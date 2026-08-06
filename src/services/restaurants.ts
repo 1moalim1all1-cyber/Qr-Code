@@ -8,6 +8,13 @@ import type { Restaurant } from '@/types/database'
 const restaurantsRef = collection(db, 'restaurants')
 
 export async function createRestaurant(ownerId: string, name: string) {
+  // Safety net: never create a second restaurant for an owner who already
+  // has one (e.g. a retried sign-up after a network hiccup). Reuse the
+  // existing one instead — this is what previously caused an account to
+  // randomly see one of several duplicate restaurants.
+  const existing = await getRestaurantByOwner(ownerId)
+  if (existing) return existing
+
   const slug = generateSlug(name)
 
   let docRef

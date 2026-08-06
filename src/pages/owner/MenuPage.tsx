@@ -310,7 +310,6 @@ function CategoryModal({
     formState: { errors, isSubmitting },
   } = useForm<CategoryForm>({ resolver: zodResolver(categorySchema) })
   const [formError, setFormError] = useState<string | null>(null)
-  const { user: currentUser } = useAuth()
 
   useEffect(() => {
     if (open) reset({ nameAr: editing?.name.ar ?? '', nameEn: editing?.name.en ?? '' })
@@ -327,13 +326,12 @@ function CategoryModal({
       onSaved()
       onClose()
     } catch (err) {
-      const base = err instanceof Error ? err.message : 'حصل خطأ، حاول تاني'
-      setFormError(`${base} || DEBUG: restaurantId=${restaurantId} ownerIdOnDoc=${ownerId} currentUserUid=${currentUser?.uid}`)
+      setFormError(err instanceof Error ? err.message : 'حصل خطأ، حاول تاني')
     }
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={editing ? 'تعديل القسم' : 'قسم جديد [DEBUG-V2]'}>
+    <Modal open={open} onClose={onClose} title={editing ? 'تعديل القسم' : 'قسم جديد'}>
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
         <Input label="اسم القسم بالعربي" error={errors.nameAr?.message} {...register('nameAr')} />
         <Input label="اسم القسم بالإنجليزي (اختياري)" {...register('nameEn')} />
