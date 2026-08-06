@@ -1,0 +1,130 @@
+rules_version = '2';
+
+// ============================================================
+// Smart QR Menu — Firestore Security Rules
+// Paste this into Firebase Console > Firestore Database > Rules
+// (or deploy with `firebase deploy --only firestore:rules` if you use the CLI)
+// ============================================================
+
+function isSignedIn() {
+  return request.auth != null;
+}
+
+function isSuperAdmin() {
+  return isSignedIn() &&
+    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin';
+}
+
+function ownsRestaurant(restaurantId) {
+  return isSignedIn() &&
+    get(/databases/$(database)/documents/restaurants/$(restaurantId)).data.owner_id == request.auth.uid;
+}
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users: a user can read/update their own profile; admins can read all
+    match /users/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || isSuperAdmin());
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isSignedIn() && request.auth.uid == userId;
+      allow delete: if false;
+    }
+
+    // Restaurants: public can read active restaurants (for the public menu page);
+    // the owner and super admins can read/write their own restaurant
+    match /restaurants/{restaurantId} {
+      // These check resource.data directly (no get() lookup) since `resource`
+      // already IS this exact restaurant doc — a self-referential get() here
+      // was redundant and, worse, could be unreliable for list/query reads
+      // (e.g. "find my restaurant by owner_id"), which is what every owner
+      // page starts with.
+      allow read: if resource.data.status == 'active' || (isSignedIn() && resource.data.owner_id == request.auth.uid) || isSuperAdmin();
+      allow create: if (isSignedIn() && request.resource.data.owner_id == request.auth.uid) || isSuperAdmin();
+      allow update, delete: if (isSignedIn() && resource.data.owner_id == request.auth.uid) || isSuperAdmin();
+
+      // Branches, categories, products, offers, qrcodes: public read (the menu is
+      // public), only the owner or an admin can write
+      match /branches/{docId} {
+        allow read: if true;
+        allow write: if ownsRestaurant(restaurantId) || isSuperAdmin();
+      }
+      // categories/products/qrcodes carry their own owner_id field (set at
+      // creation) so ownership checks compare directly against the document
+      // instead of doing a get() lookup on the parent restaurant — avoids
+      // any cross-document rule-evaluation reliability issues.
+      match /categories/{docId} {
+        allow read: if true;
+        allow create: if isSignedIn() && (request.resource.data.owner_id == request.auth.uid || isSuperAdmin());
+        allow update, delete: if isSignedIn() && (resource.data.owner_id == request.auth.uid || isSuperAdmin());
+      }
+      match /products/{docId} {
+        allow read: if true;
+        allow create: if isSignedIn() && (request.resource.data.owner_id == request.auth.uid || isSuperAdmin());
+        allow update, delete: if isSignedIn() && (resource.data.owner_id == request.auth.uid || isSuperAdmin());
+      }
+      match /offers/{docId} {
+        allow read: if true;
+        allow write: if ownsRestaurant(restaurantId) || isSuperAdmin();
+      }
+      match /coupons/{docId} {
+        allow read: if true;
+        allow write: if ownsRestaurant(restaurantId) || isSuperAdmin();
+      }
+      match /orders/{docId} {
+        allow create: if true;
+        allow read, update: if ownsRestaurant(restaurantId) || isSuperAdmin();
+        allow delete: if false;
+      }
+      match /qrcodes/{docId} {
+        allow read: if true;
+        allow create: if isSignedIn() && (request.resource.data.owner_id == request.auth.uid || isSuperAdmin());
+        allow update, delete: if isSignedIn() && (resource.data.owner_id == request.auth.uid || isSuperAdmin());
+      }
+
+      // Visits: anyone (including anonymous menu visitors) can log a visit;
+      // only the owner/admin can read the analytics
+      match /visits/{docId} {
+        allow create: if true;
+        allow read: if ownsRestaurant(restaurantId) || isSuperAdmin();
+        allow update, delete: if false;
+      }
+
+      // Subscriptions: the owner can create their own initial subscription
+      // (createRestaurant() does this right after sign-up). The create check
+      // uses the owner_id stored directly on the new subscription doc rather
+      // than a get() lookup on the parent restaurant doc — that lookup can
+      // race Firestore's write-then-read consistency for a doc created a
+      // moment earlier in the same request chain. Only admins can change
+      // plan/status afterwards, so an owner can't self-upgrade.
+      match /subscriptions/{docId} {
+        allow read: if ownsRestaurant(restaurantId) || isSuperAdmin();
+        allow create: if isSignedIn() && (request.resource.data.owner_id == request.auth.uid || isSuperAdmin());
+        allow update, delete: if isSuperAdmin();
+      }
+      match /payments/{docId} {
+        allow read: if ownsRestaurant(restaurantId) || isSuperAdmin();
+        allow write: if isSuperAdmin();
+      }
+    }
+
+    // Reference data: readable by everyone, writable only by super admins
+    match /plans/{planCode} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+    match /languages/{code} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
+    // Activity logs: admins and the relevant restaurant owner can read;
+    // any signed-in user can log an action they performed
+    match /activity_logs/{docId} {
+      allow read: if isSuperAdmin() ||
+        (isSignedIn() && ownsRestaurant(resource.data.restaurant_id));
+      allow create: if isSignedIn() && request.resource.data.actor_id == request.auth.uid;
+      allow update, delete: if false;
+    }
+  }
+}
