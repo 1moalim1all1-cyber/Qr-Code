@@ -4,6 +4,7 @@ import { QRCodeCanvas, QRCodeSVG } from 'qrcode.react'
 import { jsPDF } from 'jspdf'
 import { ArrowRight, Download, Copy, Check, ExternalLink } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { auth } from '@/lib/firebase'
 import { getRestaurantByOwner, getRestaurantById } from '@/services/restaurants'
 import { getOrCreateMainQRCode, updateQRStyle } from '@/services/qrcodes'
 import type { Restaurant, QRCode } from '@/types/database'
@@ -44,7 +45,7 @@ export default function QRCodePage({ restaurantIdOverride, backTo = '/dashboard'
       .then(async (r) => {
         setRestaurant(r)
         if (r) {
-          const qrRow = await getOrCreateMainQRCode(r.id, r.owner_id)
+          const qrRow = await getOrCreateMainQRCode(r.id, auth.currentUser?.uid ?? r.owner_id)
           setQr(qrRow)
           setColor(qrRow.style?.color ?? '#14110F')
           setShape(qrRow.style?.shape ?? 'square')

@@ -29,6 +29,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        // Force a fresh ID token on every sign-in state change (fresh login,
+        // page reload with a persisted session, etc.) — not just right after
+        // sign-up. A stale token has been the suspected cause of intermittent
+        // "Missing or insufficient permissions" errors on writes even when
+        // the user is genuinely signed in and owns the document.
+        try {
+          await firebaseUser.getIdToken(true)
+        } catch {
+          // Non-fatal — proceed with whatever token is already cached
+        }
+      }
       setUser(firebaseUser)
       if (firebaseUser) {
         await loadProfile(firebaseUser.uid)

@@ -1,4 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext'
+import { auth } from '@/lib/firebase'
 import { useEffect, useState, useCallback } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
@@ -321,12 +322,16 @@ function CategoryModal({
       if (editing && restaurantId) {
         await updateCategory(restaurantId, editing.id, { name: { ar: values.nameAr, en: values.nameEn } })
       } else if (restaurantId) {
-        await createCategory(restaurantId, ownerId, values.nameAr, values.nameEn ?? '', nextSortOrder)
+        // Use the freshest possible auth UID at the exact moment of write,
+        // not a value captured earlier when the page first loaded.
+        const liveUid = auth.currentUser?.uid ?? ownerId
+        await createCategory(restaurantId, liveUid, values.nameAr, values.nameEn ?? '', nextSortOrder)
       }
       onSaved()
       onClose()
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'حصل خطأ، حاول تاني')
+      const base = err instanceof Error ? err.message : 'حصل خطأ، حاول تاني'
+      setFormError(`${base} || DEBUG2: liveUid=${auth.currentUser?.uid} restaurantOwnerId=${ownerId} restaurantId=${restaurantId}`)
     }
   }
 
@@ -409,7 +414,8 @@ function ProductModal({
       if (editing && restaurantId) {
         await updateProduct(restaurantId, editing.id, payload)
       } else if (restaurantId) {
-        await createProduct(restaurantId, ownerId, payload)
+        const liveUid = auth.currentUser?.uid ?? ownerId
+        await createProduct(restaurantId, liveUid, payload)
       }
       onSaved()
       onClose()
