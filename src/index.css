@@ -1,18 +1,20 @@
 @import "tailwindcss";
 
 @theme {
-  /* Signature palette — inspired by saffron, olive oil & charcoal, not the generic cream/terracotta AI default */
-  --color-ink: #14110F;
-  --color-ink-soft: #262119;
-  --color-paper: #FBF7F1;
-  --color-paper-dim: #F2ECE1;
-  --color-saffron: #E8A33D;
-  --color-saffron-dim: #C4842A;
-  --color-zaytoon: #4B5D3A;
-  --color-zaytoon-dim: #3A4A2C;
-  --color-sumac: #B23A48;
-  --color-stone: #8A8579;
-  --color-stone-light: #C9C3B4;
+  /* Signature palette v2 — warmer, more appetizing saffron/olive/spice mix */
+  --color-ink: #1A140F;
+  --color-ink-soft: #2C231A;
+  --color-paper: #FBF6EE;
+  --color-paper-dim: #F3E9D8;
+  --color-saffron: #F2A93C;
+  --color-saffron-dim: #D6842A;
+  --color-zaytoon: #55692F;
+  --color-zaytoon-dim: #435322;
+  --color-sumac: #C43F3F;
+  --color-paprika: #E06B2C;
+  --color-mint: #3E8E7E;
+  --color-stone: #8A7E6E;
+  --color-stone-light: #D9CBB0;
 
   --font-display: "El Messiri", "Cairo", sans-serif;
   --font-body: "Tajawal", "Cairo", sans-serif;

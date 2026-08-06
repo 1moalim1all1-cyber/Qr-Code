@@ -8,6 +8,7 @@ import {
 import Showcase3D from '@/components/landing/Showcase3D'
 import PromoBanners from '@/components/landing/PromoBanners'
 import RestaurantCarousel from '@/components/landing/RestaurantCarousel'
+import MenuPreviewDemo from '@/components/landing/MenuPreviewDemo'
 
 const SUPPORT_WHATSAPP = '201006923454'
 
@@ -171,6 +172,8 @@ export default function LandingPage() {
       <section className="max-w-6xl mx-auto px-6 py-16 flex justify-center">
         <RestaurantCarousel />
       </section>
+
+      <MenuPreviewDemo />
 
       <PromoBanners />
 
