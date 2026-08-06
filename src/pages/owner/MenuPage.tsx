@@ -328,12 +328,12 @@ function CategoryModal({
       onClose()
     } catch (err) {
       const base = err instanceof Error ? err.message : 'حصل خطأ، حاول تاني'
-      setFormError(`${base} [restaurantId=${restaurantId} | owner_id_على_المطعم=${ownerId} | حسابك_الحالي=${currentUser?.uid}]`)
+      setFormError(`${base} || DEBUG: restaurantId=${restaurantId} ownerIdOnDoc=${ownerId} currentUserUid=${currentUser?.uid}`)
     }
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={editing ? 'تعديل القسم' : 'قسم جديد'}>
+    <Modal open={open} onClose={onClose} title={editing ? 'تعديل القسم' : 'قسم جديد [DEBUG-V2]'}>
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
         <Input label="اسم القسم بالعربي" error={errors.nameAr?.message} {...register('nameAr')} />
         <Input label="اسم القسم بالإنجليزي (اختياري)" {...register('nameEn')} />
