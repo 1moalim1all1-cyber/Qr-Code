@@ -9,12 +9,14 @@ import Showcase3D from '@/components/landing/Showcase3D'
 import PromoBanners from '@/components/landing/PromoBanners'
 import RestaurantCarousel from '@/components/landing/RestaurantCarousel'
 import MenuPreviewDemo from '@/components/landing/MenuPreviewDemo'
+import FeaturedMenus from '@/components/landing/FeaturedMenus'
 
 const SUPPORT_WHATSAPP = '201006923454'
 
 const NAV_LINKS = [
   { label: 'الرئيسية', href: '#top' },
   { label: 'المميزات', href: '#features' },
+  { label: 'منيوهاتنا', href: '#menus' },
   { label: 'كيف يعمل', href: '#how' },
   { label: 'الأسئلة الشائعة', href: '#faq' },
 ]
@@ -88,7 +90,7 @@ export default function LandingPage() {
         <div className="relative max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
           <span className="font-display text-xl font-semibold text-paper shrink-0 flex items-center gap-2">
             <QrCode className="text-saffron" size={20} />
-            Smart QR Menu
+            Egy Menu
           </span>
           <nav className="hidden md:flex items-center gap-6">
             {NAV_LINKS.map((link) => (
@@ -174,6 +176,8 @@ export default function LandingPage() {
       </section>
 
       <MenuPreviewDemo />
+
+      <FeaturedMenus />
 
       <PromoBanners />
 
@@ -261,7 +265,7 @@ export default function LandingPage() {
       <footer className="border-t border-stone-light/20">
         <div className="max-w-6xl mx-auto px-6 py-12 grid sm:grid-cols-3 gap-8">
           <div>
-            <span className="font-display text-lg font-semibold">Smart QR Menu</span>
+            <span className="font-display text-lg font-semibold">Egy Menu</span>
             <p className="text-stone text-sm mt-2 leading-relaxed">
               منصة عربية لإنشاء منيو إلكتروني احترافي وإدارة طلبات المطاعم والكافيهات.
             </p>
@@ -284,6 +288,11 @@ export default function LandingPage() {
                   </a>
                 </li>
               ))}
+              <li>
+                <Link to="/restaurants" className="hover:text-ink transition-colors">
+                  دليل كل المطاعم
+                </Link>
+              </li>
             </ul>
           </div>
           <div>
@@ -296,8 +305,16 @@ export default function LandingPage() {
             </Link>
           </div>
         </div>
-        <div className="border-t border-stone-light/20 py-5 text-center text-xs text-stone">
-          © {new Date().getFullYear()} Smart QR Menu — جميع الحقوق محفوظة
+        <div className="border-t border-stone-light/20 py-5 flex flex-col sm:flex-row items-center justify-center gap-3 text-xs text-stone">
+          <span>© {new Date().getFullYear()} Egy Menu — جميع الحقوق محفوظة</span>
+          <span className="flex items-center gap-3">
+            <Link to="/terms" className="hover:text-ink transition-colors">
+              الشروط والأحكام
+            </Link>
+            <Link to="/privacy" className="hover:text-ink transition-colors">
+              سياسة الخصوصية
+            </Link>
+          </span>
         </div>
       </footer>
 

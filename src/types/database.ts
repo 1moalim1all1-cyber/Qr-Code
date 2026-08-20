@@ -174,3 +174,15 @@ export interface Order {
   status: OrderStatus
   created_at: string
 }
+
+// ============================================================
+// Reviews
+// ============================================================
+
+export interface Review {
+  id: string
+  customer_name: string
+  rating: number // 1-5
+  comment: string
+  created_at: string
+}

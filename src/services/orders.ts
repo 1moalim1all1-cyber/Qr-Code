@@ -1,4 +1,4 @@
-import { collection, addDoc, getDocs, doc, updateDoc, query, orderBy, serverTimestamp } from 'firebase/firestore'
+import { collection, addDoc, getDocs, doc, updateDoc, query, orderBy, serverTimestamp, onSnapshot } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import type { Order, OrderItem, OrderType, OrderStatus } from '@/types/database'
 
@@ -43,4 +43,15 @@ export async function listOrders(restaurantId: string) {
 
 export async function updateOrderStatus(restaurantId: string, orderId: string, status: OrderStatus) {
   await updateDoc(doc(db, 'restaurants', restaurantId, 'orders', orderId), { status })
+}
+
+// Real-time subscription — used by OrdersPage so a restaurant owner sees new
+// orders (and a notification) the moment a customer places one, without
+// needing to refresh the page.
+export function subscribeToOrders(restaurantId: string, onChange: (orders: Order[]) => void) {
+  const q = query(ordersRef(restaurantId), orderBy('created_at', 'desc'))
+  return onSnapshot(q, (snap) => {
+    const orders = snap.docs.map((d) => ({ id: d.id, ...d.data() })) as unknown as Order[]
+    onChange(orders)
+  })
 }

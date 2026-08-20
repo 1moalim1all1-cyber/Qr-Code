@@ -65,11 +65,21 @@ service cloud.firestore {
       }
       match /offers/{docId} {
         allow read: if true;
-        allow write: if ownsRestaurant(restaurantId) || isSuperAdmin();
+        allow create: if isSignedIn() && (request.resource.data.owner_id == request.auth.uid || isSuperAdmin());
+        allow update, delete: if isSignedIn() && (resource.data.owner_id == request.auth.uid || isSuperAdmin());
       }
       match /coupons/{docId} {
         allow read: if true;
-        allow write: if ownsRestaurant(restaurantId) || isSuperAdmin();
+        allow create: if isSignedIn() && (request.resource.data.owner_id == request.auth.uid || isSuperAdmin());
+        allow update, delete: if isSignedIn() && (resource.data.owner_id == request.auth.uid || isSuperAdmin());
+      }
+      match /reviews/{docId} {
+        allow read: if true;
+        // Anyone (including anonymous menu visitors) can leave a review;
+        // only the owner/admin can remove one (e.g. spam/abuse)
+        allow create: if true;
+        allow update: if false;
+        allow delete: if ownsRestaurant(restaurantId) || isSuperAdmin();
       }
       match /orders/{docId} {
         allow create: if true;

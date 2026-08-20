@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { QRCodeCanvas, QRCodeSVG } from 'qrcode.react'
 import { jsPDF } from 'jspdf'
-import { ArrowRight, Download, Copy, Check, ExternalLink } from 'lucide-react'
+import html2canvas from 'html2canvas'
+import { ArrowRight, Download, Copy, Check, ExternalLink, Smartphone, ScanLine, UtensilsCrossed } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { auth } from '@/lib/firebase'
 import { getRestaurantByOwner, getRestaurantById } from '@/services/restaurants'
@@ -37,6 +38,8 @@ export default function QRCodePage({ restaurantIdOverride, backTo = '/dashboard'
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const canvasRef = useRef<HTMLDivElement>(null)
+  const flyerRef = useRef<HTMLDivElement>(null)
+  const [generatingPdf, setGeneratingPdf] = useState(false)
 
   useEffect(() => {
     const fetcher = adminRestaurantId ? getRestaurantById(adminRestaurantId) : user ? getRestaurantByOwner(user.uid) : null
@@ -98,22 +101,28 @@ export default function QRCodePage({ restaurantIdOverride, backTo = '/dashboard'
     link.click()
   }
 
-  function downloadPDF() {
-    const canvas = canvasRef.current?.querySelector('canvas')
-    if (!canvas || !restaurant) return
-    const imgData = canvas.toDataURL('image/png')
-    const pdf = new jsPDF({ unit: 'mm', format: 'a6' })
-    const pageWidth = pdf.internal.pageSize.getWidth()
-    const qrSize = 70
-    const x = (pageWidth - qrSize) / 2
-
-    pdf.setFont('helvetica', 'bold')
-    pdf.setFontSize(16)
-    pdf.text(restaurant.name, pageWidth / 2, 20, { align: 'center' })
-    pdf.addImage(imgData, 'PNG', x, 28, qrSize, qrSize)
-    pdf.setFontSize(11)
-    pdf.text('امسح الكود لعرض المنيو', pageWidth / 2, 106, { align: 'center' })
-    pdf.save(`${restaurant.slug}-qr.pdf`)
+  async function downloadPDF() {
+    if (!flyerRef.current || !restaurant) return
+    setGeneratingPdf(true)
+    try {
+      // Rasterize the hidden Arabic flyer as an image first — jsPDF's built-in
+      // fonts have no Arabic glyphs, so text drawn directly would come out
+      // as boxes. html2canvas renders it exactly as the browser does, RTL
+      // shaping and all, then we just place that image on the PDF page.
+      const canvas = await html2canvas(flyerRef.current, { scale: 3, backgroundColor: '#ffffff' })
+      const imgData = canvas.toDataURL('image/png')
+      const pdf = new jsPDF({ unit: 'mm', format: 'a5' })
+      const pageWidth = pdf.internal.pageSize.getWidth()
+      const pageHeight = pdf.internal.pageSize.getHeight()
+      const imgRatio = canvas.height / canvas.width
+      const drawWidth = pageWidth
+      const drawHeight = pageWidth * imgRatio
+      const y = Math.max(0, (pageHeight - drawHeight) / 2)
+      pdf.addImage(imgData, 'PNG', 0, y, drawWidth, Math.min(drawHeight, pageHeight))
+      pdf.save(`${restaurant.slug}-qr-flyer.pdf`)
+    } finally {
+      setGeneratingPdf(false)
+    }
   }
 
   if (!restaurant) {
@@ -195,8 +204,12 @@ export default function QRCodePage({ restaurantIdOverride, backTo = '/dashboard'
             <button onClick={downloadSVG} className="flex items-center gap-1.5 rounded-full bg-paper-dim px-4 py-2 text-sm font-medium hover:bg-stone-light/30 transition-colors">
               <Download size={14} /> SVG
             </button>
-            <button onClick={downloadPDF} className="flex items-center gap-1.5 rounded-full bg-paper-dim px-4 py-2 text-sm font-medium hover:bg-stone-light/30 transition-colors">
-              <Download size={14} /> PDF للطباعة
+            <button
+              onClick={downloadPDF}
+              disabled={generatingPdf}
+              className="flex items-center gap-1.5 rounded-full bg-paper-dim px-4 py-2 text-sm font-medium hover:bg-stone-light/30 transition-colors disabled:opacity-60"
+            >
+              <Download size={14} /> {generatingPdf ? 'جارِ التجهيز...' : 'ورقة طباعة PDF'}
             </button>
           </div>
         </div>
@@ -252,6 +265,50 @@ export default function QRCodePage({ restaurantIdOverride, backTo = '/dashboard'
           {error && <p className="text-xs text-sumac mt-3">{error}</p>}
         </div>
       </main>
+
+      {/* Hidden print flyer — rendered off-screen, captured via html2canvas
+          for the PDF so Arabic text renders correctly (see downloadPDF). */}
+      <div className="fixed -left-[9999px] top-0 pointer-events-none" aria-hidden="true">
+        <div
+          ref={flyerRef}
+          className="w-[400px] bg-white p-8 flex flex-col items-center text-center"
+          style={{ fontFamily: 'Tajawal, sans-serif' }}
+        >
+          {restaurant.logo_url ? (
+            <img src={restaurant.logo_url} alt="" className="w-16 h-16 rounded-2xl object-cover mb-3" />
+          ) : (
+            <div className="w-16 h-16 rounded-2xl bg-ink text-saffron flex items-center justify-center text-2xl font-bold mb-3">
+              {restaurant.name.charAt(0)}
+            </div>
+          )}
+          <h1 style={{ fontFamily: 'El Messiri, sans-serif' }} className="text-2xl font-bold text-ink mb-1">
+            {restaurant.name}
+          </h1>
+          <p className="text-sm text-stone mb-6">امسح الكود وشوف المنيو دلوقتي</p>
+
+          <div className="p-4 bg-white border-2 rounded-2xl mb-6" style={{ borderColor: color }}>
+            <QRCodeCanvas value={menuUrl} size={200} fgColor={color} level="H" />
+          </div>
+
+          <div className="w-full flex flex-col gap-3 text-right">
+            {[
+              { icon: Smartphone, text: 'افتح كاميرا موبايلك' },
+              { icon: ScanLine, text: 'وجّهها للكود وانتظر ثانية' },
+              { icon: UtensilsCrossed, text: 'تصفح المنيو واطلب من مكانك' },
+            ].map((step, i) => (
+              <div key={step.text} className="flex items-center gap-3">
+                <div className="w-7 h-7 rounded-full bg-saffron/20 text-saffron-dim flex items-center justify-center text-xs font-bold shrink-0">
+                  {i + 1}
+                </div>
+                <step.icon size={16} className="text-zaytoon shrink-0" />
+                <span className="text-sm text-ink">{step.text}</span>
+              </div>
+            ))}
+          </div>
+
+          <p className="text-[10px] text-stone-light mt-8">Egy Menu</p>
+        </div>
+      </div>
     </div>
   )
 }

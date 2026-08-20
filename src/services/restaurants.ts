@@ -144,6 +144,15 @@ export async function setPaymentStatus(
   })
 }
 
+// Public showcase for the landing page — a handful of active restaurants
+// that have at least a name and logo/cover, so the homepage can show real
+// menus from real platform users instead of only mockups.
+export async function listFeaturedRestaurants(max: number = 6) {
+  const q = query(restaurantsRef, where('status', '==', 'active'), limit(max))
+  const snap = await getDocs(q)
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() })) as unknown as Restaurant[]
+}
+
 export async function getRestaurantBySlug(slug: string) {
   const q = query(restaurantsRef, where('slug', '==', slug), where('status', '==', 'active'), limit(1))
   const snap = await getDocs(q)

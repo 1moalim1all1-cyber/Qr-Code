@@ -5,6 +5,7 @@ import {
   Search, Phone, MessageCircle, MapPin, Clock, Star, Flame, Sparkles, Leaf, X, Share2, Plus, Minus, ShoppingBag,
 } from 'lucide-react'
 import { getRestaurantBySlug } from '@/services/restaurants'
+import { isRestaurantOpenNow } from '@/lib/businessHours'
 import { listCategories } from '@/services/categories'
 import { listProducts } from '@/services/products'
 import { logVisit } from '@/services/visits'
@@ -12,6 +13,8 @@ import type { Restaurant, Category, Product, OrderItemExtra } from '@/types/data
 import { CartProvider, useCart } from '@/contexts/CartContext'
 import BottomCartBar from '@/components/menu/BottomCartBar'
 import CartSheet from '@/components/menu/CartSheet'
+import ReviewsSection from '@/components/menu/ReviewsSection'
+import OffersBanner from '@/components/menu/OffersBanner'
 
 export default function MenuPage() {
   return (
@@ -40,6 +43,7 @@ function MenuPageContent() {
     getRestaurantBySlug(slug)
       .then(async (r) => {
         setRestaurant(r)
+        document.title = `${r.name} | منيو إلكتروني — Egy Menu`
         const [cats, prods] = await Promise.all([listCategories(r.id), listProducts(r.id)])
         setCategories(cats.filter((c) => c.is_visible))
         setProducts(prods.filter((p) => p.is_available))
@@ -47,6 +51,10 @@ function MenuPageContent() {
       })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false))
+
+    return () => {
+      document.title = 'Egy Menu | منيو إلكتروني ذكي لمطعمك'
+    }
   }, [slug])
 
   const filteredByCategory = useMemo(() => {
@@ -124,9 +132,9 @@ function MenuPageContent() {
                   {restaurant.rating}
                 </span>
               )}
-              <span className={`flex items-center gap-1 ${restaurant.is_open ? 'text-zaytoon' : 'text-sumac'}`}>
+              <span className={`flex items-center gap-1 ${isRestaurantOpenNow(restaurant) ? 'text-zaytoon' : 'text-sumac'}`}>
                 <Clock size={13} />
-                {restaurant.is_open ? 'مفتوح الآن' : 'مغلق حاليًا'}
+                {isRestaurantOpenNow(restaurant) ? 'مفتوح الآن' : 'مغلق حاليًا'}
               </span>
             </div>
           </div>
@@ -169,6 +177,8 @@ function MenuPageContent() {
             <Share2 size={15} />
           </button>
         </div>
+
+        {restaurant && <OffersBanner restaurantId={restaurant.id} />}
 
         {/* Search */}
         <div className="relative mb-4">
@@ -217,6 +227,8 @@ function MenuPageContent() {
             </div>
           ))
         )}
+
+        {restaurant && <ReviewsSection restaurantId={restaurant.id} />}
       </div>
 
       {selectedProduct && <ProductDetailSheet product={selectedProduct} onClose={() => setSelectedProduct(null)} />}

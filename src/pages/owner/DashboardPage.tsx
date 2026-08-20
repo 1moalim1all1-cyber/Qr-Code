@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { LogOut, QrCode, Eye, UtensilsCrossed, Building2, Settings, ClipboardList } from 'lucide-react'
+import { LogOut, QrCode, Eye, UtensilsCrossed, Building2, Settings, ClipboardList, Gift } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { signOut } from '@/services/auth'
 import { getRestaurantByOwner } from '@/services/restaurants'
@@ -116,6 +116,17 @@ export default function DashboardPage() {
               كود QR الخاص بالمنيو
             </p>
             <p className="text-paper/80 text-sm mt-1">خصّص الشكل واللون وحمّله جاهز للطباعة</p>
+          </Link>
+
+          <Link
+            to="/dashboard/offers"
+            className="block rounded-2xl bg-paper border border-stone-light/30 p-6 hover:border-saffron/40 transition-colors"
+          >
+            <p className="font-display font-semibold flex items-center gap-2">
+              <Gift size={18} className="text-saffron-dim" />
+              العروض والكوبونات
+            </p>
+            <p className="text-stone text-sm mt-1">أنشئ عروض وأكواد خصم لعملائك</p>
           </Link>
         </div>
       </main>

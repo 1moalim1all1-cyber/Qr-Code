@@ -1,6 +1,9 @@
 import { Routes, Route } from 'react-router-dom'
 import LandingPage from './pages/public/LandingPage'
 import PublicMenuPage from './pages/public/MenuPage'
+import TermsPage from './pages/public/TermsPage'
+import PrivacyPage from './pages/public/PrivacyPage'
+import RestaurantsDirectoryPage from './pages/public/RestaurantsDirectoryPage'
 import LoginPage from './pages/auth/LoginPage'
 import RegisterPage from './pages/auth/RegisterPage'
 import DashboardPage from './pages/owner/DashboardPage'
@@ -8,6 +11,7 @@ import MenuPage from './pages/owner/MenuPage'
 import QRCodePage from './pages/owner/QRCodePage'
 import SettingsPage from './pages/owner/SettingsPage'
 import OrdersPage from './pages/owner/OrdersPage'
+import OffersPage from './pages/owner/OffersPage'
 import AdminDashboardPage from './pages/admin/AdminDashboardPage'
 import AdminCreateClientPage from './pages/admin/AdminCreateClientPage'
 import ProtectedRoute from './components/layout/ProtectedRoute'
@@ -20,6 +24,9 @@ function App() {
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/m/:slug" element={<PublicMenuPage />} />
+      <Route path="/restaurants" element={<RestaurantsDirectoryPage />} />
+      <Route path="/terms" element={<TermsPage />} />
+      <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route
@@ -63,6 +70,14 @@ function App() {
         }
       />
       <Route
+        path="/dashboard/offers"
+        element={
+          <ProtectedRoute allowedRoles={['owner', 'staff']}>
+            <OffersPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/admin"
         element={
           <ProtectedRoute allowedRoles={['super_admin']}>
@@ -99,6 +114,14 @@ function App() {
         element={
           <ProtectedRoute allowedRoles={['super_admin']}>
             <OrdersPage backTo="/admin" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/clients/:id/offers"
+        element={
+          <ProtectedRoute allowedRoles={['super_admin']}>
+            <OffersPage backTo="/admin" />
           </ProtectedRoute>
         }
       />

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { LogOut, Store, CheckCircle2, Clock, Ban, Eye, ExternalLink, Plus, UtensilsCrossed, QrCode, Wallet, ClipboardList } from 'lucide-react'
+import { LogOut, Store, CheckCircle2, Clock, Ban, Eye, ExternalLink, Plus, UtensilsCrossed, QrCode, Wallet, ClipboardList, Gift } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { signOut } from '@/services/auth'
 import { listAllRestaurants, setRestaurantStatus, getPlatformStats } from '@/services/admin'
@@ -180,6 +180,12 @@ export default function AdminDashboardPage() {
                           className="flex items-center gap-1 text-xs rounded-full bg-paper-dim px-3 py-1.5 hover:bg-stone-light/30 transition-colors"
                         >
                           <ClipboardList size={12} /> الطلبات
+                        </Link>
+                        <Link
+                          to={`/admin/clients/${r.id}/offers`}
+                          className="flex items-center gap-1 text-xs rounded-full bg-paper-dim px-3 py-1.5 hover:bg-stone-light/30 transition-colors"
+                        >
+                          <Gift size={12} /> العروض
                         </Link>
                         {r.status !== 'active' && (
                           <button

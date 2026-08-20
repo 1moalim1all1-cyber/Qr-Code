@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowRight, Clock, ChefHat, CheckCircle2, XCircle, Phone } from 'lucide-react'
+import { ArrowRight, Clock, ChefHat, CheckCircle2, XCircle, Phone, Bell } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { getRestaurantByOwner, getRestaurantById } from '@/services/restaurants'
-import { listOrders, updateOrderStatus } from '@/services/orders'
+import { subscribeToOrders, updateOrderStatus } from '@/services/orders'
+import { playNewOrderChime } from '@/lib/notifySound'
 import type { Order, OrderStatus, Restaurant } from '@/types/database'
 
 const STATUS_FLOW: OrderStatus[] = ['pending', 'preparing', 'ready', 'completed']
@@ -45,31 +46,44 @@ export default function OrdersPage({ restaurantIdOverride, backTo = '/dashboard'
   const [filter, setFilter] = useState<'active' | 'all'>('active')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-
-  async function load(restaurantId: string) {
-    try {
-      const data = await listOrders(restaurantId)
-      setOrders(data)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'حصل خطأ، حاول تاني')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const [newOrderToast, setNewOrderToast] = useState(false)
+  const knownOrderIds = useRef<Set<string> | null>(null)
 
   useEffect(() => {
     const fetcher = adminRestaurantId ? getRestaurantById(adminRestaurantId) : user ? getRestaurantByOwner(user.uid) : null
     if (!fetcher) return
+
+    let unsubscribe: (() => void) | undefined
+
     fetcher
       .then((r) => {
         setRestaurant(r)
-        if (r) load(r.id)
-        else setLoading(false)
+        if (!r) {
+          setLoading(false)
+          return
+        }
+        unsubscribe = subscribeToOrders(r.id, (data) => {
+          // Detect genuinely NEW orders (not the first load) to trigger the
+          // chime + toast — comparing against previously-seen order IDs.
+          if (knownOrderIds.current) {
+            const isNewOrder = data.some((o) => !knownOrderIds.current!.has(o.id))
+            if (isNewOrder) {
+              playNewOrderChime()
+              setNewOrderToast(true)
+              setTimeout(() => setNewOrderToast(false), 4000)
+            }
+          }
+          knownOrderIds.current = new Set(data.map((o) => o.id))
+          setOrders(data)
+          setLoading(false)
+        })
       })
       .catch((err) => {
         setError(err instanceof Error ? err.message : 'حصل خطأ، حاول تاني')
         setLoading(false)
       })
+
+    return () => unsubscribe?.()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, adminRestaurantId])
 
@@ -87,6 +101,13 @@ export default function OrdersPage({ restaurantIdOverride, backTo = '/dashboard'
 
   return (
     <div className="min-h-screen bg-paper-dim">
+      {newOrderToast && (
+        <div className="fixed top-4 inset-x-4 sm:inset-x-auto sm:left-4 z-50 rounded-2xl bg-ink text-paper shadow-2xl px-5 py-3.5 flex items-center gap-2">
+          <Bell size={16} className="text-saffron" />
+          <span className="text-sm font-medium">طلب جديد وصل! 🎉</span>
+        </div>
+      )}
+
       <header className="bg-paper border-b border-stone-light/40">
         <div className="max-w-3xl mx-auto px-6 py-4 flex items-center gap-4">
           <Link to={backTo} className="text-stone hover:text-ink transition-colors">
