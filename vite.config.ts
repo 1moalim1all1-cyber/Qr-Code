@@ -3,12 +3,15 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
 
-// With a custom domain (egy-menu.org) the site is served from the domain
-// root, not from a GitHub Pages subpath like /Qr-Code/ anymore — so base
-// is just '/'. If you ever go back to the default *.github.io/RepoName/
-// URL (no custom domain), change this back to `/${REPO_NAME}/`.
+// TEMPORARY: reverted to the GitHub Pages subpath while egy-menu.org's DNS/
+// Cloudflare nameserver switch is still propagating, so the old
+// https://1moalim1all1-cyber.github.io/Qr-Code/ link keeps working in the
+// meantime. Once egy-menu.org is confirmed working, change this back to
+// base: '/' and redeploy — the custom domain needs root-level asset paths.
+const REPO_NAME = 'Qr-Code'
+
 export default defineConfig({
-  base: '/',
+  base: `/${REPO_NAME}/`,
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
