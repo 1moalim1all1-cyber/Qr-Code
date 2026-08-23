@@ -148,20 +148,20 @@ export default function QRCodePage({ restaurantIdOverride, backTo = '/dashboard'
   return (
     <div className="min-h-screen bg-paper-dim">
       <header className="bg-paper border-b border-stone-light/40">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-4">
-          <Link to={backTo} className="text-stone hover:text-ink transition-colors">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3 sm:gap-4">
+          <Link to={backTo} className="text-stone hover:text-ink transition-colors shrink-0">
             <ArrowRight size={20} />
           </Link>
-          <h1 className="font-display text-lg font-semibold">
+          <h1 className="font-display text-base sm:text-lg font-semibold truncate">
             كود QR الخاص بالمنيو {restaurant && adminRestaurantId ? `— ${restaurant.name}` : ''}
           </h1>
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-6 py-8 grid md:grid-cols-[1fr_260px] gap-8">
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8 grid md:grid-cols-[1fr_260px] gap-6 sm:gap-8">
         {/* Preview */}
-        <div className="rounded-2xl bg-paper border border-stone-light/30 p-8 flex flex-col items-center">
-          <div ref={canvasRef} className="p-4 bg-white rounded-2xl">
+        <div className="rounded-2xl bg-paper border border-stone-light/30 p-4 sm:p-8 flex flex-col items-center">
+          <div ref={canvasRef} className="p-3 sm:p-4 bg-white rounded-2xl">
             <QRCodeCanvas
               value={menuUrl}
               size={220}
@@ -171,12 +171,12 @@ export default function QRCodePage({ restaurantIdOverride, backTo = '/dashboard'
             />
             <QRCodeSVG
               value={menuUrl}
-              size={220}
+              size={180}
               fgColor={color}
               level="H"
               imageSettings={
                 restaurant.logo_url
-                  ? { src: restaurant.logo_url, height: 40, width: 40, excavate: true }
+                  ? { src: restaurant.logo_url, height: 34, width: 34, excavate: true }
                   : undefined
               }
             />
@@ -202,25 +202,25 @@ export default function QRCodePage({ restaurantIdOverride, backTo = '/dashboard'
             </a>
           </div>
 
-          <div className="flex flex-wrap gap-2 mt-6 justify-center">
-            <button onClick={downloadPNG} className="flex items-center gap-1.5 rounded-full bg-ink text-paper px-4 py-2 text-sm font-medium hover:bg-ink-soft transition-colors">
+          <div className="grid grid-cols-3 sm:flex sm:flex-wrap gap-2 mt-6 w-full sm:w-auto sm:justify-center">
+            <button onClick={downloadPNG} className="flex items-center justify-center gap-1.5 rounded-full bg-ink text-paper px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium hover:bg-ink-soft transition-colors">
               <Download size={14} /> PNG
             </button>
-            <button onClick={downloadSVG} className="flex items-center gap-1.5 rounded-full bg-paper-dim px-4 py-2 text-sm font-medium hover:bg-stone-light/30 transition-colors">
+            <button onClick={downloadSVG} className="flex items-center justify-center gap-1.5 rounded-full bg-paper-dim px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium hover:bg-stone-light/30 transition-colors">
               <Download size={14} /> SVG
             </button>
             <button
               onClick={downloadPDF}
               disabled={generatingPdf}
-              className="flex items-center gap-1.5 rounded-full bg-paper-dim px-4 py-2 text-sm font-medium hover:bg-stone-light/30 transition-colors disabled:opacity-60"
+              className="flex items-center justify-center gap-1.5 rounded-full bg-paper-dim px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium hover:bg-stone-light/30 transition-colors disabled:opacity-60"
             >
-              <Download size={14} /> {generatingPdf ? 'جارِ التجهيز...' : 'ورقة طباعة PDF'}
+              <Download size={14} /> {generatingPdf ? '...جارِ' : 'PDF'}
             </button>
           </div>
         </div>
 
         {/* Customization */}
-        <div className="rounded-2xl bg-paper border border-stone-light/30 p-5 h-fit">
+        <div className="rounded-2xl bg-paper border border-stone-light/30 p-4 sm:p-5 h-fit">
           <p className="text-sm font-semibold mb-3">اللون</p>
           <div className="flex flex-wrap gap-2 mb-3">
             {COLOR_PRESETS.map((c) => (
