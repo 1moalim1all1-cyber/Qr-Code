@@ -3,17 +3,16 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
 
-// IMPORTANT: change this to your exact GitHub repo name before deploying,
-// e.g. if the repo is github.com/1moalim1all1-cyber/Qr-Code then
-// base must be '/Qr-Code/'
-const REPO_NAME = 'Qr-Code'
-
-export default defineConfig(({ command }) => ({
-  base: command === 'build' ? `/${REPO_NAME}/` : '/',
+// With a custom domain (egy-menu.org) the site is served from the domain
+// root, not from a GitHub Pages subpath like /Qr-Code/ anymore — so base
+// is just '/'. If you ever go back to the default *.github.io/RepoName/
+// URL (no custom domain), change this back to `/${REPO_NAME}/`.
+export default defineConfig({
+  base: '/',
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
   },
-}))
+})
