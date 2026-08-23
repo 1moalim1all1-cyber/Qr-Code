@@ -1,0 +1,1 @@
+async function e(e,t){try{return await t()}catch(t){throw console.error(`[${e}]`,t),Error(`${e}: ${t instanceof Error?t.message:String(t)}`)}}export{e as t};
