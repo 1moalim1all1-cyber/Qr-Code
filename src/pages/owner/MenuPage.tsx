@@ -385,7 +385,7 @@ function ProductModal({
         descriptionAr: editing?.description?.ar ?? '',
         categoryId: editing?.category_id ?? defaultCategoryId ?? '',
         price: editing?.price ?? undefined,
-        discountPrice: editing?.discount_price ?? '',
+        discountPrice: editing?.discount_price != null ? String(editing.discount_price) : '',
         isBestSeller: editing?.is_best_seller ?? false,
         isNew: editing?.is_new ?? false,
         isSpicy: editing?.is_spicy ?? false,

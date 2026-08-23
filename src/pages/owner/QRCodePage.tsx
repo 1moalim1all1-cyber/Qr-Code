@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { QRCodeCanvas, QRCodeSVG } from 'qrcode.react'
-import { jsPDF } from 'jspdf'
-import html2canvas from 'html2canvas'
 import { ArrowRight, Download, Copy, Check, ExternalLink, Smartphone, ScanLine, UtensilsCrossed } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { auth } from '@/lib/firebase'
@@ -105,6 +103,13 @@ export default function QRCodePage({ restaurantIdOverride, backTo = '/dashboard'
     if (!flyerRef.current || !restaurant) return
     setGeneratingPdf(true)
     try {
+      // Both libraries are loaded on demand (only when the person actually
+      // clicks this button) instead of bundled into the page's main script —
+      // they're fairly large and most visitors never touch PDF export.
+      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf'),
+      ])
       // Rasterize the hidden Arabic flyer as an image first — jsPDF's built-in
       // fonts have no Arabic glyphs, so text drawn directly would come out
       // as boxes. html2canvas renders it exactly as the browser does, RTL

@@ -34,7 +34,13 @@ export const productSchema = z.object({
   descriptionAr: z.string().optional(),
   categoryId: z.string().min(1, 'اختار القسم'),
   price: z.coerce.number().positive('السعر لازم يكون أكبر من صفر'),
-  discountPrice: z.coerce.number().nonnegative().optional().or(z.literal('')),
+  // Kept as a plain string (not z.coerce.number()) on purpose: an empty
+  // discount field used to get coerced to 0 by z.coerce.number(), which
+  // then passed .nonnegative() and silently became a real "0 EGP discount"
+  // instead of "no discount". The actual number conversion happens in the
+  // form's onSubmit handler, where an empty string is explicitly mapped to
+  // null (no discount) instead of 0.
+  discountPrice: z.string().optional(),
   isBestSeller: z.boolean().default(false),
   isNew: z.boolean().default(false),
   isSpicy: z.boolean().default(false),
