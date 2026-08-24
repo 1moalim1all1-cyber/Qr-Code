@@ -40,6 +40,14 @@ function MenuPageContent() {
 
   useEffect(() => {
     if (!slug) return
+    // Guards against the page occasionally rendering "scrolled sideways" on
+    // first load on some mobile browsers with RTL pages (Brave/Chrome on
+    // Android in particular) — force the scroll position to the true start
+    // on every fresh visit instead of trusting the browser's default.
+    window.scrollTo(0, 0)
+    document.documentElement.scrollLeft = 0
+    document.body.scrollLeft = 0
+
     getRestaurantBySlug(slug)
       .then(async (r) => {
         setRestaurant(r)
@@ -274,7 +282,7 @@ function ProductCard({ product: p, onOpen }: { product: Product; onOpen: () => v
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') onOpen()
       }}
-      className="flex items-center gap-3 text-right rounded-2xl bg-paper border border-stone-light/30 shadow-sm p-3 hover:border-saffron/40 hover:shadow-md active:scale-[0.99] transition-all cursor-pointer"
+      className="flex items-center gap-2 sm:gap-3 text-right rounded-2xl bg-paper border border-stone-light/30 shadow-sm p-2.5 sm:p-3 hover:border-saffron/40 hover:shadow-md active:scale-[0.99] transition-all cursor-pointer"
     >
       <div className="w-[72px] h-[72px] rounded-xl bg-paper-dim overflow-hidden shrink-0 flex items-center justify-center">
         {p.images?.[0]?.url ? (
