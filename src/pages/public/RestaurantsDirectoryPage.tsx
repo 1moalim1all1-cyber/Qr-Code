@@ -67,7 +67,7 @@ export default function RestaurantsDirectoryPage() {
                 className="flex items-center gap-3 rounded-2xl bg-paper border border-stone-light/30 p-3 hover:border-saffron/40 hover:shadow-sm transition-all"
               >
                 <div className="w-12 h-12 rounded-xl bg-ink text-saffron flex items-center justify-center font-bold overflow-hidden shrink-0">
-                  {r.logo_url ? <img src={r.logo_url} alt="" className="w-full h-full object-cover" /> : r.name.charAt(0)}
+                  {r.logo_url ? <img src={r.logo_url} alt="" className="w-full h-full object-contain p-1 bg-white" /> : r.name.charAt(0)}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm truncate">{r.name}</p>

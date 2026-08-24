@@ -74,7 +74,7 @@ export default function FeaturedMenus() {
                   <div className="flex items-center gap-2 mb-3">
                     <div className="w-8 h-8 rounded-lg bg-ink text-saffron flex items-center justify-center text-xs font-bold overflow-hidden shrink-0">
                       {restaurant.logo_url ? (
-                        <img src={restaurant.logo_url} alt="" className="w-full h-full object-cover" />
+                        <img src={restaurant.logo_url} alt="" className="w-full h-full object-contain p-0.5 bg-white" />
                       ) : (
                         restaurant.name.charAt(0)
                       )}

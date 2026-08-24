@@ -109,13 +109,14 @@ export default function SettingsPage() {
 
       <main className="max-w-3xl mx-auto px-6 py-8">
         <div className="rounded-2xl bg-paper border border-stone-light/30 p-6 mb-6">
-          <div className="flex gap-4 mb-6">
+          <div className="flex gap-4 mb-2">
             <ImageUpload
               label="اللوجو"
               value={logoUrl}
               onChange={setLogoUrl}
               folder={`restaurants/${restaurant.id}`}
               aspect="square"
+              fit="contain"
             />
             <div className="flex-1">
               <ImageUpload
@@ -127,6 +128,9 @@ export default function SettingsPage() {
               />
             </div>
           </div>
+          <p className="text-xs text-stone-light mb-6">
+            نصيحة: اللوجو الأفضل يكون صورة مربّعة (زي أيقونة التطبيقات)، مش نفس صورة الغلاف — عشان يبان واضح ومش مقصوص.
+          </p>
 
           <div className="grid sm:grid-cols-2 gap-4">
             <Input label="اسم المطعم" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />

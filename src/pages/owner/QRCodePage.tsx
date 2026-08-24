@@ -280,7 +280,7 @@ export default function QRCodePage({ restaurantIdOverride, backTo = '/dashboard'
           style={{ fontFamily: 'Tajawal, sans-serif' }}
         >
           {restaurant.logo_url ? (
-            <img src={restaurant.logo_url} alt="" className="w-16 h-16 rounded-2xl object-cover mb-3" />
+            <img src={restaurant.logo_url} alt="" className="w-16 h-16 rounded-2xl object-contain bg-white p-1.5 mb-3" />
           ) : (
             <div className="w-16 h-16 rounded-2xl bg-ink text-saffron flex items-center justify-center text-2xl font-bold mb-3">
               {restaurant.name.charAt(0)}

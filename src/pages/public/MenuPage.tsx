@@ -112,18 +112,23 @@ function MenuPageContent() {
         <div className="absolute inset-0 bg-gradient-to-t from-ink/50 to-transparent" />
       </div>
 
-      <div className="max-w-2xl mx-auto px-5 -mt-10 relative">
+      <div className="max-w-2xl mx-auto px-5 -mt-12 relative">
         <div className="flex items-end gap-4 mb-3">
-          <div className="w-20 h-20 rounded-2xl bg-paper border-4 border-paper shadow-lg overflow-hidden shrink-0">
+          <div className="w-24 h-24 rounded-full bg-paper border-4 border-paper shadow-lg overflow-hidden shrink-0 flex items-center justify-center">
             {restaurant.logo_url ? (
-              <img src={restaurant.logo_url} alt={restaurant.name} loading="lazy" className="w-full h-full object-cover" />
+              <img
+                src={restaurant.logo_url}
+                alt={restaurant.name}
+                loading="lazy"
+                className="w-full h-full object-contain"
+              />
             ) : (
               <div className="w-full h-full bg-ink text-saffron flex items-center justify-center font-display font-bold text-xl">
                 {restaurant.name.charAt(0)}
               </div>
             )}
           </div>
-          <div className="pb-1 flex-1 min-w-0">
+          <div className="pb-2 flex-1 min-w-0">
             <h1 className="font-display text-xl font-bold truncate">{restaurant.name}</h1>
             <div className="flex items-center gap-2 text-sm text-stone">
               {restaurant.rating > 0 && (

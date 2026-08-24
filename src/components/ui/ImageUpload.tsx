@@ -8,9 +8,10 @@ interface ImageUploadProps {
   onChange: (url: string | null) => void
   folder?: string
   aspect?: 'square' | 'wide'
+  fit?: 'cover' | 'contain'
 }
 
-export default function ImageUpload({ label, value, onChange, folder, aspect = 'square' }: ImageUploadProps) {
+export default function ImageUpload({ label, value, onChange, folder, aspect = 'square', fit = 'cover' }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -39,7 +40,11 @@ export default function ImageUpload({ label, value, onChange, folder, aspect = '
       >
         {value ? (
           <>
-            <img src={value} alt={label} className="w-full h-full object-cover" />
+            <img
+              src={value}
+              alt={label}
+              className={`w-full h-full ${fit === 'contain' ? 'object-contain p-1.5 bg-white' : 'object-cover'}`}
+            />
             <button
               type="button"
               onClick={(e) => {
