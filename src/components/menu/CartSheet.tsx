@@ -98,12 +98,12 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
         initial={{ y: 60, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.2 }}
-        className="w-full sm:max-w-md bg-paper rounded-t-3xl sm:rounded-3xl max-h-[88vh] overflow-y-auto"
+        className="w-full sm:max-w-md bg-ink text-paper rounded-t-3xl sm:rounded-3xl max-h-[88vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-paper flex items-center justify-between px-5 py-4 border-b border-stone-light/30 z-10">
+        <div className="sticky top-0 bg-ink flex items-center justify-between px-5 py-4 border-b border-saffron/30 z-10">
           <h2 className="font-display text-lg font-semibold">سلتك</h2>
-          <button onClick={onClose} className="text-stone hover:text-ink" aria-label="إغلاق">
+          <button onClick={onClose} className="text-stone-light hover:text-paper" aria-label="إغلاق">
             <X size={20} />
           </button>
         </div>
@@ -114,7 +114,7 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
               <Check size={26} className="text-zaytoon" />
             </div>
             <h3 className="font-display text-lg font-semibold">تم إرسال طلبك</h3>
-            <p className="text-stone text-sm">المطعم استلم طلبك وهيتواصل معاك لو محتاج أي تفاصيل.</p>
+            <p className="text-stone-light text-sm">المطعم استلم طلبك وهيتواصل معاك لو محتاج أي تفاصيل.</p>
             <Link
               to={`${import.meta.env.BASE_URL}m/${restaurant.slug}/order/${placedOrderId}`}
               onClick={onClose}
@@ -122,12 +122,12 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
             >
               <MapPin size={15} /> تتبّع طلبك
             </Link>
-            <button onClick={onClose} className="text-sm text-stone hover:text-ink underline underline-offset-2">
+            <button onClick={onClose} className="text-sm text-stone-light hover:text-paper underline underline-offset-2">
               تمام، رجّعني للمنيو
             </button>
           </div>
         ) : lines.length === 0 ? (
-          <div className="p-10 text-center text-stone">سلتك فاضية.</div>
+          <div className="p-10 text-center text-stone-light">سلتك فاضية.</div>
         ) : (
           <div className="p-5">
             {/* Items */}
@@ -137,23 +137,23 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm">
                       {l.name}
-                      {l.size && <span className="text-stone font-normal"> — {l.size}</span>}
+                      {l.size && <span className="text-stone-light font-normal"> — {l.size}</span>}
                     </p>
                     {l.extras.length > 0 && (
-                      <p className="text-xs text-stone mt-0.5">{l.extras.map((e) => e.name).join('، ')}</p>
+                      <p className="text-xs text-stone-light mt-0.5">{l.extras.map((e) => e.name).join('، ')}</p>
                     )}
                     {l.notes && <p className="text-xs text-stone-light mt-0.5 italic">"{l.notes}"</p>}
                     <div className="flex items-center gap-2 mt-1.5">
                       <button
                         onClick={() => updateQuantity(l.lineId, l.quantity - 1)}
-                        className="w-6 h-6 rounded-full bg-paper-dim flex items-center justify-center"
+                        className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center"
                       >
                         <Minus size={12} />
                       </button>
                       <span className="text-sm w-4 text-center">{l.quantity}</span>
                       <button
                         onClick={() => updateQuantity(l.lineId, l.quantity + 1)}
-                        className="w-6 h-6 rounded-full bg-paper-dim flex items-center justify-center"
+                        className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center"
                       >
                         <Plus size={12} />
                       </button>
@@ -163,7 +163,7 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
                     <span className="text-sm font-display font-semibold">
                       {(l.price + l.extras.reduce((s, e) => s + e.price, 0)) * l.quantity} ج.م
                     </span>
-                    <button onClick={() => removeItem(l.lineId)} className="text-stone hover:text-sumac" aria-label="حذف">
+                    <button onClick={() => removeItem(l.lineId)} className="text-stone-light hover:text-sumac" aria-label="حذف">
                       <Trash2 size={14} />
                     </button>
                   </div>
@@ -179,13 +179,13 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
                   value={couponCode}
                   onChange={(e) => setCouponCode(e.target.value)}
                   placeholder="كود خصم (اختياري)"
-                  className="w-full rounded-full bg-paper-dim pr-9 pl-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-saffron/40"
+                  className="w-full rounded-full bg-white/5 pr-9 pl-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-saffron/40"
                 />
               </div>
               <button
                 onClick={handleApplyCoupon}
                 disabled={checkingCoupon}
-                className="rounded-full bg-paper-dim px-4 py-2 text-sm font-medium hover:bg-stone-light/30 disabled:opacity-60"
+                className="rounded-full bg-white/5 px-4 py-2 text-sm font-medium hover:bg-stone-light/30 disabled:opacity-60"
               >
                 تطبيق
               </button>
@@ -203,7 +203,7 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
                   key={t.value}
                   onClick={() => setOrderType(t.value)}
                   className={`flex flex-col items-center gap-1 rounded-xl py-2.5 text-xs transition-colors ${
-                    orderType === t.value ? 'bg-ink text-paper' : 'bg-paper-dim text-ink hover:bg-stone-light/30'
+                    orderType === t.value ? 'bg-ink text-paper' : 'bg-white/5 text-paper hover:bg-stone-light/30'
                   }`}
                 >
                   <t.icon size={16} />
@@ -217,7 +217,7 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
                 value={tableLabel}
                 onChange={(e) => setTableLabel(e.target.value)}
                 placeholder="رقم الطاولة (اختياري)"
-                className="w-full rounded-xl border border-stone-light/50 px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-saffron/40"
+                className="w-full rounded-xl border border-saffron/50 px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-saffron/40"
               />
             )}
             {(orderType === 'pickup' || orderType === 'delivery' || orderType === 'whatsapp') && (
@@ -226,21 +226,21 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
                   placeholder="اسمك"
-                  className="rounded-xl border border-stone-light/50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-saffron/40"
+                  className="rounded-xl border border-saffron/50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-saffron/40"
                 />
                 <input
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
                   placeholder="رقم تليفونك"
                   dir="ltr"
-                  className="rounded-xl border border-stone-light/50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-saffron/40"
+                  className="rounded-xl border border-saffron/50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-saffron/40"
                 />
               </div>
             )}
 
             {/* Totals */}
-            <div className="border-t border-stone-light/30 pt-3 mb-4 space-y-1.5 text-sm">
-              <div className="flex justify-between text-stone">
+            <div className="border-t border-saffron/30 pt-3 mb-4 space-y-1.5 text-sm">
+              <div className="flex justify-between text-stone-light">
                 <span>الإجمالي الفرعي</span>
                 <span>{subtotal} ج.م</span>
               </div>
@@ -250,7 +250,7 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
                   <span>-{discountAmount} ج.م</span>
                 </div>
               )}
-              <div className="flex justify-between font-display font-semibold text-base pt-1.5 border-t border-stone-light/20">
+              <div className="flex justify-between font-display font-semibold text-base pt-1.5 border-t border-saffron/20">
                 <span>الإجمالي</span>
                 <span>{total} ج.م</span>
               </div>

@@ -68,7 +68,7 @@ export default function ReviewsSection({ restaurantId }: { restaurantId: string 
                   />
                 ))}
               </div>
-              <span className="text-xs text-stone">
+              <span className="text-xs text-stone-light">
                 {average.toFixed(1)} ({reviews.length} تقييم)
               </span>
             </div>
@@ -83,7 +83,7 @@ export default function ReviewsSection({ restaurantId }: { restaurantId: string 
       </div>
 
       {formOpen && (
-        <form onSubmit={handleSubmit} className="rounded-2xl bg-paper border border-stone-light/30 p-4 mb-4 flex flex-col gap-3">
+        <form onSubmit={handleSubmit} className="rounded-2xl bg-ink border border-saffron/30 p-4 mb-4 flex flex-col gap-3">
           <div className="flex items-center gap-1">
             {[1, 2, 3, 4, 5].map((n) => (
               <button key={n} type="button" onClick={() => setRating(n)} aria-label={`${n} نجوم`}>
@@ -95,20 +95,20 @@ export default function ReviewsSection({ restaurantId }: { restaurantId: string 
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="اسمك"
-            className="rounded-xl border border-stone-light/50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-saffron/40"
+            className="rounded-xl border border-saffron/50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-saffron/40"
           />
           <textarea
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             placeholder="رأيك في المطعم..."
             rows={2}
-            className="rounded-xl border border-stone-light/50 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-saffron/40"
+            className="rounded-xl border border-saffron/50 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-saffron/40"
           />
           {error && <p className="text-xs text-sumac">{error}</p>}
           <button
             type="submit"
             disabled={submitting}
-            className="rounded-full bg-saffron text-ink font-semibold py-2.5 text-sm disabled:opacity-60"
+            className="rounded-full bg-saffron text-paper font-semibold py-2.5 text-sm disabled:opacity-60"
           >
             {submitting ? 'جارِ الإرسال...' : 'إرسال التقييم'}
           </button>
@@ -116,13 +116,13 @@ export default function ReviewsSection({ restaurantId }: { restaurantId: string 
       )}
 
       {loading ? (
-        <p className="text-sm text-stone">جارِ التحميل...</p>
+        <p className="text-sm text-stone-light">جارِ التحميل...</p>
       ) : reviews.length === 0 ? (
         <p className="text-sm text-stone-light">لسه مفيش تقييمات — كن أول من يقيّم.</p>
       ) : (
         <div className="flex flex-col gap-3">
           {reviews.slice(0, 6).map((r) => (
-            <div key={r.id} className="rounded-xl bg-paper border border-stone-light/20 p-3">
+            <div key={r.id} className="rounded-xl bg-ink border border-saffron/20 p-3">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-sm font-medium">{r.customer_name}</span>
                 <div className="flex">
@@ -131,7 +131,7 @@ export default function ReviewsSection({ restaurantId }: { restaurantId: string 
                   ))}
                 </div>
               </div>
-              <p className="text-xs text-stone">{r.comment}</p>
+              <p className="text-xs text-stone-light">{r.comment}</p>
             </div>
           ))}
         </div>

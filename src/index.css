@@ -1,13 +1,14 @@
 @import "tailwindcss";
 
 @theme {
-  /* Signature palette v2 — warmer, more appetizing saffron/olive/spice mix */
-  --color-ink: #1A140F;
-  --color-ink-soft: #2C231A;
+  /* Signature palette v3 — deep black + rich metallic gold (used across the
+     customer-facing menu, cart, and order tracking for a premium feel) */
+  --color-ink: #0D0B08;
+  --color-ink-soft: #1C1712;
   --color-paper: #FBF6EE;
   --color-paper-dim: #F3E9D8;
-  --color-saffron: #F2A93C;
-  --color-saffron-dim: #D6842A;
+  --color-saffron: #D4AF37;
+  --color-saffron-dim: #A8841E;
   --color-zaytoon: #55692F;
   --color-zaytoon-dim: #435322;
   --color-sumac: #C43F3F;

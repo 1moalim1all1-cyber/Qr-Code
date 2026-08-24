@@ -95,7 +95,7 @@ function MenuPageContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-paper">
+      <div className="min-h-screen bg-ink">
         <MenuSkeleton />
       </div>
     )
@@ -103,15 +103,15 @@ function MenuPageContent() {
 
   if (notFound || !restaurant) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-paper text-center px-6">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-ink text-paper text-center px-6">
         <h1 className="font-display text-2xl font-semibold mb-2">المنيو غير موجود</h1>
-        <p className="text-stone">الرابط ده مش شغال أو المطعم مش متاح دلوقتي.</p>
+        <p className="text-stone-light">الرابط ده مش شغال أو المطعم مش متاح دلوقتي.</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-paper pb-28">
+    <div className="min-h-screen bg-ink text-paper pb-28">
       {/* Cover + identity */}
       <div className="relative h-44 bg-zaytoon overflow-hidden">
         {restaurant.cover_url && (
@@ -122,7 +122,7 @@ function MenuPageContent() {
 
       <div className="max-w-2xl mx-auto px-5 -mt-12 relative">
         <div className="flex items-end gap-4 mb-3">
-          <div className="w-24 h-24 rounded-full bg-paper border-4 border-paper shadow-lg overflow-hidden shrink-0 flex items-center justify-center">
+          <div className="w-24 h-24 rounded-full bg-ink border-4 border-paper shadow-lg overflow-hidden shrink-0 flex items-center justify-center">
             {restaurant.logo_url ? (
               <img
                 src={restaurant.logo_url}
@@ -138,7 +138,7 @@ function MenuPageContent() {
           </div>
           <div className="pb-2 flex-1 min-w-0">
             <h1 className="font-display text-xl font-bold truncate">{restaurant.name}</h1>
-            <div className="flex items-center gap-2 text-sm text-stone">
+            <div className="flex items-center gap-2 text-sm text-stone-light">
               {restaurant.rating > 0 && (
                 <span className="flex items-center gap-0.5">
                   <Star size={13} className="text-saffron" fill="currentColor" />
@@ -153,12 +153,12 @@ function MenuPageContent() {
           </div>
         </div>
 
-        {restaurant.description && <p className="text-sm text-stone mb-4">{restaurant.description}</p>}
+        {restaurant.description && <p className="text-sm text-stone-light mb-4">{restaurant.description}</p>}
 
         {/* Contact row */}
         <div className="flex items-center gap-2 mb-5">
           {restaurant.phone && (
-            <a href={`tel:${restaurant.phone}`} className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-paper-dim py-2.5 text-sm font-medium hover:bg-stone-light/30 active:scale-95 transition-all">
+            <a href={`tel:${restaurant.phone}`} className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-white/5 py-2.5 text-sm font-medium hover:bg-stone-light/30 active:scale-95 transition-all">
               <Phone size={15} /> اتصال
             </a>
           )}
@@ -177,14 +177,14 @@ function MenuPageContent() {
               href={restaurant.google_maps_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-paper-dim py-2.5 text-sm font-medium hover:bg-stone-light/30 active:scale-95 transition-all"
+              className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-white/5 py-2.5 text-sm font-medium hover:bg-stone-light/30 active:scale-95 transition-all"
             >
               <MapPin size={15} /> الموقع
             </a>
           )}
           <button
             onClick={() => navigator.share?.({ title: restaurant.name, url: window.location.href })}
-            className="rounded-xl bg-paper-dim p-2.5 hover:bg-stone-light/30 active:scale-95 transition-all"
+            className="rounded-xl bg-white/5 p-2.5 hover:bg-stone-light/30 active:scale-95 transition-all"
             aria-label="مشاركة"
           >
             <Share2 size={15} />
@@ -200,13 +200,13 @@ function MenuPageContent() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="دوّر على صنف..."
-            className="w-full rounded-full bg-paper-dim pr-10 pl-10 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-saffron/40"
+            className="w-full rounded-full bg-white/5 pr-10 pl-10 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-saffron/40"
           />
           {search && (
             <button
               onClick={() => setSearch('')}
               aria-label="مسح البحث"
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-light hover:text-ink"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-light hover:text-paper"
             >
               <X size={16} />
             </button>
@@ -214,13 +214,13 @@ function MenuPageContent() {
         </div>
 
         {/* Sticky category tabs */}
-        <div className="sticky top-0 z-10 bg-paper/90 backdrop-blur-sm py-2 -mx-5 px-5 overflow-x-auto flex gap-2 border-b border-stone-light/30 mb-6">
+        <div className="sticky top-0 z-10 bg-ink/90 backdrop-blur-sm py-2 -mx-5 px-5 overflow-x-auto flex gap-2 border-b border-saffron/30 mb-6">
           {filteredByCategory.map(({ category }) => (
             <button
               key={category.id}
               onClick={() => scrollToCategory(category.id)}
               className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
-                activeCategoryId === category.id ? 'bg-ink text-paper' : 'bg-paper-dim text-ink hover:bg-stone-light/30'
+                activeCategoryId === category.id ? 'bg-ink text-paper' : 'bg-white/5 text-paper hover:bg-stone-light/30'
               }`}
             >
               {category.name.ar}
@@ -230,7 +230,7 @@ function MenuPageContent() {
 
         {/* Product sections */}
         {filteredByCategory.length === 0 ? (
-          <p className="text-center text-stone py-16">مفيش نتائج مطابقة لبحثك.</p>
+          <p className="text-center text-stone-light py-16">مفيش نتائج مطابقة لبحثك.</p>
         ) : (
           filteredByCategory.map(({ category, products: catProducts }) => (
             <div
@@ -241,7 +241,7 @@ function MenuPageContent() {
               className="mb-8 scroll-mt-16"
             >
               <h2 className="font-display font-semibold text-lg mb-3">
-                {category.name.ar} <span className="text-stone text-sm font-normal">({catProducts.length})</span>
+                {category.name.ar} <span className="text-stone-light text-sm font-normal">({catProducts.length})</span>
               </h2>
               <div className="grid gap-3">
                 {catProducts.map((p) => (
@@ -269,7 +269,7 @@ function ProductCard({ product: p, onOpen }: { product: Product; onOpen: () => v
   function quickAdd(e: React.MouseEvent) {
     e.stopPropagation()
     addItem(
-      { productId: p.id, name: p.name.ar, price: p.discount_price ?? p.price, extras: [] },
+      { productId: p.id, name: p.name.ar, price: p.discount_price || p.price, extras: [] },
       1
     )
   }
@@ -282,10 +282,10 @@ function ProductCard({ product: p, onOpen }: { product: Product; onOpen: () => v
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') onOpen()
       }}
-      className="rounded-2xl bg-paper border border-stone-light/30 shadow-sm overflow-hidden hover:border-saffron/40 hover:shadow-md active:scale-[0.99] transition-all cursor-pointer"
+      className="rounded-2xl bg-ink border border-saffron/30 shadow-sm overflow-hidden hover:border-saffron/40 hover:shadow-md active:scale-[0.99] transition-all cursor-pointer"
     >
       <div className="flex gap-3 p-3">
-        <div className="w-16 h-16 rounded-xl bg-paper-dim overflow-hidden shrink-0 flex items-center justify-center">
+        <div className="w-16 h-16 rounded-xl bg-white/5 overflow-hidden shrink-0 flex items-center justify-center">
           {p.images?.[0]?.url ? (
             <img src={p.images[0].url} alt="" loading="lazy" className="w-full h-full object-cover" />
           ) : (
@@ -300,7 +300,7 @@ function ProductCard({ product: p, onOpen }: { product: Product; onOpen: () => v
             {p.is_spicy && <Flame size={12} className="text-sumac shrink-0" />}
             {p.is_vegetarian && <Leaf size={12} className="text-zaytoon shrink-0" />}
           </p>
-          {p.description?.ar && <p className="text-xs text-stone truncate mt-0.5">{p.description.ar}</p>}
+          {p.description?.ar && <p className="text-xs text-stone-light truncate mt-0.5">{p.description.ar}</p>}
         </div>
       </div>
 
@@ -344,7 +344,7 @@ function ProductDetailSheet({ product, onClose }: { product: Product; onClose: (
   const [zoomOpen, setZoomOpen] = useState(false)
 
   const images = product.images ?? []
-  const basePrice = selectedSize ? selectedSize.price : product.discount_price ?? product.price
+  const basePrice = selectedSize ? selectedSize.price : product.discount_price || product.price
   const extrasTotal = selectedExtras.reduce((s, e) => s + e.price, 0)
   const finalPrice = (basePrice + extrasTotal) * quantity
 
@@ -382,11 +382,11 @@ function ProductDetailSheet({ product, onClose }: { product: Product; onClose: (
           initial={{ y: 40, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.2 }}
-          className="w-full sm:max-w-md bg-paper rounded-t-3xl sm:rounded-3xl max-h-[85vh] overflow-y-auto"
+          className="w-full sm:max-w-md bg-ink rounded-t-3xl sm:rounded-3xl max-h-[85vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Image gallery */}
-          <div className="h-48 bg-paper-dim relative flex items-center justify-center">
+          <div className="h-48 bg-white/5 relative flex items-center justify-center">
             {images.length > 0 ? (
               <button
                 onClick={() => setZoomOpen(true)}
@@ -400,7 +400,7 @@ function ProductDetailSheet({ product, onClose }: { product: Product; onClose: (
             )}
             <button
               onClick={onClose}
-              className="absolute top-3 left-3 bg-paper rounded-full p-1.5 shadow"
+              className="absolute top-3 left-3 bg-ink rounded-full p-1.5 shadow"
               aria-label="إغلاق"
             >
               <X size={18} />
@@ -412,7 +412,7 @@ function ProductDetailSheet({ product, onClose }: { product: Product; onClose: (
                     key={i}
                     onClick={() => setActiveImage(i)}
                     aria-label={`صورة ${i + 1}`}
-                    className={`h-1.5 rounded-full transition-all ${i === activeImage ? 'w-5 bg-paper' : 'w-1.5 bg-paper/60'}`}
+                    className={`h-1.5 rounded-full transition-all ${i === activeImage ? 'w-5 bg-ink' : 'w-1.5 bg-ink/60'}`}
                   />
                 ))}
               </div>
@@ -426,7 +426,7 @@ function ProductDetailSheet({ product, onClose }: { product: Product; onClose: (
               {product.is_spicy && <Flame size={16} className="text-sumac" />}
               {product.is_vegetarian && <Leaf size={16} className="text-zaytoon" />}
             </h2>
-            {product.description?.ar && <p className="text-stone text-sm mb-3">{product.description.ar}</p>}
+            {product.description?.ar && <p className="text-stone-light text-sm mb-3">{product.description.ar}</p>}
             <div className="flex items-baseline gap-2 mb-4">
               {!selectedSize && product.discount_price ? (
                 <>
@@ -447,7 +447,7 @@ function ProductDetailSheet({ product, onClose }: { product: Product; onClose: (
                       key={s.name}
                       onClick={() => setSelectedSize(s)}
                       className={`rounded-full border px-3.5 py-1.5 text-sm transition-colors ${
-                        selectedSize?.name === s.name ? 'border-saffron bg-saffron/10 font-medium' : 'border-stone-light/40 hover:bg-paper-dim'
+                        selectedSize?.name === s.name ? 'border-saffron bg-saffron/10 font-medium' : 'border-saffron/40 hover:bg-white/5'
                       }`}
                     >
                       {s.name} · {s.price} ج.م
@@ -458,12 +458,12 @@ function ProductDetailSheet({ product, onClose }: { product: Product; onClose: (
             )}
 
             {product.calories != null && (
-              <p className="text-sm text-stone mb-2">السعرات الحرارية: {product.calories}</p>
+              <p className="text-sm text-stone-light mb-2">السعرات الحرارية: {product.calories}</p>
             )}
             {product.ingredients?.length > 0 && (
               <div className="mb-3">
                 <p className="text-sm font-medium mb-1">المكونات</p>
-                <p className="text-sm text-stone">{product.ingredients.join('، ')}</p>
+                <p className="text-sm text-stone-light">{product.ingredients.join('، ')}</p>
               </div>
             )}
             {product.allergens && product.allergens.length > 0 && (
@@ -483,11 +483,11 @@ function ProductDetailSheet({ product, onClose }: { product: Product; onClose: (
                         key={e.name}
                         onClick={() => toggleExtra(e)}
                         className={`flex justify-between items-center rounded-xl border px-3 py-2 text-sm transition-colors ${
-                          active ? 'border-saffron bg-saffron/10' : 'border-stone-light/40 hover:bg-paper-dim'
+                          active ? 'border-saffron bg-saffron/10' : 'border-saffron/40 hover:bg-white/5'
                         }`}
                       >
                         <span>{e.name}</span>
-                        <span className="text-stone">+{e.price} ج.م</span>
+                        <span className="text-stone-light">+{e.price} ج.م</span>
                       </button>
                     )
                   })}
@@ -501,15 +501,15 @@ function ProductDetailSheet({ product, onClose }: { product: Product; onClose: (
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="مثال: من غير بصل"
-                className="w-full rounded-xl border border-stone-light/50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-saffron/40"
+                className="w-full rounded-xl border border-saffron/50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-saffron/40"
               />
             </div>
 
             <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3 rounded-full bg-paper-dim px-2 py-1.5">
+              <div className="flex items-center gap-3 rounded-full bg-white/5 px-2 py-1.5">
                 <button
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  className="w-7 h-7 rounded-full bg-paper flex items-center justify-center hover:bg-stone-light/30"
+                  className="w-7 h-7 rounded-full bg-ink flex items-center justify-center hover:bg-stone-light/30"
                   aria-label="تقليل"
                 >
                   <Minus size={14} />
@@ -517,7 +517,7 @@ function ProductDetailSheet({ product, onClose }: { product: Product; onClose: (
                 <span className="w-5 text-center font-medium">{quantity}</span>
                 <button
                   onClick={() => setQuantity((q) => q + 1)}
-                  className="w-7 h-7 rounded-full bg-paper flex items-center justify-center hover:bg-stone-light/30"
+                  className="w-7 h-7 rounded-full bg-ink flex items-center justify-center hover:bg-stone-light/30"
                   aria-label="زيادة"
                 >
                   <Plus size={14} />
@@ -546,7 +546,7 @@ function ProductDetailSheet({ product, onClose }: { product: Product; onClose: (
         >
           <button
             onClick={() => setZoomOpen(false)}
-            className="absolute top-4 left-4 text-paper bg-paper/10 rounded-full p-2"
+            className="absolute top-4 left-4 text-paper bg-ink/10 rounded-full p-2"
             aria-label="إغلاق"
           >
             <X size={20} />
@@ -562,7 +562,7 @@ function ProductDetailSheet({ product, onClose }: { product: Product; onClose: (
                     setActiveImage(i)
                   }}
                   aria-label={`صورة ${i + 1}`}
-                  className={`h-2 rounded-full transition-all ${i === activeImage ? 'w-6 bg-paper' : 'w-2 bg-paper/50'}`}
+                  className={`h-2 rounded-full transition-all ${i === activeImage ? 'w-6 bg-ink' : 'w-2 bg-ink/50'}`}
                 />
               ))}
             </div>
@@ -576,7 +576,7 @@ function ProductDetailSheet({ product, onClose }: { product: Product; onClose: (
 function MenuSkeleton() {
   return (
     <div className="animate-pulse">
-      <div className="h-44 bg-paper-dim" />
+      <div className="h-44 bg-white/5" />
       <div className="max-w-2xl mx-auto px-5 -mt-10 relative">
         <div className="flex items-end gap-4 mb-6">
           <div className="w-20 h-20 rounded-2xl bg-stone-light/40 border-4 border-paper" />
@@ -592,7 +592,7 @@ function MenuSkeleton() {
           ))}
         </div>
         {[1, 2, 3].map((i) => (
-          <div key={i} className="flex items-center gap-3 rounded-2xl border border-stone-light/20 p-3 mb-3">
+          <div key={i} className="flex items-center gap-3 rounded-2xl border border-saffron/20 p-3 mb-3">
             <div className="w-16 h-16 rounded-xl bg-stone-light/30 shrink-0" />
             <div className="flex-1 space-y-2">
               <div className="h-4 w-2/3 bg-stone-light/30 rounded-full" />

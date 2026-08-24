@@ -86,7 +86,7 @@ export default function FeaturedMenus() {
                     {products.map((p) => (
                       <li key={p.id} className="flex justify-between text-xs text-stone">
                         <span className="truncate">{p.name.ar}</span>
-                        <span className="shrink-0 text-saffron-dim font-medium">{p.discount_price ?? p.price} ج.م</span>
+                        <span className="shrink-0 text-saffron-dim font-medium">{p.discount_price || p.price} ج.م</span>
                       </li>
                     ))}
                   </ul>
