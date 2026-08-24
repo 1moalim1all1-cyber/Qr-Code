@@ -267,9 +267,14 @@ function ProductCard({ product: p, onOpen }: { product: Product; onOpen: () => v
   }
 
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onOpen}
-      className="flex items-center gap-3 text-right rounded-2xl bg-paper border border-stone-light/30 shadow-sm p-3 hover:border-saffron/40 hover:shadow-md active:scale-[0.99] transition-all"
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') onOpen()
+      }}
+      className="flex items-center gap-3 text-right rounded-2xl bg-paper border border-stone-light/30 shadow-sm p-3 hover:border-saffron/40 hover:shadow-md active:scale-[0.99] transition-all cursor-pointer"
     >
       <div className="w-[72px] h-[72px] rounded-xl bg-paper-dim overflow-hidden shrink-0 flex items-center justify-center">
         {p.images?.[0]?.url ? (
@@ -305,7 +310,7 @@ function ProductCard({ product: p, onOpen }: { product: Product; onOpen: () => v
       >
         <Plus size={16} />
       </button>
-    </button>
+    </div>
   )
 }
 
