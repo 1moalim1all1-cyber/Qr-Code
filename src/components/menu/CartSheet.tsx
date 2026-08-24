@@ -1,6 +1,7 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { X, Plus, Minus, Trash2, Tag, Check, UtensilsCrossed, ShoppingBag, Truck, MessageCircle } from 'lucide-react'
+import { X, Plus, Minus, Trash2, Tag, Check, UtensilsCrossed, ShoppingBag, Truck, MessageCircle, MapPin } from 'lucide-react'
 import { useCart } from '@/contexts/CartContext'
 import { createOrder } from '@/services/orders'
 import { validateCoupon } from '@/services/coupons'
@@ -24,7 +25,7 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
   const [couponError, setCouponError] = useState<string | null>(null)
   const [checkingCoupon, setCheckingCoupon] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [orderPlaced, setOrderPlaced] = useState(false)
+  const [placedOrderId, setPlacedOrderId] = useState<string | null>(null)
 
   const discountAmount = couponDiscount ? Math.round((subtotal * couponDiscount.percent) / 100) : 0
   const total = Math.max(0, subtotal - discountAmount)
@@ -56,10 +57,11 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
         price: l.price,
         quantity: l.quantity,
         extras: l.extras,
+        size: l.size,
         notes: l.notes,
       }))
 
-      await createOrder(restaurant.id, {
+      const orderId = await createOrder(restaurant.id, {
         items,
         subtotal,
         deliveryFee: 0,
@@ -69,6 +71,7 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
         customerName: customerName || undefined,
         customerPhone: customerPhone || undefined,
         tableLabel: orderType === 'dine_in' ? tableLabel || undefined : undefined,
+        restaurantName: restaurant.name,
       })
 
       if (orderType === 'whatsapp' && restaurant.whatsapp) {
@@ -76,7 +79,7 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
         window.open(`https://wa.me/${restaurant.whatsapp.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`, '_blank')
       }
 
-      setOrderPlaced(true)
+      setPlacedOrderId(orderId)
       clearCart()
     } finally {
       setSubmitting(false)
@@ -105,15 +108,22 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
           </button>
         </div>
 
-        {orderPlaced ? (
+        {placedOrderId ? (
           <div className="p-8 flex flex-col items-center text-center gap-3">
             <div className="w-14 h-14 rounded-full bg-zaytoon/15 flex items-center justify-center">
               <Check size={26} className="text-zaytoon" />
             </div>
             <h3 className="font-display text-lg font-semibold">تم إرسال طلبك</h3>
             <p className="text-stone text-sm">المطعم استلم طلبك وهيتواصل معاك لو محتاج أي تفاصيل.</p>
-            <button onClick={onClose} className="mt-3 rounded-full bg-ink text-paper px-6 py-2.5 text-sm font-medium">
-              تمام
+            <Link
+              to={`${import.meta.env.BASE_URL}m/${restaurant.slug}/order/${placedOrderId}`}
+              onClick={onClose}
+              className="mt-2 rounded-full bg-saffron text-ink px-6 py-2.5 text-sm font-semibold hover:bg-saffron-dim transition-colors flex items-center gap-1.5"
+            >
+              <MapPin size={15} /> تتبّع طلبك
+            </Link>
+            <button onClick={onClose} className="text-sm text-stone hover:text-ink underline underline-offset-2">
+              تمام، رجّعني للمنيو
             </button>
           </div>
         ) : lines.length === 0 ? (
@@ -125,7 +135,10 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
               {lines.map((l) => (
                 <div key={l.lineId} className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm">{l.name}</p>
+                    <p className="font-medium text-sm">
+                      {l.name}
+                      {l.size && <span className="text-stone font-normal"> — {l.size}</span>}
+                    </p>
                     {l.extras.length > 0 && (
                       <p className="text-xs text-stone mt-0.5">{l.extras.map((e) => e.name).join('، ')}</p>
                     )}

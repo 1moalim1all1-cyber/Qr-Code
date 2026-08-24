@@ -2,12 +2,21 @@ import { createContext, useContext, useState, useMemo, type ReactNode } from 're
 import type { OrderItem, OrderItemExtra } from '@/types/database'
 
 interface CartLine extends OrderItem {
-  lineId: string // unique per (product + extras + notes) combination
+  lineId: string // unique per (product + size + extras + notes) combination
+}
+
+interface AddItemInput {
+  productId: string
+  name: string
+  price: number
+  extras: OrderItemExtra[]
+  size?: string
+  notes?: string
 }
 
 interface CartContextValue {
   lines: CartLine[]
-  addItem: (item: { productId: string; name: string; price: number; extras: OrderItemExtra[]; notes?: string }, quantity: number) => void
+  addItem: (item: AddItemInput, quantity: number) => void
   updateQuantity: (lineId: string, quantity: number) => void
   removeItem: (lineId: string) => void
   clearCart: () => void
@@ -20,12 +29,9 @@ const CartContext = createContext<CartContextValue | undefined>(undefined)
 export function CartProvider({ children }: { children: ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>([])
 
-  function addItem(
-    item: { productId: string; name: string; price: number; extras: OrderItemExtra[]; notes?: string },
-    quantity: number
-  ) {
+  function addItem(item: AddItemInput, quantity: number) {
     const extrasKey = item.extras.map((e) => e.name).sort().join('|')
-    const lineId = `${item.productId}::${extrasKey}::${item.notes ?? ''}`
+    const lineId = `${item.productId}::${item.size ?? ''}::${extrasKey}::${item.notes ?? ''}`
     setLines((prev) => {
       const existing = prev.find((l) => l.lineId === lineId)
       if (existing) {
@@ -33,7 +39,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
       return [
         ...prev,
-        { lineId, product_id: item.productId, name: item.name, price: item.price, quantity, extras: item.extras, notes: item.notes },
+        {
+          lineId,
+          product_id: item.productId,
+          name: item.name,
+          price: item.price,
+          quantity,
+          extras: item.extras,
+          size: item.size,
+          notes: item.notes,
+        },
       ]
     })
   }

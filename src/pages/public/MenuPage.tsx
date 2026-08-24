@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
-  Search, Phone, MessageCircle, MapPin, Clock, Star, Flame, Sparkles, Leaf, X, Share2, Plus, Minus, ShoppingBag,
+  Search, Phone, MessageCircle, MapPin, Clock, Star, Flame, Sparkles, Leaf, X, Share2, Plus, Minus, ShoppingBag, UtensilsCrossed,
 } from 'lucide-react'
 import { getRestaurantBySlug } from '@/services/restaurants'
 import { isRestaurantOpenNow } from '@/lib/businessHours'
@@ -187,8 +187,17 @@ function MenuPageContent() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="دوّر على صنف..."
-            className="w-full rounded-full bg-paper-dim pr-10 pl-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-saffron/40"
+            className="w-full rounded-full bg-paper-dim pr-10 pl-10 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-saffron/40"
           />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              aria-label="مسح البحث"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-light hover:text-ink"
+            >
+              <X size={16} />
+            </button>
+          )}
         </div>
 
         {/* Sticky category tabs */}
@@ -218,7 +227,9 @@ function MenuPageContent() {
               }}
               className="mb-8 scroll-mt-16"
             >
-              <h2 className="font-display font-semibold text-lg mb-3">{category.name.ar}</h2>
+              <h2 className="font-display font-semibold text-lg mb-3">
+                {category.name.ar} <span className="text-stone text-sm font-normal">({catProducts.length})</span>
+              </h2>
               <div className="grid gap-3">
                 {catProducts.map((p) => (
                   <ProductCard key={p.id} product={p} onOpen={() => openProduct(p)} />
@@ -253,10 +264,14 @@ function ProductCard({ product: p, onOpen }: { product: Product; onOpen: () => v
   return (
     <button
       onClick={onOpen}
-      className="flex items-center gap-3 text-right rounded-2xl bg-paper border border-stone-light/30 p-3 hover:border-saffron/40 hover:shadow-sm active:scale-[0.99] transition-all"
+      className="flex items-center gap-3 text-right rounded-2xl bg-paper border border-stone-light/30 shadow-sm p-3 hover:border-saffron/40 hover:shadow-md active:scale-[0.99] transition-all"
     >
-      <div className="w-16 h-16 rounded-xl bg-paper-dim overflow-hidden shrink-0">
-        {p.images?.[0]?.url && <img src={p.images[0].url} alt="" loading="lazy" className="w-full h-full object-cover" />}
+      <div className="w-[72px] h-[72px] rounded-xl bg-paper-dim overflow-hidden shrink-0 flex items-center justify-center">
+        {p.images?.[0]?.url ? (
+          <img src={p.images[0].url} alt="" loading="lazy" className="w-full h-full object-cover" />
+        ) : (
+          <UtensilsCrossed size={22} className="text-stone-light" />
+        )}
       </div>
       <div className="flex-1 min-w-0">
         <p className="font-medium flex items-center gap-1.5 flex-wrap">
@@ -292,12 +307,18 @@ function ProductCard({ product: p, onOpen }: { product: Product; onOpen: () => v
 function ProductDetailSheet({ product, onClose }: { product: Product; onClose: () => void }) {
   const { addItem } = useCart()
   const [selectedExtras, setSelectedExtras] = useState<OrderItemExtra[]>([])
+  const [selectedSize, setSelectedSize] = useState<{ name: string; price: number } | null>(
+    product.sizes?.[0] ?? null
+  )
   const [quantity, setQuantity] = useState(1)
   const [notes, setNotes] = useState('')
+  const [activeImage, setActiveImage] = useState(0)
+  const [zoomOpen, setZoomOpen] = useState(false)
 
-  const unitPrice = product.discount_price ?? product.price
+  const images = product.images ?? []
+  const basePrice = selectedSize ? selectedSize.price : product.discount_price ?? product.price
   const extrasTotal = selectedExtras.reduce((s, e) => s + e.price, 0)
-  const finalPrice = (unitPrice + extrasTotal) * quantity
+  const finalPrice = (basePrice + extrasTotal) * quantity
 
   function toggleExtra(extra: OrderItemExtra) {
     setSelectedExtras((prev) =>
@@ -307,129 +328,220 @@ function ProductDetailSheet({ product, onClose }: { product: Product; onClose: (
 
   function handleAddToCart() {
     addItem(
-      { productId: product.id, name: product.name.ar, price: unitPrice, extras: selectedExtras, notes: notes || undefined },
+      {
+        productId: product.id,
+        name: product.name.ar,
+        price: basePrice,
+        extras: selectedExtras,
+        size: selectedSize?.name,
+        notes: notes || undefined,
+      },
       quantity
     )
     onClose()
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 bg-ink/50 flex items-end sm:items-center justify-center"
-      onClick={onClose}
-    >
+    <>
       <motion.div
-        initial={{ y: 40, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.2 }}
-        className="w-full sm:max-w-md bg-paper rounded-t-3xl sm:rounded-3xl max-h-[85vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 bg-ink/50 flex items-end sm:items-center justify-center"
+        onClick={onClose}
       >
-        <div className="h-48 bg-paper-dim relative">
-          {product.images?.[0]?.url && (
-            <img src={product.images[0].url} alt="" loading="lazy" className="w-full h-full object-cover" />
-          )}
-          <button
-            onClick={onClose}
-            className="absolute top-3 left-3 bg-paper rounded-full p-1.5 shadow"
-            aria-label="إغلاق"
-          >
-            <X size={18} />
-          </button>
-        </div>
-        <div className="p-5">
-          <h2 className="font-display text-xl font-semibold mb-1 flex items-center gap-2 flex-wrap">
-            {product.name.ar}
-            {product.is_best_seller && <Star size={16} className="text-saffron" fill="currentColor" />}
-            {product.is_new && <Sparkles size={16} className="text-zaytoon" />}
-            {product.is_spicy && <Flame size={16} className="text-sumac" />}
-            {product.is_vegetarian && <Leaf size={16} className="text-zaytoon" />}
-          </h2>
-          {product.description?.ar && <p className="text-stone text-sm mb-3">{product.description.ar}</p>}
-          <div className="flex items-baseline gap-2 mb-4">
-            {product.discount_price ? (
-              <>
-                <span className="font-display font-bold text-saffron-dim text-lg">{product.discount_price} ج.م</span>
-                <span className="text-stone-light line-through">{product.price} ج.م</span>
-              </>
+        <motion.div
+          initial={{ y: 40, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.2 }}
+          className="w-full sm:max-w-md bg-paper rounded-t-3xl sm:rounded-3xl max-h-[85vh] overflow-y-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Image gallery */}
+          <div className="h-48 bg-paper-dim relative flex items-center justify-center">
+            {images.length > 0 ? (
+              <button
+                onClick={() => setZoomOpen(true)}
+                className="w-full h-full"
+                aria-label="تكبير الصورة"
+              >
+                <img src={images[activeImage].url} alt="" loading="lazy" className="w-full h-full object-cover" />
+              </button>
             ) : (
-              <span className="font-display font-bold text-lg">{product.price} ج.م</span>
+              <UtensilsCrossed size={40} className="text-stone-light" />
+            )}
+            <button
+              onClick={onClose}
+              className="absolute top-3 left-3 bg-paper rounded-full p-1.5 shadow"
+              aria-label="إغلاق"
+            >
+              <X size={18} />
+            </button>
+            {images.length > 1 && (
+              <div className="absolute bottom-2 inset-x-0 flex justify-center gap-1.5">
+                {images.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setActiveImage(i)}
+                    aria-label={`صورة ${i + 1}`}
+                    className={`h-1.5 rounded-full transition-all ${i === activeImage ? 'w-5 bg-paper' : 'w-1.5 bg-paper/60'}`}
+                  />
+                ))}
+              </div>
             )}
           </div>
-          {product.calories != null && (
-            <p className="text-sm text-stone mb-2">السعرات الحرارية: {product.calories}</p>
-          )}
-          {product.ingredients?.length > 0 && (
-            <div className="mb-3">
-              <p className="text-sm font-medium mb-1">المكونات</p>
-              <p className="text-sm text-stone">{product.ingredients.join('، ')}</p>
+          <div className="p-5">
+            <h2 className="font-display text-xl font-semibold mb-1 flex items-center gap-2 flex-wrap">
+              {product.name.ar}
+              {product.is_best_seller && <Star size={16} className="text-saffron" fill="currentColor" />}
+              {product.is_new && <Sparkles size={16} className="text-zaytoon" />}
+              {product.is_spicy && <Flame size={16} className="text-sumac" />}
+              {product.is_vegetarian && <Leaf size={16} className="text-zaytoon" />}
+            </h2>
+            {product.description?.ar && <p className="text-stone text-sm mb-3">{product.description.ar}</p>}
+            <div className="flex items-baseline gap-2 mb-4">
+              {!selectedSize && product.discount_price ? (
+                <>
+                  <span className="font-display font-bold text-saffron-dim text-lg">{product.discount_price} ج.م</span>
+                  <span className="text-stone-light line-through">{product.price} ج.م</span>
+                </>
+              ) : (
+                <span className="font-display font-bold text-lg">{basePrice} ج.م</span>
+              )}
             </div>
-          )}
-          {product.extras?.length > 0 && (
-            <div className="mb-4">
-              <p className="text-sm font-medium mb-2">إضافات</p>
-              <div className="flex flex-col gap-2">
-                {product.extras.map((e) => {
-                  const active = selectedExtras.some((s) => s.name === e.name)
-                  return (
+
+            {product.sizes && product.sizes.length > 0 && (
+              <div className="mb-4">
+                <p className="text-sm font-medium mb-2">الحجم</p>
+                <div className="flex flex-wrap gap-2">
+                  {product.sizes.map((s) => (
                     <button
-                      key={e.name}
-                      onClick={() => toggleExtra(e)}
-                      className={`flex justify-between items-center rounded-xl border px-3 py-2 text-sm transition-colors ${
-                        active ? 'border-saffron bg-saffron/10' : 'border-stone-light/40 hover:bg-paper-dim'
+                      key={s.name}
+                      onClick={() => setSelectedSize(s)}
+                      className={`rounded-full border px-3.5 py-1.5 text-sm transition-colors ${
+                        selectedSize?.name === s.name ? 'border-saffron bg-saffron/10 font-medium' : 'border-stone-light/40 hover:bg-paper-dim'
                       }`}
                     >
-                      <span>{e.name}</span>
-                      <span className="text-stone">+{e.price} ج.م</span>
+                      {s.name} · {s.price} ج.م
                     </button>
-                  )
-                })}
+                  ))}
+                </div>
               </div>
+            )}
+
+            {product.calories != null && (
+              <p className="text-sm text-stone mb-2">السعرات الحرارية: {product.calories}</p>
+            )}
+            {product.ingredients?.length > 0 && (
+              <div className="mb-3">
+                <p className="text-sm font-medium mb-1">المكونات</p>
+                <p className="text-sm text-stone">{product.ingredients.join('، ')}</p>
+              </div>
+            )}
+            {product.allergens && product.allergens.length > 0 && (
+              <div className="mb-3 rounded-xl bg-sumac/10 px-3 py-2">
+                <p className="text-xs font-medium text-sumac mb-0.5">⚠ مسببات حساسية</p>
+                <p className="text-xs text-sumac/90">{product.allergens.join('، ')}</p>
+              </div>
+            )}
+            {product.extras?.length > 0 && (
+              <div className="mb-4">
+                <p className="text-sm font-medium mb-2">إضافات</p>
+                <div className="flex flex-col gap-2">
+                  {product.extras.map((e) => {
+                    const active = selectedExtras.some((s) => s.name === e.name)
+                    return (
+                      <button
+                        key={e.name}
+                        onClick={() => toggleExtra(e)}
+                        className={`flex justify-between items-center rounded-xl border px-3 py-2 text-sm transition-colors ${
+                          active ? 'border-saffron bg-saffron/10' : 'border-stone-light/40 hover:bg-paper-dim'
+                        }`}
+                      >
+                        <span>{e.name}</span>
+                        <span className="text-stone">+{e.price} ج.م</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div className="mb-4">
+              <label className="text-sm font-medium mb-1.5 block">ملاحظات (اختياري)</label>
+              <input
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="مثال: من غير بصل"
+                className="w-full rounded-xl border border-stone-light/50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-saffron/40"
+              />
+            </div>
+
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 rounded-full bg-paper-dim px-2 py-1.5">
+                <button
+                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                  className="w-7 h-7 rounded-full bg-paper flex items-center justify-center hover:bg-stone-light/30"
+                  aria-label="تقليل"
+                >
+                  <Minus size={14} />
+                </button>
+                <span className="w-5 text-center font-medium">{quantity}</span>
+                <button
+                  onClick={() => setQuantity((q) => q + 1)}
+                  className="w-7 h-7 rounded-full bg-paper flex items-center justify-center hover:bg-stone-light/30"
+                  aria-label="زيادة"
+                >
+                  <Plus size={14} />
+                </button>
+              </div>
+              <button
+                onClick={handleAddToCart}
+                className="flex-1 rounded-full bg-saffron text-ink font-semibold py-3 flex items-center justify-center gap-2 hover:bg-saffron-dim active:scale-[0.98] transition-all"
+              >
+                <ShoppingBag size={16} />
+                أضف للسلة — {finalPrice} ج.م
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+
+      {/* Full-screen zoom lightbox */}
+      {zoomOpen && images.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[60] bg-ink/95 flex items-center justify-center"
+          onClick={() => setZoomOpen(false)}
+        >
+          <button
+            onClick={() => setZoomOpen(false)}
+            className="absolute top-4 left-4 text-paper bg-paper/10 rounded-full p-2"
+            aria-label="إغلاق"
+          >
+            <X size={20} />
+          </button>
+          <img src={images[activeImage].url} alt="" className="max-w-full max-h-full object-contain" />
+          {images.length > 1 && (
+            <div className="absolute bottom-6 inset-x-0 flex justify-center gap-2">
+              {images.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setActiveImage(i)
+                  }}
+                  aria-label={`صورة ${i + 1}`}
+                  className={`h-2 rounded-full transition-all ${i === activeImage ? 'w-6 bg-paper' : 'w-2 bg-paper/50'}`}
+                />
+              ))}
             </div>
           )}
-
-          <div className="mb-4">
-            <label className="text-sm font-medium mb-1.5 block">ملاحظات (اختياري)</label>
-            <input
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="مثال: من غير بصل"
-              className="w-full rounded-xl border border-stone-light/50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-saffron/40"
-            />
-          </div>
-
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 rounded-full bg-paper-dim px-2 py-1.5">
-              <button
-                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                className="w-7 h-7 rounded-full bg-paper flex items-center justify-center hover:bg-stone-light/30"
-                aria-label="تقليل"
-              >
-                <Minus size={14} />
-              </button>
-              <span className="w-5 text-center font-medium">{quantity}</span>
-              <button
-                onClick={() => setQuantity((q) => q + 1)}
-                className="w-7 h-7 rounded-full bg-paper flex items-center justify-center hover:bg-stone-light/30"
-                aria-label="زيادة"
-              >
-                <Plus size={14} />
-              </button>
-            </div>
-            <button
-              onClick={handleAddToCart}
-              className="flex-1 rounded-full bg-saffron text-ink font-semibold py-3 flex items-center justify-center gap-2 hover:bg-saffron-dim active:scale-[0.98] transition-all"
-            >
-              <ShoppingBag size={16} />
-              أضف للسلة — {finalPrice} ج.م
-            </button>
-          </div>
-        </div>
-      </motion.div>
-    </motion.div>
+        </motion.div>
+      )}
+    </>
   )
 }
 

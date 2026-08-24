@@ -8,6 +8,7 @@ import ProtectedRoute from './components/layout/ProtectedRoute'
 // keeps the first paint fast, especially on mobile data.
 const LandingPage = lazy(() => import('./pages/public/LandingPage'))
 const PublicMenuPage = lazy(() => import('./pages/public/MenuPage'))
+const OrderTrackingPage = lazy(() => import('./pages/public/OrderTrackingPage'))
 const TermsPage = lazy(() => import('./pages/public/TermsPage'))
 const PrivacyPage = lazy(() => import('./pages/public/PrivacyPage'))
 const RestaurantsDirectoryPage = lazy(() => import('./pages/public/RestaurantsDirectoryPage'))
@@ -36,6 +37,7 @@ function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/m/:slug" element={<PublicMenuPage />} />
+        <Route path="/m/:slug/order/:orderId" element={<OrderTrackingPage />} />
         <Route path="/restaurants" element={<RestaurantsDirectoryPage />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />

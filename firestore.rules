@@ -86,6 +86,17 @@ service cloud.firestore {
         allow read, update: if ownsRestaurant(restaurantId) || isSuperAdmin();
         allow delete: if false;
       }
+      // Public, non-sensitive order tracking companion doc (no customer
+      // name/phone stored here — see OrderStatusPublic type) so a customer
+      // can check their order status by ID without an account. Anyone CAN
+      // technically list this collection, which is why customer_name/phone
+      // are deliberately excluded from it.
+      match /order_status/{docId} {
+        allow read: if true;
+        allow create: if true;
+        allow update: if ownsRestaurant(restaurantId) || isSuperAdmin();
+        allow delete: if false;
+      }
       match /qrcodes/{docId} {
         allow read: if true;
         allow create: if isSignedIn() && (request.resource.data.owner_id == request.auth.uid || isSuperAdmin());

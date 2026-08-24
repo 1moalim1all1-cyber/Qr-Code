@@ -84,7 +84,9 @@ export interface Product {
   discount_price?: number | null
   calories?: number | null
   ingredients: string[]
+  allergens?: string[]
   extras: ProductExtra[]
+  sizes?: ProductSize[]
   video_url?: string | null
   is_available: boolean
   is_best_seller: boolean
@@ -93,6 +95,11 @@ export interface Product {
   is_vegetarian: boolean
   sort_order: number
   images?: { id: string; url: string; sort_order: number }[]
+}
+
+export interface ProductSize {
+  name: string
+  price: number
 }
 
 export interface Offer {
@@ -152,6 +159,7 @@ export interface OrderItem {
   price: number
   quantity: number
   extras: OrderItemExtra[]
+  size?: string
   notes?: string
 }
 
@@ -172,6 +180,21 @@ export interface Order {
   table_label?: string
   notes?: string
   status: OrderStatus
+  created_at: string
+}
+
+// Public, non-sensitive companion doc for order tracking — deliberately
+// excludes customer_name/customer_phone since it's readable by anyone who
+// has the order ID (no login required for a customer to check their order).
+export interface OrderStatusPublic {
+  id: string
+  restaurant_id: string
+  restaurant_name: string
+  status: OrderStatus
+  order_type: OrderType
+  items_summary: string
+  total: number
+  table_label?: string
   created_at: string
 }
 

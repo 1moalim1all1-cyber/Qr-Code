@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowRight, Plus, Pencil, Trash2, ChevronUp, ChevronDown, Flame, Sparkles, Leaf, Star } from 'lucide-react'
+import { ArrowRight, Plus, Pencil, Trash2, ChevronUp, ChevronDown, Flame, Sparkles, Leaf, Star, X } from 'lucide-react'
 import { getRestaurantByOwner, getRestaurantById } from '@/services/restaurants'
 import {
   listCategories,
@@ -374,7 +374,11 @@ function ProductModal({
     reset,
     formState: { errors, isSubmitting },
   } = useForm<ProductForm>({ resolver: zodResolver(productSchema) })
-  const [imageUrl, setImageUrl] = useState<string | null>(null)
+  const [images, setImages] = useState<string[]>([])
+  const [ingredientsText, setIngredientsText] = useState('')
+  const [allergensText, setAllergensText] = useState('')
+  const [extras, setExtras] = useState<{ name: string; price: string }[]>([])
+  const [sizes, setSizes] = useState<{ name: string; price: string }[]>([])
   const [formError, setFormError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -391,7 +395,11 @@ function ProductModal({
         isSpicy: editing?.is_spicy ?? false,
         isVegetarian: editing?.is_vegetarian ?? false,
       })
-      setImageUrl(editing?.images?.[0]?.url ?? null)
+      setImages(editing?.images?.map((i) => i.url) ?? [])
+      setIngredientsText(editing?.ingredients?.join('، ') ?? '')
+      setAllergensText(editing?.allergens?.join('، ') ?? '')
+      setExtras(editing?.extras?.map((e) => ({ name: e.name, price: String(e.price) })) ?? [])
+      setSizes(editing?.sizes?.map((s) => ({ name: s.name, price: String(s.price) })) ?? [])
       setFormError(null)
     }
   }, [open, editing, defaultCategoryId, reset])
@@ -408,7 +416,11 @@ function ProductModal({
       is_new: values.isNew ?? false,
       is_spicy: values.isSpicy ?? false,
       is_vegetarian: values.isVegetarian ?? false,
-      images: imageUrl ? [{ id: 'main', url: imageUrl, sort_order: 0 }] : [],
+      images: images.map((url, i) => ({ id: `img-${i}`, url, sort_order: i })),
+      ingredients: ingredientsText.split('،').map((s) => s.trim()).filter(Boolean),
+      allergens: allergensText.split('،').map((s) => s.trim()).filter(Boolean),
+      extras: extras.filter((e) => e.name.trim()).map((e) => ({ name: e.name.trim(), price: Number(e.price) || 0 })),
+      sizes: sizes.filter((s) => s.name.trim()).map((s) => ({ name: s.name.trim(), price: Number(s.price) || 0 })),
     }
     try {
       if (editing && restaurantId) {
@@ -427,13 +439,33 @@ function ProductModal({
   return (
     <Modal open={open} onClose={onClose} title={editing ? 'تعديل الصنف' : 'صنف جديد'}>
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-        <ImageUpload
-          label="صورة الصنف"
-          value={imageUrl}
-          onChange={setImageUrl}
-          folder={restaurantId ? `restaurants/${restaurantId}/products` : undefined}
-          aspect="wide"
-        />
+        {/* Multiple images */}
+        <div>
+          <label className="text-sm font-medium text-ink block mb-1.5">صور الصنف (تقدر تضيف أكتر من واحدة)</label>
+          <div className="flex flex-wrap gap-2">
+            {images.map((url, i) => (
+              <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden border border-stone-light/40">
+                <img src={url} alt="" className="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setImages(images.filter((_, idx) => idx !== i))}
+                  className="absolute top-1 left-1 bg-ink/70 text-paper rounded-full p-0.5"
+                  aria-label="حذف الصورة"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            ))}
+            <ImageUpload
+              label=""
+              value={null}
+              onChange={(url) => url && setImages([...images, url])}
+              folder={restaurantId ? `restaurants/${restaurantId}/products` : undefined}
+              aspect="square"
+            />
+          </div>
+        </div>
+
         <Input label="اسم الصنف بالعربي" error={errors.nameAr?.message} {...register('nameAr')} />
         <Input label="اسم الصنف بالإنجليزي (اختياري)" {...register('nameEn')} />
 
@@ -458,6 +490,87 @@ function ProductModal({
         <div className="grid grid-cols-2 gap-4">
           <Input label="السعر" type="number" step="0.01" error={errors.price?.message} {...register('price')} />
           <Input label="سعر بعد الخصم (اختياري)" type="number" step="0.01" {...register('discountPrice')} />
+        </div>
+
+        <Input
+          label="المكونات (افصل بفاصلة عربي ،)"
+          value={ingredientsText}
+          onChange={(e) => setIngredientsText(e.target.value)}
+          placeholder="عيش، جبنة، طماطم"
+        />
+        <Input
+          label="مسببات الحساسية (اختياري)"
+          value={allergensText}
+          onChange={(e) => setAllergensText(e.target.value)}
+          placeholder="جلوتين، مكسرات، لاكتوز"
+        />
+
+        {/* Sizes */}
+        <div>
+          <label className="text-sm font-medium text-ink block mb-1.5">الأحجام (اختياري — لو موجودة العميل يختار واحد بيغيّر السعر)</label>
+          <div className="flex flex-col gap-2">
+            {sizes.map((s, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <input
+                  value={s.name}
+                  onChange={(e) => setSizes(sizes.map((x, idx) => (idx === i ? { ...x, name: e.target.value } : x)))}
+                  placeholder="وسط"
+                  className="flex-1 rounded-lg border border-stone-light/50 px-3 py-1.5 text-sm"
+                />
+                <input
+                  value={s.price}
+                  onChange={(e) => setSizes(sizes.map((x, idx) => (idx === i ? { ...x, price: e.target.value } : x)))}
+                  type="number"
+                  placeholder="السعر"
+                  className="w-24 rounded-lg border border-stone-light/50 px-3 py-1.5 text-sm"
+                />
+                <button type="button" onClick={() => setSizes(sizes.filter((_, idx) => idx !== i))} className="text-stone hover:text-sumac">
+                  <X size={16} />
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => setSizes([...sizes, { name: '', price: '' }])}
+              className="text-xs text-saffron-dim font-medium self-start"
+            >
+              + ضيف حجم
+            </button>
+          </div>
+        </div>
+
+        {/* Extras */}
+        <div>
+          <label className="text-sm font-medium text-ink block mb-1.5">الإضافات (اختياري)</label>
+          <div className="flex flex-col gap-2">
+            {extras.map((ex, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <input
+                  value={ex.name}
+                  onChange={(e) => setExtras(extras.map((x, idx) => (idx === i ? { ...x, name: e.target.value } : x)))}
+                  placeholder="جبنة إضافية"
+                  className="flex-1 rounded-lg border border-stone-light/50 px-3 py-1.5 text-sm"
+                />
+                <input
+                  value={ex.price}
+                  onChange={(e) => setExtras(extras.map((x, idx) => (idx === i ? { ...x, price: e.target.value } : x)))}
+                  type="number"
+                  placeholder="السعر"
+                  className="w-24 rounded-lg border border-stone-light/50 px-3 py-1.5 text-sm"
+                />
+                <button type="button" onClick={() => setExtras(extras.filter((_, idx) => idx !== i))} className="text-stone hover:text-sumac">
+                  <X size={16} />
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => setExtras([...extras, { name: '', price: '' }])}
+              className="text-xs text-saffron-dim font-medium self-start"
+            >
+              + ضيف إضافة
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-2 text-sm">

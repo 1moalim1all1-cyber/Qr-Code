@@ -11,7 +11,8 @@ export default function BottomCartBar({ onOpenCart }: { onOpenCart: () => void }
       animate={{ y: 0, opacity: 1 }}
       exit={{ y: 100, opacity: 0 }}
       onClick={onOpenCart}
-      className="fixed bottom-4 left-4 right-4 max-w-2xl mx-auto z-30 rounded-full bg-ink text-paper shadow-2xl px-5 py-3.5 flex items-center justify-between active:scale-[0.98] transition-transform"
+      className="fixed left-4 right-4 max-w-2xl mx-auto z-30 rounded-full bg-ink text-paper shadow-2xl px-5 py-3.5 flex items-center justify-between active:scale-[0.98] transition-transform"
+      style={{ bottom: 'max(1rem, calc(env(safe-area-inset-bottom) + 0.5rem))' }}
     >
       <span className="flex items-center gap-2 font-medium">
         <span className="relative">

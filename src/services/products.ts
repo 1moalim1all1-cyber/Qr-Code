@@ -29,6 +29,10 @@ export interface ProductInput {
   is_spicy: boolean
   is_vegetarian: boolean
   images?: { id: string; url: string; sort_order: number }[]
+  ingredients?: string[]
+  allergens?: string[]
+  extras?: { name: string; price: number }[]
+  sizes?: { name: string; price: number }[]
 }
 
 export async function createProduct(restaurantId: string, ownerId: string | null, input: ProductInput) {
@@ -37,8 +41,10 @@ export async function createProduct(restaurantId: string, ownerId: string | null
       owner_id: ownerId,
       ...input,
       calories: null,
-      ingredients: [],
-      extras: [],
+      ingredients: input.ingredients ?? [],
+      allergens: input.allergens ?? [],
+      extras: input.extras ?? [],
+      sizes: input.sizes ?? [],
       video_url: null,
       sort_order: Date.now(),
       images: input.images ?? [],
