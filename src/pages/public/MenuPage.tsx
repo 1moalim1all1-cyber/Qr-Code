@@ -282,25 +282,34 @@ function ProductCard({ product: p, onOpen }: { product: Product; onOpen: () => v
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') onOpen()
       }}
-      className="flex items-center gap-2 sm:gap-3 text-right rounded-2xl bg-paper border border-stone-light/30 shadow-sm p-2.5 sm:p-3 hover:border-saffron/40 hover:shadow-md active:scale-[0.99] transition-all cursor-pointer"
+      className="rounded-2xl bg-paper border border-stone-light/30 shadow-sm overflow-hidden hover:border-saffron/40 hover:shadow-md active:scale-[0.99] transition-all cursor-pointer"
     >
-      <div className="w-[72px] h-[72px] rounded-xl bg-paper-dim overflow-hidden shrink-0 flex items-center justify-center">
-        {p.images?.[0]?.url ? (
-          <img src={p.images[0].url} alt="" loading="lazy" className="w-full h-full object-cover" />
-        ) : (
-          <UtensilsCrossed size={22} className="text-stone-light" />
-        )}
+      <div className="flex gap-3 p-3">
+        <div className="w-16 h-16 rounded-xl bg-paper-dim overflow-hidden shrink-0 flex items-center justify-center">
+          {p.images?.[0]?.url ? (
+            <img src={p.images[0].url} alt="" loading="lazy" className="w-full h-full object-cover" />
+          ) : (
+            <UtensilsCrossed size={20} className="text-stone-light" />
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-sm truncate flex items-center gap-1.5">
+            <span className="truncate">{p.name.ar}</span>
+            {p.is_best_seller && <Star size={12} className="text-saffron shrink-0" fill="currentColor" />}
+            {p.is_new && <Sparkles size={12} className="text-zaytoon shrink-0" />}
+            {p.is_spicy && <Flame size={12} className="text-sumac shrink-0" />}
+            {p.is_vegetarian && <Leaf size={12} className="text-zaytoon shrink-0" />}
+          </p>
+          {p.description?.ar && <p className="text-xs text-stone truncate mt-0.5">{p.description.ar}</p>}
+        </div>
       </div>
-      <div className="flex-1 min-w-0">
-        <p className="font-medium flex items-center gap-1.5 flex-wrap">
-          {p.name.ar}
-          {p.is_best_seller && <Star size={12} className="text-saffron" fill="currentColor" />}
-          {p.is_new && <Sparkles size={12} className="text-zaytoon" />}
-          {p.is_spicy && <Flame size={12} className="text-sumac" />}
-          {p.is_vegetarian && <Leaf size={12} className="text-zaytoon" />}
-        </p>
-        {p.description?.ar && <p className="text-xs text-stone truncate mt-0.5">{p.description.ar}</p>}
-        <div className="flex items-baseline gap-2 mt-1">
+
+      {/* Price + add button live on their own full-width row, below the
+          image/text — this guarantees the button never has to compete for
+          horizontal space with the name/description, so it can never get
+          squeezed off-screen on narrow phones. */}
+      <div className="flex items-center justify-between px-3 pb-3 pt-1">
+        <div className="flex items-baseline gap-2">
           {p.discount_price ? (
             <>
               <span className="font-display font-semibold text-saffron-dim text-sm">{p.discount_price} ج.م</span>
@@ -310,14 +319,15 @@ function ProductCard({ product: p, onOpen }: { product: Product; onOpen: () => v
             <span className="font-display font-semibold text-sm">{p.price} ج.م</span>
           )}
         </div>
+        <button
+          onClick={quickAdd}
+          aria-label="إضافة سريعة"
+          className="flex items-center gap-1 rounded-full bg-saffron text-ink px-3 py-1.5 text-xs font-semibold hover:bg-saffron-dim active:scale-90 transition-all"
+        >
+          <Plus size={14} />
+          إضافة
+        </button>
       </div>
-      <button
-        onClick={quickAdd}
-        aria-label="إضافة سريعة"
-        className="shrink-0 w-9 h-9 rounded-full bg-saffron text-ink flex items-center justify-center hover:bg-saffron-dim active:scale-90 transition-all"
-      >
-        <Plus size={16} />
-      </button>
     </div>
   )
 }
