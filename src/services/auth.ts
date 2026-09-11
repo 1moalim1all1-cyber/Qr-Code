@@ -21,19 +21,19 @@ export async function getCurrentUserProfile(userId: string) {
 
 // ============================================================
 // Phone + password authentication (no SMS/OTP — phone number acts as
-// the username, exactly like email + password would). This is the ONLY
-// sign-up/sign-in method the platform offers.
+// the username, exactly like email + password would).
 // ============================================================
 
-export async function signUpWithPhone(phone: string, password: string, fullName: string): Promise<User> {
+export async function signUpWithPhone(
+  phone: string,
+  password: string,
+  fullName: string,
+  requestedBusinessName?: string,
+): Promise<User> {
   const pseudoEmail = phoneToPseudoEmail(phone)
   const cred = await createUserWithEmailAndPassword(auth, pseudoEmail, password)
   await updateProfile(cred.user, { displayName: fullName })
 
-  // Force the ID token to sync before the first Firestore write — without
-  // this, the very next write can occasionally race Firestore's auth state
-  // and fail with "Missing or insufficient permissions" right after a
-  // brand-new sign-up, even though the auth account itself was created fine.
   await cred.user.getIdToken(true)
 
   try {
@@ -42,6 +42,12 @@ export async function signUpWithPhone(phone: string, password: string, fullName:
       phone: normalizePhone(phone),
       role: 'owner',
       avatar_url: null,
+      account_status: 'pending',
+      requested_business_name: requestedBusinessName?.trim() || null,
+      rejection_reason: null,
+      payment_status: 'unpaid',
+      amount_paid: 0,
+      payment_note: '',
       created_at: serverTimestamp(),
     })
   } catch (err) {
