@@ -21,6 +21,20 @@ function isStandaloneUserId(userId: string) {
   return userId.startsWith('restaurant:')
 }
 
+function isoDate(date: Date) {
+  return date.toISOString().slice(0, 10)
+}
+
+function addMonths(base: Date, months: number) {
+  const d = new Date(base)
+  const day = d.getDate()
+  d.setDate(1)
+  d.setMonth(d.getMonth() + months)
+  const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
+  d.setDate(Math.min(day, lastDay))
+  return d
+}
+
 export async function listAllRestaurants() {
   const snap = await getDocs(query(collection(db, 'restaurants'), orderBy('name', 'asc')))
   return snap.docs.map((d) => ({ id: d.id, ...d.data() })) as unknown as Restaurant[]
@@ -50,6 +64,10 @@ export async function listAdminClients(): Promise<AdminClientRecord[]> {
         payment_status: rawUser.payment_status || restaurant?.payment_status || 'unpaid',
         amount_paid: rawUser.amount_paid ?? Number(restaurant?.amount_paid || 0),
         payment_note: rawUser.payment_note ?? restaurant?.payment_note ?? '',
+        subscription_start: rawUser.subscription_start ?? restaurant?.subscription_start ?? null,
+        subscription_end: rawUser.subscription_end ?? restaurant?.subscription_end ?? null,
+        subscription_months: rawUser.subscription_months ?? restaurant?.subscription_months ?? null,
+        last_renewed_at: rawUser.last_renewed_at ?? restaurant?.last_renewed_at ?? null,
       }
       return { user, restaurant, standalone: false }
     })
@@ -71,6 +89,10 @@ export async function listAdminClients(): Promise<AdminClientRecord[]> {
         payment_status: restaurant.payment_status || 'unpaid',
         amount_paid: Number(restaurant.amount_paid || 0),
         payment_note: restaurant.payment_note || '',
+        subscription_start: restaurant.subscription_start ?? null,
+        subscription_end: restaurant.subscription_end ?? null,
+        subscription_months: restaurant.subscription_months ?? null,
+        last_renewed_at: restaurant.last_renewed_at ?? null,
         created_at: '',
       },
     }))
@@ -101,15 +123,17 @@ export async function updateAdminClient(input: {
   amountPaid: number
   paymentNote: string
 }) {
+  const patch = {
+    full_name: input.fullName,
+    phone: input.phone,
+    requested_business_name: input.businessName,
+    payment_status: input.paymentStatus,
+    amount_paid: input.amountPaid,
+    payment_note: input.paymentNote,
+  }
+
   if (!isStandaloneUserId(input.userId)) {
-    await updateDoc(doc(db, 'users', input.userId), {
-      full_name: input.fullName,
-      phone: input.phone,
-      requested_business_name: input.businessName,
-      payment_status: input.paymentStatus,
-      amount_paid: input.amountPaid,
-      payment_note: input.paymentNote,
-    })
+    await updateDoc(doc(db, 'users', input.userId), patch)
   }
 
   if (input.restaurantId) {
@@ -123,6 +147,39 @@ export async function updateAdminClient(input: {
       amount_paid: input.amountPaid,
       payment_note: input.paymentNote,
     })
+  }
+}
+
+export async function renewClient(input: {
+  userId: string
+  restaurantId?: string | null
+  months: number
+  amountPaid?: number
+  paymentNote?: string
+}) {
+  const clients = await listAdminClients()
+  const client = clients.find((c) => c.user.id === input.userId)
+  const currentEnd = client?.user.subscription_end
+  const today = new Date()
+  const parsedEnd = currentEnd ? new Date(`${currentEnd}T00:00:00`) : null
+  const base = parsedEnd && parsedEnd.getTime() > today.getTime() ? parsedEnd : today
+  const newEnd = addMonths(base, input.months)
+  const start = client?.user.subscription_start || isoDate(today)
+  const renewalPatch = {
+    subscription_start: start,
+    subscription_end: isoDate(newEnd),
+    subscription_months: input.months,
+    last_renewed_at: isoDate(today),
+    payment_status: 'paid' as const,
+    ...(input.amountPaid !== undefined ? { amount_paid: input.amountPaid } : {}),
+    ...(input.paymentNote !== undefined ? { payment_note: input.paymentNote } : {}),
+  }
+
+  if (!isStandaloneUserId(input.userId)) {
+    await updateDoc(doc(db, 'users', input.userId), renewalPatch)
+  }
+  if (input.restaurantId) {
+    await updateDoc(doc(db, 'restaurants', input.restaurantId), renewalPatch)
   }
 }
 
@@ -157,6 +214,13 @@ export async function restoreClient(userId: string, restaurantId?: string | null
   if (restaurantId) await setRestaurantStatus(restaurantId, 'active')
 }
 
+export function getSubscriptionDaysLeft(end?: string | null) {
+  if (!end) return null
+  const endDate = new Date(`${end}T23:59:59`)
+  const diff = endDate.getTime() - Date.now()
+  return Math.ceil(diff / 86400000)
+}
+
 export async function getPlatformStats() {
   const clients = await listAdminClients()
   const totalRestaurants = clients.filter((c) => c.restaurant).length
@@ -165,6 +229,14 @@ export async function getPlatformStats() {
   const rejected = clients.filter((c) => c.user.account_status === 'rejected').length
   const suspended = clients.filter((c) => c.user.account_status === 'suspended').length
   const totalRevenue = clients.reduce((sum, c) => sum + Number(c.user.amount_paid || c.restaurant?.amount_paid || 0), 0)
+  const expiringSoon = clients.filter((c) => {
+    const days = getSubscriptionDaysLeft(c.user.subscription_end)
+    return days !== null && days >= 0 && days <= 7
+  }).length
+  const expired = clients.filter((c) => {
+    const days = getSubscriptionDaysLeft(c.user.subscription_end)
+    return days !== null && days < 0
+  }).length
 
   let totalVisitsSample = 0
   try {
@@ -182,6 +254,8 @@ export async function getPlatformStats() {
     rejected,
     suspended,
     totalRevenue,
+    expiringSoon,
+    expired,
     totalVisitsSample,
   }
 }
