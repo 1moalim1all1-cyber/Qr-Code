@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Ban,
+  CalendarClock,
   CheckCircle2,
   Clock,
   ExternalLink,
@@ -23,8 +24,10 @@ import { signOut } from '@/services/auth'
 import {
   approveClient,
   getPlatformStats,
+  getSubscriptionDaysLeft,
   listAdminClients,
   rejectClient,
+  renewClient,
   restoreClient,
   suspendClient,
   updateAdminClient,
@@ -39,15 +42,29 @@ const STATUS_LABEL: Record<AccountStatus, string> = {
   suspended: 'موقوف',
 }
 
+function whatsappNumber(phone: string) {
+  const digits = phone.replace(/\D/g, '')
+  if (digits.startsWith('20')) return digits
+  if (digits.startsWith('0')) return `20${digits.slice(1)}`
+  return digits
+}
+
+function renewalMessage(client: AdminClientRecord) {
+  const business = client.user.requested_business_name || client.restaurant?.name || 'النشاط'
+  const end = client.user.subscription_end
+  return encodeURIComponent(`أهلاً ${client.user.full_name}، بنفكرك إن اشتراك ${business}${end ? ` هينتهي يوم ${end}` : ' محتاج تجديد'}. تواصل معانا لتجديد الخدمة واستمرار المنيو بدون توقف.`)
+}
+
 export default function AdminDashboardPage() {
   const { profile } = useAuth()
   const [clients, setClients] = useState<AdminClientRecord[]>([])
-  const [stats, setStats] = useState({ totalClients: 0, totalRestaurants: 0, active: 0, pending: 0, rejected: 0, suspended: 0, totalRevenue: 0, totalVisitsSample: 0 })
+  const [stats, setStats] = useState({ totalClients: 0, totalRestaurants: 0, active: 0, pending: 0, rejected: 0, suspended: 0, totalRevenue: 0, expiringSoon: 0, expired: 0, totalVisitsSample: 0 })
   const [filter, setFilter] = useState<'all' | AccountStatus>('all')
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState<AdminClientRecord | null>(null)
+  const [renewing, setRenewing] = useState<AdminClientRecord | null>(null)
 
   async function load() {
     setLoading(true)
@@ -73,13 +90,8 @@ export default function AdminDashboardPage() {
       const status = c.user.account_status || 'pending'
       if (filter !== 'all' && status !== filter) return false
       if (!q) return true
-      return [
-        c.user.full_name,
-        c.user.phone,
-        c.user.requested_business_name,
-        c.restaurant?.name,
-        c.restaurant?.client_contact,
-      ].some((v) => String(v || '').toLowerCase().includes(q))
+      return [c.user.full_name, c.user.phone, c.user.requested_business_name, c.restaurant?.name, c.restaurant?.client_contact]
+        .some((v) => String(v || '').toLowerCase().includes(q))
     })
   }, [clients, filter, search])
 
@@ -108,24 +120,21 @@ export default function AdminDashboardPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-5 py-7">
-        <div className="grid sm:grid-cols-2 xl:grid-cols-6 gap-3 mb-6">
+        <div className="grid sm:grid-cols-2 xl:grid-cols-8 gap-3 mb-6">
           <Stat icon={Store} label="إجمالي العملاء" value={stats.totalClients} />
           <Stat icon={Clock} label="منتظرين" value={stats.pending} />
           <Stat icon={CheckCircle2} label="مفعّلين" value={stats.active} />
           <Stat icon={XCircle} label="مرفوضين" value={stats.rejected} />
           <Stat icon={Ban} label="موقوفين" value={stats.suspended} />
+          <Stat icon={CalendarClock} label="يجددوا خلال 7 أيام" value={stats.expiringSoon} />
+          <Stat icon={CalendarClock} label="اشتراكات منتهية" value={stats.expired} />
           <Stat icon={Wallet} label="إجمالي المحصل" value={`${stats.totalRevenue} ج.م`} />
         </div>
 
         <div className="grid lg:grid-cols-[1fr_auto] gap-3 mb-5">
           <div className="relative">
             <Search size={17} className="absolute right-3 top-1/2 -translate-y-1/2 text-stone" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="ابحث بالاسم أو رقم الهاتف أو اسم النشاط"
-              className="w-full rounded-2xl border border-stone-light/30 bg-paper py-3 pr-10 pl-4 outline-none focus:border-saffron"
-            />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="ابحث بالاسم أو رقم الهاتف أو اسم النشاط" className="w-full rounded-2xl border border-stone-light/30 bg-paper py-3 pr-10 pl-4 outline-none focus:border-saffron" />
           </div>
           <Link to="/admin/clients/new" className="rounded-2xl bg-saffron text-ink font-semibold px-5 py-3 flex items-center justify-center gap-2">
             <Plus size={18} /> إضافة عميل يدويًا
@@ -134,11 +143,7 @@ export default function AdminDashboardPage() {
 
         <div className="flex gap-2 flex-wrap mb-5">
           {(['all', 'pending', 'active', 'rejected', 'suspended'] as const).map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`rounded-full px-4 py-2 text-sm ${filter === f ? 'bg-ink text-paper' : 'bg-paper border border-stone-light/30'}`}
-            >
+            <button key={f} onClick={() => setFilter(f)} className={`rounded-full px-4 py-2 text-sm ${filter === f ? 'bg-ink text-paper' : 'bg-paper border border-stone-light/30'}`}>
               {f === 'all' ? 'الكل' : STATUS_LABEL[f]}
             </button>
           ))}
@@ -164,7 +169,10 @@ export default function AdminDashboardPage() {
               const phone = c.user.phone || c.restaurant?.client_contact || ''
               const paid = c.user.payment_status === 'paid' || c.restaurant?.payment_status === 'paid'
               const amount = Number(c.user.amount_paid || c.restaurant?.amount_paid || 0)
-              const whatsapp = phone ? `https://wa.me/2${phone.replace(/^0/, '')}` : null
+              const wa = phone ? whatsappNumber(phone) : ''
+              const daysLeft = getSubscriptionDaysLeft(c.user.subscription_end)
+              const expiryLabel = daysLeft === null ? 'ميعاد التجديد غير محدد' : daysLeft < 0 ? `منتهي من ${Math.abs(daysLeft)} يوم` : daysLeft === 0 ? 'ينتهي اليوم' : `متبقي ${daysLeft} يوم`
+              const expiryClass = daysLeft === null ? 'bg-paper-dim text-stone' : daysLeft < 0 ? 'bg-sumac/15 text-sumac' : daysLeft <= 7 ? 'bg-saffron/15 text-saffron-dim' : 'bg-zaytoon/15 text-zaytoon'
 
               return (
                 <section key={c.user.id} className="rounded-3xl bg-paper border border-stone-light/30 p-5 shadow-sm">
@@ -173,49 +181,29 @@ export default function AdminDashboardPage() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <h2 className="font-display text-xl font-semibold">{name}</h2>
                         <span className="text-xs rounded-full bg-paper-dim border border-stone-light/30 px-3 py-1">{STATUS_LABEL[status]}</span>
-                        <span className={`text-xs rounded-full px-3 py-1 ${paid ? 'bg-zaytoon/15 text-zaytoon' : 'bg-sumac/15 text-sumac'}`}>
-                          {paid ? `مدفوع${amount ? ` ${amount} ج.م` : ''}` : 'غير مدفوع'}
-                        </span>
+                        <span className={`text-xs rounded-full px-3 py-1 ${paid ? 'bg-zaytoon/15 text-zaytoon' : 'bg-sumac/15 text-sumac'}`}>{paid ? `مدفوع${amount ? ` ${amount} ج.م` : ''}` : 'غير مدفوع'}</span>
+                        <span className={`text-xs rounded-full px-3 py-1 ${expiryClass}`}>{expiryLabel}</span>
                       </div>
                       <p className="mt-2 text-sm text-stone">{c.user.full_name} {phone ? `• ${phone}` : ''}</p>
+                      {c.user.subscription_end && <p className="mt-1 text-xs text-stone">تاريخ التجديد: {c.user.subscription_end}</p>}
                       {!c.restaurant && <p className="mt-2 text-sm text-sumac">الحساب مسجل لكن النشاط لم يُنشأ في Firestore بعد.</p>}
                       {c.user.rejection_reason && <p className="mt-2 text-sm text-sumac">سبب الرفض: {c.user.rejection_reason}</p>}
                     </div>
 
                     <div className="flex gap-2 flex-wrap">
                       <button onClick={() => setEditing(c)} className="flex items-center gap-1 rounded-full bg-paper-dim px-3 py-2 text-xs hover:bg-stone-light/30"><Pencil size={14} /> تعديل</button>
-                      {whatsapp && <a href={whatsapp} target="_blank" rel="noreferrer" className="flex items-center gap-1 rounded-full bg-paper-dim px-3 py-2 text-xs hover:bg-stone-light/30"><MessageCircle size={14} /> واتساب</a>}
-                      {c.restaurant && (
-                        <a href={`${import.meta.env.BASE_URL}m/${c.restaurant.slug}`} target="_blank" rel="noreferrer" className="flex items-center gap-1 rounded-full bg-paper-dim px-3 py-2 text-xs hover:bg-stone-light/30">
-                          <ExternalLink size={14} /> عرض المنيو
-                        </a>
-                      )}
+                      <button onClick={() => setRenewing(c)} className="flex items-center gap-1 rounded-full bg-saffron/15 text-saffron-dim px-3 py-2 text-xs hover:opacity-80"><CalendarClock size={14} /> تجديد</button>
+                      {wa && <a href={`https://wa.me/${wa}`} target="_blank" rel="noreferrer" className="flex items-center gap-1 rounded-full bg-paper-dim px-3 py-2 text-xs hover:bg-stone-light/30"><MessageCircle size={14} /> واتساب</a>}
+                      {wa && daysLeft !== null && daysLeft <= 7 && <a href={`https://wa.me/${wa}?text=${renewalMessage(c)}`} target="_blank" rel="noreferrer" className="flex items-center gap-1 rounded-full bg-zaytoon text-paper px-3 py-2 text-xs"><MessageCircle size={14} /> رسالة تجديد جاهزة</a>}
+                      {c.restaurant && <a href={`${import.meta.env.BASE_URL}m/${c.restaurant.slug}`} target="_blank" rel="noreferrer" className="flex items-center gap-1 rounded-full bg-paper-dim px-3 py-2 text-xs hover:bg-stone-light/30"><ExternalLink size={14} /> عرض المنيو</a>}
                     </div>
                   </div>
 
                   <div className="mt-4 flex gap-2 flex-wrap">
-                    {status !== 'active' && status !== 'rejected' && (
-                      <button onClick={() => action(() => approveClient(c.user.id, c.restaurant?.id))} className="rounded-full bg-zaytoon text-paper px-4 py-2 text-sm font-semibold">
-                        قبول + اعتماد الدفع + تفعيل
-                      </button>
-                    )}
-                    {status !== 'rejected' && (
-                      <button
-                        onClick={() => {
-                          const reason = window.prompt('اكتب سبب الرفض للعميل:')
-                          if (reason !== null) action(() => rejectClient(c.user.id, c.restaurant?.id, reason.trim() || 'تم رفض الطلب بواسطة الإدارة'))
-                        }}
-                        className="rounded-full bg-sumac/15 text-sumac px-4 py-2 text-sm font-semibold"
-                      >
-                        رفض
-                      </button>
-                    )}
-                    {status === 'active' && (
-                      <button onClick={() => action(() => suspendClient(c.user.id, c.restaurant?.id))} className="rounded-full bg-sumac/15 text-sumac px-4 py-2 text-sm font-semibold">إيقاف الحساب</button>
-                    )}
-                    {(status === 'suspended' || status === 'rejected') && (
-                      <button onClick={() => action(() => restoreClient(c.user.id, c.restaurant?.id))} className="rounded-full bg-zaytoon/15 text-zaytoon px-4 py-2 text-sm font-semibold">إعادة التفعيل</button>
-                    )}
+                    {status !== 'active' && status !== 'rejected' && <button onClick={() => action(() => approveClient(c.user.id, c.restaurant?.id))} className="rounded-full bg-zaytoon text-paper px-4 py-2 text-sm font-semibold">قبول + اعتماد الدفع + تفعيل</button>}
+                    {status !== 'rejected' && <button onClick={() => { const reason = window.prompt('اكتب سبب الرفض للعميل:'); if (reason !== null) action(() => rejectClient(c.user.id, c.restaurant?.id, reason.trim() || 'تم رفض الطلب بواسطة الإدارة')) }} className="rounded-full bg-sumac/15 text-sumac px-4 py-2 text-sm font-semibold">رفض</button>}
+                    {status === 'active' && <button onClick={() => action(() => suspendClient(c.user.id, c.restaurant?.id))} className="rounded-full bg-sumac/15 text-sumac px-4 py-2 text-sm font-semibold">إيقاف الحساب</button>}
+                    {(status === 'suspended' || status === 'rejected') && <button onClick={() => action(() => restoreClient(c.user.id, c.restaurant?.id))} className="rounded-full bg-zaytoon/15 text-zaytoon px-4 py-2 text-sm font-semibold">إعادة التفعيل</button>}
                   </div>
 
                   {c.restaurant && (
@@ -234,16 +222,45 @@ export default function AdminDashboardPage() {
       </main>
 
       {editing && <EditClientModal client={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); load() }} />}
+      {renewing && <RenewClientModal client={renewing} onClose={() => setRenewing(null)} onSaved={() => { setRenewing(null); load() }} />}
     </div>
   )
 }
 
 function Stat({ icon: Icon, label, value }: { icon: typeof Store; label: string; value: string | number }) {
+  return <div className="rounded-2xl bg-paper border border-stone-light/30 p-4"><Icon size={20} className="text-saffron-dim mb-2" /><p className="text-2xl font-display font-semibold">{value}</p><p className="text-xs text-stone mt-1">{label}</p></div>
+}
+
+function RenewClientModal({ client, onClose, onSaved }: { client: AdminClientRecord; onClose: () => void; onSaved: () => void }) {
+  const [months, setMonths] = useState('1')
+  const [amount, setAmount] = useState(String(client.user.amount_paid || 0))
+  const [note, setNote] = useState(client.user.payment_note || '')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function save() {
+    setSaving(true); setError(null)
+    try {
+      await renewClient({ userId: client.user.id, restaurantId: client.restaurant?.id, months: Number(months), amountPaid: Number(amount || 0), paymentNote: note.trim() })
+      onSaved()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'تعذر تسجيل التجديد')
+    } finally { setSaving(false) }
+  }
+
   return (
-    <div className="rounded-2xl bg-paper border border-stone-light/30 p-4">
-      <Icon size={20} className="text-saffron-dim mb-2" />
-      <p className="text-2xl font-display font-semibold">{value}</p>
-      <p className="text-xs text-stone mt-1">{label}</p>
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" dir="rtl">
+      <div className="w-full max-w-md rounded-3xl bg-paper p-6">
+        <div className="flex justify-between items-center mb-5"><h3 className="font-display text-xl font-semibold">تجديد اشتراك العميل</h3><button onClick={onClose}><XCircle size={22} /></button></div>
+        <div className="space-y-4">
+          <div><label className="text-sm font-medium">مدة التجديد</label><select value={months} onChange={(e) => setMonths(e.target.value)} className="mt-1 w-full rounded-xl border border-stone-light/30 bg-paper p-3"><option value="1">شهر</option><option value="3">3 شهور</option><option value="6">6 شهور</option><option value="12">سنة</option></select></div>
+          <Field label="المبلغ المحصل" value={amount} onChange={setAmount} type="number" />
+          <div><label className="text-sm font-medium">ملاحظات / طريقة الدفع</label><textarea value={note} onChange={(e) => setNote(e.target.value)} className="mt-1 w-full min-h-20 rounded-xl border border-stone-light/30 bg-paper p-3" /></div>
+          <p className="text-xs text-stone">لو الاشتراك لسه ساري، المدة الجديدة هتتحسب من تاريخ الانتهاء الحالي. لو منتهي، هتبدأ من النهارده.</p>
+          {error && <p className="text-sm text-sumac">{error}</p>}
+          <button disabled={saving} onClick={save} className="w-full rounded-2xl bg-zaytoon text-paper py-3 font-semibold disabled:opacity-50">{saving ? 'جارِ تسجيل التجديد...' : 'تأكيد التجديد'}</button>
+        </div>
+      </div>
     </div>
   )
 }
@@ -259,54 +276,26 @@ function EditClientModal({ client, onClose, onSaved }: { client: AdminClientReco
   const [error, setError] = useState<string | null>(null)
 
   async function save() {
-    setSaving(true)
-    setError(null)
+    setSaving(true); setError(null)
     try {
-      await updateAdminClient({
-        userId: client.user.id,
-        restaurantId: client.restaurant?.id,
-        fullName: fullName.trim(),
-        phone: phone.trim(),
-        businessName: businessName.trim(),
-        paymentStatus,
-        amountPaid: Number(amountPaid || 0),
-        paymentNote: paymentNote.trim(),
-      })
+      await updateAdminClient({ userId: client.user.id, restaurantId: client.restaurant?.id, fullName: fullName.trim(), phone: phone.trim(), businessName: businessName.trim(), paymentStatus, amountPaid: Number(amountPaid || 0), paymentNote: paymentNote.trim() })
       onSaved()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'تعذّر حفظ البيانات')
-    } finally {
-      setSaving(false)
-    }
+    } catch (err) { setError(err instanceof Error ? err.message : 'تعذّر حفظ البيانات') } finally { setSaving(false) }
   }
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" dir="rtl">
       <div className="w-full max-w-lg rounded-3xl bg-paper p-6 max-h-[90vh] overflow-auto">
-        <div className="flex items-center justify-between mb-5">
-          <h3 className="font-display text-xl font-semibold">تعديل بيانات العميل</h3>
-          <button onClick={onClose}><XCircle size={22} /></button>
-        </div>
+        <div className="flex items-center justify-between mb-5"><h3 className="font-display text-xl font-semibold">تعديل بيانات العميل</h3><button onClick={onClose}><XCircle size={22} /></button></div>
         <div className="space-y-4">
           <Field label="اسم العميل" value={fullName} onChange={setFullName} />
           <Field label="رقم الهاتف" value={phone} onChange={setPhone} />
           <Field label="اسم النشاط" value={businessName} onChange={setBusinessName} />
-          <div>
-            <label className="text-sm font-medium">حالة الدفع</label>
-            <select value={paymentStatus} onChange={(e) => setPaymentStatus(e.target.value as 'paid' | 'unpaid')} className="mt-1 w-full rounded-xl border border-stone-light/30 bg-paper p-3">
-              <option value="unpaid">غير مدفوع</option>
-              <option value="paid">مدفوع</option>
-            </select>
-          </div>
+          <div><label className="text-sm font-medium">حالة الدفع</label><select value={paymentStatus} onChange={(e) => setPaymentStatus(e.target.value as 'paid' | 'unpaid')} className="mt-1 w-full rounded-xl border border-stone-light/30 bg-paper p-3"><option value="unpaid">غير مدفوع</option><option value="paid">مدفوع</option></select></div>
           <Field label="المبلغ المدفوع" value={amountPaid} onChange={setAmountPaid} type="number" />
-          <div>
-            <label className="text-sm font-medium">ملاحظات الدفع</label>
-            <textarea value={paymentNote} onChange={(e) => setPaymentNote(e.target.value)} className="mt-1 w-full min-h-24 rounded-xl border border-stone-light/30 bg-paper p-3" />
-          </div>
+          <div><label className="text-sm font-medium">ملاحظات الدفع</label><textarea value={paymentNote} onChange={(e) => setPaymentNote(e.target.value)} className="mt-1 w-full min-h-24 rounded-xl border border-stone-light/30 bg-paper p-3" /></div>
           {error && <p className="text-sm text-sumac">{error}</p>}
-          <button disabled={saving} onClick={save} className="w-full rounded-2xl bg-ink text-paper py-3 font-semibold disabled:opacity-50">
-            {saving ? 'جارِ الحفظ...' : 'حفظ كل التعديلات'}
-          </button>
+          <button disabled={saving} onClick={save} className="w-full rounded-2xl bg-ink text-paper py-3 font-semibold disabled:opacity-50">{saving ? 'جارِ الحفظ...' : 'حفظ كل التعديلات'}</button>
         </div>
       </div>
     </div>
@@ -314,10 +303,5 @@ function EditClientModal({ client, onClose, onSaved }: { client: AdminClientReco
 }
 
 function Field({ label, value, onChange, type = 'text' }: { label: string; value: string; onChange: (v: string) => void; type?: string }) {
-  return (
-    <div>
-      <label className="text-sm font-medium">{label}</label>
-      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} className="mt-1 w-full rounded-xl border border-stone-light/30 bg-paper p-3" />
-    </div>
-  )
+  return <div><label className="text-sm font-medium">{label}</label><input type={type} value={value} onChange={(e) => onChange(e.target.value)} className="mt-1 w-full rounded-xl border border-stone-light/30 bg-paper p-3" /></div>
 }
