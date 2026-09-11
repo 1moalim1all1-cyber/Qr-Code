@@ -1,67 +1,56 @@
 rules_version = '2';
 
-// ============================================================
-// Smart QR Menu — Firestore Security Rules
-// Paste this into Firebase Console > Firestore Database > Rules
-// (or deploy with `firebase deploy --only firestore:rules` if you use the CLI)
-// ============================================================
-
-function isSignedIn() {
-  return request.auth != null;
-}
-
-function isSuperAdmin() {
-  return isSignedIn() &&
-    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin';
-}
-
-function ownsRestaurant(restaurantId) {
-  return isSignedIn() &&
-    get(/databases/$(database)/documents/restaurants/$(restaurantId)).data.owner_id == request.auth.uid;
-}
-
-function ownsActiveRestaurant(restaurantId) {
-  return isSignedIn() &&
-    get(/databases/$(database)/documents/restaurants/$(restaurantId)).data.owner_id == request.auth.uid &&
-    get(/databases/$(database)/documents/restaurants/$(restaurantId)).data.status == 'active';
-}
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Users: owners can only edit ordinary profile fields. Approval, rejection,
-    // suspension and payment fields are admin-only.
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isSuperAdmin() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin';
+    }
+
+    function ownsRestaurant(restaurantId) {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/restaurants/$(restaurantId)).data.owner_id == request.auth.uid;
+    }
+
+    function ownsActiveRestaurant(restaurantId) {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/restaurants/$(restaurantId)).data.owner_id == request.auth.uid &&
+        get(/databases/$(database)/documents/restaurants/$(restaurantId)).data.status == 'active';
+    }
+
     match /users/{userId} {
       allow read: if isSignedIn() && (request.auth.uid == userId || isSuperAdmin());
       allow create: if isSignedIn() &&
         request.auth.uid == userId &&
-        request.resource.data.role == 'owner' &&
-        request.resource.data.account_status == 'pending';
+        request.resource.data.role == 'owner';
       allow update: if isSuperAdmin() || (
-        isSignedIn() && request.auth.uid == userId &&
+        isSignedIn() &&
+        request.auth.uid == userId &&
         request.resource.data.role == resource.data.role &&
         !request.resource.data.diff(resource.data).affectedKeys().hasAny([
           'role', 'account_status', 'requested_business_name', 'rejection_reason',
-          'payment_status', 'amount_paid', 'payment_note', 'created_at'
+          'payment_status', 'amount_paid', 'payment_note', 'created_at',
+          'subscription_start', 'subscription_end', 'subscription_months', 'last_renewed_at'
         ])
       );
       allow delete: if false;
     }
 
-    // Restaurants: public can read active restaurants. Owners can edit normal
-    // content only after activation; status/payment/admin ownership fields are
-    // controlled by super admins.
     match /restaurants/{restaurantId} {
       allow read: if resource.data.status == 'active' ||
         (isSignedIn() && resource.data.owner_id == request.auth.uid) ||
         isSuperAdmin();
 
-      allow create: if (
+      allow create: if isSuperAdmin() || (
         isSignedIn() &&
         request.resource.data.owner_id == request.auth.uid &&
-        request.resource.data.status == 'pending' &&
-        request.resource.data.payment_status == 'unpaid'
-      ) || isSuperAdmin();
+        request.resource.data.status == 'pending'
+      );
 
       allow update: if isSuperAdmin() || (
         isSignedIn() &&
@@ -69,7 +58,8 @@ service cloud.firestore {
         resource.data.status == 'active' &&
         !request.resource.data.diff(resource.data).affectedKeys().hasAny([
           'owner_id', 'status', 'payment_status', 'amount_paid', 'payment_note',
-          'managed_by_admin', 'client_name', 'client_contact', 'registration_source'
+          'managed_by_admin', 'client_name', 'client_contact', 'registration_source',
+          'subscription_start', 'subscription_end', 'subscription_months', 'last_renewed_at'
         ])
       );
       allow delete: if isSuperAdmin();
@@ -113,14 +103,14 @@ service cloud.firestore {
       match /orders/{docId} {
         allow create: if true;
         allow read, update: if ownsActiveRestaurant(restaurantId) || isSuperAdmin();
-        allow delete: if false;
+        allow delete: if isSuperAdmin();
       }
 
       match /order_status/{docId} {
         allow read: if true;
         allow create: if true;
         allow update: if ownsActiveRestaurant(restaurantId) || isSuperAdmin();
-        allow delete: if false;
+        allow delete: if isSuperAdmin();
       }
 
       match /qrcodes/{docId} {
