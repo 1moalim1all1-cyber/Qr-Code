@@ -43,7 +43,7 @@ export default function ProtectedRoute({ children, allowedRoles, requireActiveRe
   }
 
   if (profile?.role === 'owner') {
-    const accountStatus = profile.account_status || 'pending'
+    const accountStatus = profile.account_status || (restaurant?.status === 'active' ? 'active' : 'pending')
 
     if (location.pathname !== '/activation-pending' && accountStatus !== 'active') {
       return <Navigate to="/activation-pending" replace />
