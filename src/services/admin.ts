@@ -14,6 +14,11 @@ import type { AccountStatus, AppUser, Restaurant, RestaurantStatus } from '@/typ
 export interface AdminClientRecord {
   user: AppUser
   restaurant: Restaurant | null
+  standalone?: boolean
+}
+
+function isStandaloneUserId(userId: string) {
+  return userId.startsWith('restaurant:')
 }
 
 export async function listAllRestaurants() {
@@ -32,9 +37,32 @@ export async function listAdminClients(): Promise<AdminClientRecord[]> {
     restaurants.filter((r) => r.owner_id).map((r) => [r.owner_id as string, r]),
   )
 
-  return users
+  const registered: AdminClientRecord[] = users
     .filter((u) => u.role === 'owner')
-    .map((user) => ({ user, restaurant: restaurantByOwner.get(user.id) ?? null }))
+    .map((user) => ({ user, restaurant: restaurantByOwner.get(user.id) ?? null, standalone: false }))
+
+  const standalone: AdminClientRecord[] = restaurants
+    .filter((r) => !r.owner_id)
+    .map((restaurant) => ({
+      standalone: true,
+      restaurant,
+      user: {
+        id: `restaurant:${restaurant.id}`,
+        full_name: restaurant.client_name || 'عميل إدارة',
+        phone: restaurant.client_contact || restaurant.phone || null,
+        role: 'owner',
+        avatar_url: null,
+        account_status: (restaurant.status === 'rejected' ? 'rejected' : restaurant.status) as AccountStatus,
+        requested_business_name: restaurant.name,
+        rejection_reason: null,
+        payment_status: restaurant.payment_status || 'unpaid',
+        amount_paid: Number(restaurant.amount_paid || 0),
+        payment_note: restaurant.payment_note || '',
+        created_at: '',
+      },
+    }))
+
+  return [...registered, ...standalone]
     .sort((a, b) => (a.user.full_name || '').localeCompare(b.user.full_name || '', 'ar'))
 }
 
@@ -43,6 +71,7 @@ export async function setRestaurantStatus(id: string, status: RestaurantStatus) 
 }
 
 export async function setUserAccountStatus(userId: string, status: AccountStatus, rejectionReason?: string) {
+  if (isStandaloneUserId(userId)) return
   await updateDoc(doc(db, 'users', userId), {
     account_status: status,
     rejection_reason: status === 'rejected' ? rejectionReason || 'تم رفض طلب التسجيل بواسطة الإدارة' : null,
@@ -59,14 +88,16 @@ export async function updateAdminClient(input: {
   amountPaid: number
   paymentNote: string
 }) {
-  await updateDoc(doc(db, 'users', input.userId), {
-    full_name: input.fullName,
-    phone: input.phone,
-    requested_business_name: input.businessName,
-    payment_status: input.paymentStatus,
-    amount_paid: input.amountPaid,
-    payment_note: input.paymentNote,
-  })
+  if (!isStandaloneUserId(input.userId)) {
+    await updateDoc(doc(db, 'users', input.userId), {
+      full_name: input.fullName,
+      phone: input.phone,
+      requested_business_name: input.businessName,
+      payment_status: input.paymentStatus,
+      amount_paid: input.amountPaid,
+      payment_note: input.paymentNote,
+    })
+  }
 
   if (input.restaurantId) {
     await updateDoc(doc(db, 'restaurants', input.restaurantId), {
@@ -83,11 +114,13 @@ export async function updateAdminClient(input: {
 }
 
 export async function approveClient(userId: string, restaurantId?: string | null) {
-  await updateDoc(doc(db, 'users', userId), {
-    account_status: 'active',
-    payment_status: 'paid',
-    rejection_reason: null,
-  })
+  if (!isStandaloneUserId(userId)) {
+    await updateDoc(doc(db, 'users', userId), {
+      account_status: 'active',
+      payment_status: 'paid',
+      rejection_reason: null,
+    })
+  }
   if (restaurantId) {
     await updateDoc(doc(db, 'restaurants', restaurantId), {
       status: 'active',
