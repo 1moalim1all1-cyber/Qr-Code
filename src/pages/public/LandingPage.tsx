@@ -11,7 +11,7 @@ import RestaurantCarousel from '@/components/landing/RestaurantCarousel'
 import MenuPreviewDemo from '@/components/landing/MenuPreviewDemo'
 import FeaturedMenus from '@/components/landing/FeaturedMenus'
 
-const SUPPORT_WHATSAPP = '201006923454'
+const SUPPORT_WHATSAPP = '201039177959'
 
 const NAV_LINKS = [
   { label: 'الرئيسية', href: '#top' },
