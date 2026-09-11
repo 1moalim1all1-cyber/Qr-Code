@@ -24,6 +24,10 @@ export interface AppUser {
   payment_status?: 'paid' | 'unpaid'
   amount_paid?: number
   payment_note?: string
+  subscription_start?: string | null
+  subscription_end?: string | null
+  subscription_months?: number | null
+  last_renewed_at?: string | null
   created_at: string
 }
 
@@ -54,6 +58,10 @@ export interface Restaurant {
   payment_status?: 'paid' | 'unpaid'
   amount_paid?: number
   payment_note?: string
+  subscription_start?: string | null
+  subscription_end?: string | null
+  subscription_months?: number | null
+  last_renewed_at?: string | null
 }
 
 export interface Branch {
