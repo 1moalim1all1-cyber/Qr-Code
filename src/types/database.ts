@@ -1,9 +1,10 @@
 // Core domain types mirroring the Firestore data model (see firestore.rules for security rules)
 
 export type UserRole = 'super_admin' | 'owner' | 'staff'
+export type AccountStatus = 'pending' | 'active' | 'rejected' | 'suspended'
 export type SubscriptionPlan = 'free' | 'basic' | 'pro' | 'business'
 export type SubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'canceled' | 'expired'
-export type RestaurantStatus = 'active' | 'suspended' | 'pending'
+export type RestaurantStatus = 'active' | 'suspended' | 'pending' | 'rejected'
 
 export interface LocalizedText {
   ar: string
@@ -17,6 +18,12 @@ export interface AppUser {
   phone?: string | null
   role: UserRole
   avatar_url?: string | null
+  account_status?: AccountStatus
+  requested_business_name?: string | null
+  rejection_reason?: string | null
+  payment_status?: 'paid' | 'unpaid'
+  amount_paid?: number
+  payment_note?: string
   created_at: string
 }
 
