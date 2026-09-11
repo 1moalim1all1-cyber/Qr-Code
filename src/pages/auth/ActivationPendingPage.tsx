@@ -4,9 +4,17 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { signOut } from '@/services/auth'
 import { getRestaurantByOwner } from '@/services/restaurants'
-import type { Restaurant } from '@/types/database'
+import type { AccountStatus, Restaurant } from '@/types/database'
 
 const ACTIVATION_WHATSAPP = '201006923454'
+
+function inferStatus(profileStatus: AccountStatus | undefined, restaurant: Restaurant | null): AccountStatus {
+  if (profileStatus) return profileStatus
+  if (restaurant?.status === 'active') return 'active'
+  if (restaurant?.status === 'suspended') return 'suspended'
+  if (restaurant?.status === 'rejected') return 'rejected'
+  return 'pending'
+}
 
 export default function ActivationPendingPage() {
   const { user, profile, refreshProfile } = useAuth()
@@ -21,7 +29,7 @@ export default function ActivationPendingPage() {
       await refreshProfile()
       const r = await getRestaurantByOwner(user.uid).catch(() => null)
       setRestaurant(r)
-      if (profile?.account_status === 'active' && r?.status === 'active') {
+      if (inferStatus(profile?.account_status, r) === 'active' && r?.status === 'active') {
         navigate('/dashboard', { replace: true })
       }
     } finally {
@@ -34,7 +42,7 @@ export default function ActivationPendingPage() {
     getRestaurantByOwner(user.uid)
       .then((r) => {
         setRestaurant(r)
-        if ((profile?.account_status || 'pending') === 'active' && r?.status === 'active') {
+        if (inferStatus(profile?.account_status, r) === 'active' && r?.status === 'active') {
           navigate('/dashboard', { replace: true })
         }
       })
@@ -59,7 +67,7 @@ export default function ActivationPendingPage() {
     return <div className="min-h-screen flex items-center justify-center bg-paper text-stone">جارِ التحقق من حالة الحساب...</div>
   }
 
-  const status = profile?.account_status || 'pending'
+  const status = inferStatus(profile?.account_status, restaurant)
   const rejected = status === 'rejected'
   const suspended = status === 'suspended'
 
