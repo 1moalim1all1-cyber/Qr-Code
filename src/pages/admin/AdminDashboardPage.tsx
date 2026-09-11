@@ -13,7 +13,6 @@ import {
   QrCode,
   Search,
   Store,
-  Trash2,
   UtensilsCrossed,
   Wallet,
   XCircle,
@@ -184,10 +183,10 @@ export default function AdminDashboardPage() {
                     </div>
 
                     <div className="flex gap-2 flex-wrap">
-                      <button onClick={() => setEditing(c)} className="btn-admin"><Pencil size={14} /> تعديل</button>
-                      {whatsapp && <a href={whatsapp} target="_blank" rel="noreferrer" className="btn-admin"><MessageCircle size={14} /> واتساب</a>}
+                      <button onClick={() => setEditing(c)} className="flex items-center gap-1 rounded-full bg-paper-dim px-3 py-2 text-xs hover:bg-stone-light/30"><Pencil size={14} /> تعديل</button>
+                      {whatsapp && <a href={whatsapp} target="_blank" rel="noreferrer" className="flex items-center gap-1 rounded-full bg-paper-dim px-3 py-2 text-xs hover:bg-stone-light/30"><MessageCircle size={14} /> واتساب</a>}
                       {c.restaurant && (
-                        <a href={`${import.meta.env.BASE_URL}m/${c.restaurant.slug}`} target="_blank" rel="noreferrer" className="btn-admin">
+                        <a href={`${import.meta.env.BASE_URL}m/${c.restaurant.slug}`} target="_blank" rel="noreferrer" className="flex items-center gap-1 rounded-full bg-paper-dim px-3 py-2 text-xs hover:bg-stone-light/30">
                           <ExternalLink size={14} /> عرض المنيو
                         </a>
                       )}
@@ -221,10 +220,10 @@ export default function AdminDashboardPage() {
 
                   {c.restaurant && (
                     <div className="mt-4 pt-4 border-t border-stone-light/20 flex gap-2 flex-wrap">
-                      <Link to={`/admin/clients/${c.restaurant.id}/menu`} className="btn-admin"><UtensilsCrossed size={14} /> المنيو والأصناف</Link>
-                      <Link to={`/admin/clients/${c.restaurant.id}/qr`} className="btn-admin"><QrCode size={14} /> QR</Link>
-                      <Link to={`/admin/clients/${c.restaurant.id}/orders`} className="btn-admin"><ClipboardList size={14} /> الطلبات</Link>
-                      <Link to={`/admin/clients/${c.restaurant.id}/offers`} className="btn-admin"><Gift size={14} /> العروض</Link>
+                      <Link to={`/admin/clients/${c.restaurant.id}/menu`} className="flex items-center gap-1 rounded-full bg-paper-dim px-3 py-2 text-xs hover:bg-stone-light/30"><UtensilsCrossed size={14} /> المنيو والأصناف</Link>
+                      <Link to={`/admin/clients/${c.restaurant.id}/qr`} className="flex items-center gap-1 rounded-full bg-paper-dim px-3 py-2 text-xs hover:bg-stone-light/30"><QrCode size={14} /> QR</Link>
+                      <Link to={`/admin/clients/${c.restaurant.id}/orders`} className="flex items-center gap-1 rounded-full bg-paper-dim px-3 py-2 text-xs hover:bg-stone-light/30"><ClipboardList size={14} /> الطلبات</Link>
+                      <Link to={`/admin/clients/${c.restaurant.id}/offers`} className="flex items-center gap-1 rounded-full bg-paper-dim px-3 py-2 text-xs hover:bg-stone-light/30"><Gift size={14} /> العروض</Link>
                     </div>
                   )}
                 </section>
