@@ -6,7 +6,7 @@ import { signOut } from '@/services/auth'
 import { getRestaurantByOwner } from '@/services/restaurants'
 import type { Restaurant } from '@/types/database'
 
-const SUPPORT_WHATSAPP = '201006923454'
+const SUPPORT_WHATSAPP = '201039177959'
 
 const statCards = [
   { icon: Eye, label: 'عدد الزيارات', value: '—' },
