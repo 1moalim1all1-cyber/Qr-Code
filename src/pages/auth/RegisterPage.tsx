@@ -22,11 +22,19 @@ export default function RegisterPage() {
   async function onSubmit(values: PhoneRegisterForm) {
     setServerError(null)
     try {
-      const user = await signUpWithPhone(values.phone, values.password, values.fullName)
-      await createRestaurant(user.uid, values.restaurantName, {
-        clientName: values.fullName,
-        clientContact: values.phone,
-      })
+      const user = await signUpWithPhone(values.phone, values.password, values.fullName, values.restaurantName)
+
+      // The user record is already saved before creating the restaurant, so the
+      // admin will still see this registration even if restaurant creation fails.
+      try {
+        await createRestaurant(user.uid, values.restaurantName, {
+          clientName: values.fullName,
+          clientContact: values.phone,
+        })
+      } catch (restaurantError) {
+        console.error('[RegisterPage] restaurant creation failed:', restaurantError)
+      }
+
       navigate('/activation-pending')
     } catch (err) {
       setServerError(err instanceof Error ? translateAuthError(err.message) : 'حصل خطأ، حاول تاني')
@@ -41,7 +49,7 @@ export default function RegisterPage() {
             <QrCode className="text-saffron" size={22} />
           </div>
           <h1 className="font-display text-2xl font-semibold">أنشئ حساب مطعمك</h1>
-          <p className="text-stone text-sm mt-1">دقيقتين وتبدأ تبني منيوك</p>
+          <p className="text-stone text-sm mt-1">دقيقتين وتسجل طلبك للتفعيل</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
