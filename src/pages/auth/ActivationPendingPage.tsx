@@ -6,7 +6,7 @@ import { signOut } from '@/services/auth'
 import { getRestaurantByOwner } from '@/services/restaurants'
 import type { AccountStatus, Restaurant } from '@/types/database'
 
-const ACTIVATION_WHATSAPP = '201006923454'
+const ACTIVATION_WHATSAPP = '201039177959'
 
 function inferStatus(profileStatus: AccountStatus | undefined, restaurant: Restaurant | null): AccountStatus {
   if (profileStatus) return profileStatus
@@ -92,7 +92,7 @@ export default function ActivationPendingPage() {
         {!rejected && !suspended && (
           <div className="mt-6 rounded-2xl bg-paper-dim p-4 space-y-3 text-sm">
             <div className="flex items-center gap-2"><CheckCircle2 size={17} className="text-zaytoon" /> تم تسجيل طلبك</div>
-            <div className="flex items-center gap-2"><MessageCircle size={17} className="text-saffron-dim" /> أرسل رسالة التفعيل على 01006923454</div>
+            <div className="flex items-center gap-2"><MessageCircle size={17} className="text-saffron-dim" /> أرسل رسالة التفعيل على 01039177959</div>
             <div className="flex items-center gap-2"><ShieldCheck size={17} className="text-stone" /> الإدارة تراجع الدفع وتقبل الحساب</div>
           </div>
         )}
