@@ -42,8 +42,16 @@ export default function ProtectedRoute({ children, allowedRoles, requireActiveRe
     return <Navigate to={profile.role === 'super_admin' ? '/admin' : '/dashboard'} replace />
   }
 
-  if (requireActiveRestaurant && profile?.role === 'owner' && restaurant && restaurant.status !== 'active') {
-    return <Navigate to="/activation-pending" replace />
+  if (profile?.role === 'owner') {
+    const accountStatus = profile.account_status || 'pending'
+
+    if (location.pathname !== '/activation-pending' && accountStatus !== 'active') {
+      return <Navigate to="/activation-pending" replace />
+    }
+
+    if (requireActiveRestaurant && (!restaurant || restaurant.status !== 'active')) {
+      return <Navigate to="/activation-pending" replace />
+    }
   }
 
   return <>{children}</>
