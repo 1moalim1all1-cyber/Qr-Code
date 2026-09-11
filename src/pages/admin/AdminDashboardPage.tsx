@@ -48,6 +48,15 @@ export default function AdminDashboardPage() {
     await setPaymentStatus(r.id, next, r.amount_paid ?? 0, r.payment_note)
   }
 
+  async function handleApprove(r: Restaurant) {
+    setRestaurants((prev) => prev.map((x) => (x.id === r.id ? { ...x, payment_status: 'paid', status: 'active' } : x)))
+    await Promise.all([
+      setPaymentStatus(r.id, 'paid', r.amount_paid ?? 0, r.payment_note),
+      setRestaurantStatus(r.id, 'active'),
+    ])
+    await load()
+  }
+
   const visible = filter === 'all' ? restaurants : restaurants.filter((r) => r.status === filter)
 
   const statCards = [
@@ -125,11 +134,10 @@ export default function AdminDashboardPage() {
                   <tr key={r.id} className="border-b border-stone-light/20 last:border-0">
                     <td className="px-4 py-3 font-medium">
                       {r.name}
-                      {r.managed_by_admin && (
-                        <span className="block text-xs font-normal text-stone mt-0.5">
-                          {r.client_name || 'عميل بدون اسم'} {r.client_contact ? `· ${r.client_contact}` : ''}
-                        </span>
-                      )}
+                      <span className="block text-xs font-normal text-stone mt-0.5">
+                        {r.client_name || (r.managed_by_admin ? 'عميل بدون اسم' : 'تسجيل ذاتي')}
+                        {r.client_contact ? ` · ${r.client_contact}` : ''}
+                      </span>
                     </td>
                     <td className="px-4 py-3">
                       <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_STYLE[r.status]}`}>
@@ -137,19 +145,15 @@ export default function AdminDashboardPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      {r.managed_by_admin ? (
-                        <button
-                          onClick={() => handleTogglePayment(r)}
-                          className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
-                            r.payment_status === 'paid' ? 'bg-zaytoon/15 text-zaytoon' : 'bg-sumac/15 text-sumac'
-                          }`}
-                        >
-                          <Wallet size={12} />
-                          {r.payment_status === 'paid' ? `مدفوع${r.amount_paid ? ` (${r.amount_paid} ج.م)` : ''}` : 'غير مدفوع'}
-                        </button>
-                      ) : (
-                        <span className="text-stone-light text-xs">حساب صاحب مطعم</span>
-                      )}
+                      <button
+                        onClick={() => handleTogglePayment(r)}
+                        className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
+                          r.payment_status === 'paid' ? 'bg-zaytoon/15 text-zaytoon' : 'bg-sumac/15 text-sumac'
+                        }`}
+                      >
+                        <Wallet size={12} />
+                        {r.payment_status === 'paid' ? `مدفوع${r.amount_paid ? ` (${r.amount_paid} ج.م)` : ''}` : 'غير مدفوع'}
+                      </button>
                     </td>
                     <td className="px-4 py-3">
                       <a
@@ -187,12 +191,20 @@ export default function AdminDashboardPage() {
                         >
                           <Gift size={12} /> العروض
                         </Link>
-                        {r.status !== 'active' && (
+                        {r.status === 'pending' && (
+                          <button
+                            onClick={() => handleApprove(r)}
+                            className="text-xs rounded-full bg-zaytoon text-paper px-3 py-1.5 hover:opacity-90 transition-opacity"
+                          >
+                            اعتماد الدفع وتفعيل
+                          </button>
+                        )}
+                        {r.status === 'suspended' && (
                           <button
                             onClick={() => handleStatusChange(r.id, 'active')}
                             className="text-xs rounded-full bg-zaytoon/15 text-zaytoon px-3 py-1.5 hover:bg-zaytoon/25 transition-colors"
                           >
-                            تفعيل
+                            إعادة التفعيل
                           </button>
                         )}
                         {r.status !== 'suspended' && (

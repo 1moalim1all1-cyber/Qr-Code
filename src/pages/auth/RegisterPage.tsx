@@ -23,8 +23,11 @@ export default function RegisterPage() {
     setServerError(null)
     try {
       const user = await signUpWithPhone(values.phone, values.password, values.fullName)
-      await createRestaurant(user.uid, values.restaurantName)
-      navigate('/dashboard')
+      await createRestaurant(user.uid, values.restaurantName, {
+        clientName: values.fullName,
+        clientContact: values.phone,
+      })
+      navigate('/activation-pending')
     } catch (err) {
       setServerError(err instanceof Error ? translateAuthError(err.message) : 'حصل خطأ، حاول تاني')
     }

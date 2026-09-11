@@ -14,6 +14,7 @@ const PrivacyPage = lazy(() => import('./pages/public/PrivacyPage'))
 const RestaurantsDirectoryPage = lazy(() => import('./pages/public/RestaurantsDirectoryPage'))
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'))
 const RegisterPage = lazy(() => import('./pages/auth/RegisterPage'))
+const ActivationPendingPage = lazy(() => import('./pages/auth/ActivationPendingPage'))
 const DashboardPage = lazy(() => import('./pages/owner/DashboardPage'))
 const MenuPage = lazy(() => import('./pages/owner/MenuPage'))
 const QRCodePage = lazy(() => import('./pages/owner/QRCodePage'))
@@ -43,6 +44,14 @@ function App() {
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route
+          path="/activation-pending"
+          element={
+            <ProtectedRoute allowedRoles={['owner']} requireActiveRestaurant={false}>
+              <ActivationPendingPage />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/dashboard"
           element={

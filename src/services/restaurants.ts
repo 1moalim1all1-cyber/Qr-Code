@@ -3,11 +3,16 @@ import {
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { generateSlug } from '@/lib/slug'
+import { normalizePhone } from '@/lib/phone'
 import type { Restaurant } from '@/types/database'
 
 const restaurantsRef = collection(db, 'restaurants')
 
-export async function createRestaurant(ownerId: string, name: string) {
+export async function createRestaurant(
+  ownerId: string,
+  name: string,
+  registration?: { clientName?: string; clientContact?: string }
+) {
   // Safety net: never create a second restaurant for an owner who already
   // has one (e.g. a retried sign-up after a network hiccup). Reuse the
   // existing one instead — this is what previously caused an account to
@@ -26,19 +31,26 @@ export async function createRestaurant(ownerId: string, name: string) {
       description: null,
       logo_url: null,
       cover_url: null,
-      phone: null,
-      whatsapp: null,
+      phone: registration?.clientContact ? normalizePhone(registration.clientContact) : null,
+      whatsapp: registration?.clientContact ? normalizePhone(registration.clientContact) : null,
       email: null,
       website: null,
       address: null,
       google_maps_url: null,
       working_hours: {},
-      status: 'active', // instant activation — no manual admin approval needed for self-registered accounts
+      status: 'pending', // self-registered accounts require admin approval after payment
       is_open: true,
       theme: { primaryColor: '#E8A33D', font: 'Tajawal', mode: 'light' },
       default_language: 'ar',
       supported_languages: ['ar', 'en'],
       rating: 0,
+      managed_by_admin: false,
+      client_name: registration?.clientName ?? null,
+      client_contact: registration?.clientContact ? normalizePhone(registration.clientContact) : null,
+      payment_status: 'unpaid',
+      amount_paid: 0,
+      payment_note: '',
+      registration_source: 'self_service',
       created_at: serverTimestamp(),
     })
   } catch (err) {

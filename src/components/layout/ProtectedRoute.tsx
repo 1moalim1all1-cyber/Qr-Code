@@ -1,17 +1,34 @@
-import { type ReactNode } from 'react'
-import { Navigate } from 'react-router-dom'
+import { type ReactNode, useEffect, useState } from 'react'
+import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
-import type { UserRole } from '@/types/database'
+import { getRestaurantByOwner } from '@/services/restaurants'
+import type { Restaurant, UserRole } from '@/types/database'
 
 interface ProtectedRouteProps {
   children: ReactNode
   allowedRoles?: UserRole[]
+  requireActiveRestaurant?: boolean
 }
 
-export default function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
+export default function ProtectedRoute({ children, allowedRoles, requireActiveRestaurant = true }: ProtectedRouteProps) {
   const { user, profile, loading } = useAuth()
+  const location = useLocation()
+  const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
+  const [restaurantLoading, setRestaurantLoading] = useState(false)
 
-  if (loading) {
+  useEffect(() => {
+    if (!user || !profile || !requireActiveRestaurant || profile.role !== 'owner') {
+      setRestaurantLoading(false)
+      return
+    }
+    setRestaurantLoading(true)
+    getRestaurantByOwner(user.uid)
+      .then(setRestaurant)
+      .catch(() => setRestaurant(null))
+      .finally(() => setRestaurantLoading(false))
+  }, [user, profile, requireActiveRestaurant, location.pathname])
+
+  if (loading || restaurantLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-paper text-stone">
         جارِ التحميل...
@@ -23,6 +40,10 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
 
   if (allowedRoles && profile && !allowedRoles.includes(profile.role)) {
     return <Navigate to={profile.role === 'super_admin' ? '/admin' : '/dashboard'} replace />
+  }
+
+  if (requireActiveRestaurant && profile?.role === 'owner' && restaurant && restaurant.status !== 'active') {
+    return <Navigate to="/activation-pending" replace />
   }
 
   return <>{children}</>
