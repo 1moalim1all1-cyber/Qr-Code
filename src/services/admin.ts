@@ -39,7 +39,20 @@ export async function listAdminClients(): Promise<AdminClientRecord[]> {
 
   const registered: AdminClientRecord[] = users
     .filter((u) => u.role === 'owner')
-    .map((user) => ({ user, restaurant: restaurantByOwner.get(user.id) ?? null, standalone: false }))
+    .map((rawUser) => {
+      const restaurant = restaurantByOwner.get(rawUser.id) ?? null
+      const inferredStatus: AccountStatus = rawUser.account_status ||
+        (restaurant?.status === 'active' ? 'active' : restaurant?.status === 'suspended' ? 'suspended' : restaurant?.status === 'rejected' ? 'rejected' : 'pending')
+      const user: AppUser = {
+        ...rawUser,
+        account_status: inferredStatus,
+        requested_business_name: rawUser.requested_business_name || restaurant?.name || null,
+        payment_status: rawUser.payment_status || restaurant?.payment_status || 'unpaid',
+        amount_paid: rawUser.amount_paid ?? Number(restaurant?.amount_paid || 0),
+        payment_note: rawUser.payment_note ?? restaurant?.payment_note ?? '',
+      }
+      return { user, restaurant, standalone: false }
+    })
 
   const standalone: AdminClientRecord[] = restaurants
     .filter((r) => !r.owner_id)
@@ -52,7 +65,7 @@ export async function listAdminClients(): Promise<AdminClientRecord[]> {
         phone: restaurant.client_contact || restaurant.phone || null,
         role: 'owner',
         avatar_url: null,
-        account_status: (restaurant.status === 'rejected' ? 'rejected' : restaurant.status) as AccountStatus,
+        account_status: restaurant.status as AccountStatus,
         requested_business_name: restaurant.name,
         rejection_reason: null,
         payment_status: restaurant.payment_status || 'unpaid',
@@ -148,7 +161,7 @@ export async function getPlatformStats() {
   const clients = await listAdminClients()
   const totalRestaurants = clients.filter((c) => c.restaurant).length
   const active = clients.filter((c) => c.user.account_status === 'active').length
-  const pending = clients.filter((c) => !c.user.account_status || c.user.account_status === 'pending').length
+  const pending = clients.filter((c) => c.user.account_status === 'pending').length
   const rejected = clients.filter((c) => c.user.account_status === 'rejected').length
   const suspended = clients.filter((c) => c.user.account_status === 'suspended').length
   const totalRevenue = clients.reduce((sum, c) => sum + Number(c.user.amount_paid || c.restaurant?.amount_paid || 0), 0)
