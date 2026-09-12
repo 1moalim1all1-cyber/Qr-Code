@@ -26,7 +26,9 @@ export interface AppUser {
   payment_note?: string
   subscription_start?: string | null
   subscription_end?: string | null
+  subscription_days?: number | null
   subscription_months?: number | null
+  trial_days?: number | null
   last_renewed_at?: string | null
   created_at: string
 }
@@ -60,7 +62,9 @@ export interface Restaurant {
   payment_note?: string
   subscription_start?: string | null
   subscription_end?: string | null
+  subscription_days?: number | null
   subscription_months?: number | null
+  trial_days?: number | null
   last_renewed_at?: string | null
 }
 
