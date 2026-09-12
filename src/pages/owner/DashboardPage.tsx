@@ -15,16 +15,27 @@ const statCards = [
   { icon: Building2, label: 'عدد الفروع', value: '—' },
 ]
 
-function daysLeft(end?: string | null) {
+function getCountdown(end?: string | null) {
   if (!end) return null
-  const diff = new Date(`${end}T23:59:59`).getTime() - Date.now()
-  return Math.ceil(diff / 86400000)
+  const target = new Date(end).getTime()
+  if (Number.isNaN(target)) return null
+  const now = Date.now()
+  const diff = Math.max(0, target - now)
+  return {
+    expired: target <= now,
+    days: Math.floor(diff / 86400000),
+    hours: Math.floor((diff % 86400000) / 3600000),
+    minutes: Math.floor((diff % 3600000) / 60000),
+    seconds: Math.floor((diff % 60000) / 1000),
+  }
 }
 
 export default function DashboardPage() {
   const { profile, user } = useAuth()
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const subscriptionEnd = profile?.subscription_end || restaurant?.subscription_end || null
+  const [countdown, setCountdown] = useState(() => getCountdown(subscriptionEnd))
 
   useEffect(() => {
     if (user) {
@@ -34,13 +45,20 @@ export default function DashboardPage() {
     }
   }, [user])
 
-  const subscriptionEnd = profile?.subscription_end || restaurant?.subscription_end || null
-  const remaining = daysLeft(subscriptionEnd)
+  useEffect(() => {
+    setCountdown(getCountdown(subscriptionEnd))
+    if (!subscriptionEnd) return
+    const timer = window.setInterval(() => setCountdown(getCountdown(subscriptionEnd)), 1000)
+    return () => window.clearInterval(timer)
+  }, [subscriptionEnd])
+
   const renewalUrl = useMemo(() => {
     const business = restaurant?.name || profile?.requested_business_name || 'النشاط'
-    const msg = `السلام عليكم، أنا ${profile?.full_name || 'عميل'} وعايز أجدد اشتراك ${business}${subscriptionEnd ? `، تاريخ الانتهاء ${subscriptionEnd}` : ''}.`
+    const msg = `السلام عليكم، أنا ${profile?.full_name || 'عميل'} وعايز أجدد اشتراك ${business}${subscriptionEnd ? `، الاشتراك الحالي ينتهي ${new Date(subscriptionEnd).toLocaleString('ar-EG')}` : ''}.`
     return `https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent(msg)}`
   }, [profile, restaurant, subscriptionEnd])
+
+  const isTrial = Number(profile?.trial_days || restaurant?.trial_days || 0) > 0 && !profile?.last_renewed_at && !restaurant?.last_renewed_at
 
   return (
     <div className="min-h-screen bg-paper-dim">
@@ -57,15 +75,23 @@ export default function DashboardPage() {
       {error && <div className="max-w-6xl mx-auto px-6 pt-4"><div className="rounded-xl bg-sumac/10 text-sumac text-sm px-4 py-3">{error}</div></div>}
 
       <main className="max-w-6xl mx-auto px-6 py-8">
-        {restaurant?.status === 'pending' && <div className="mb-6 rounded-xl bg-saffron/10 border border-saffron/30 px-4 py-3 text-sm text-saffron-dim">حسابك قيد المراجعة من فريق المنصة — هيتفعل قريب وتقدر تستقبل زوار على منيوك.</div>}
-
-        {subscriptionEnd && remaining !== null && (
-          <div className={`mb-6 rounded-2xl border p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${remaining < 0 ? 'bg-sumac/10 border-sumac/30' : remaining <= 7 ? 'bg-saffron/10 border-saffron/30' : 'bg-zaytoon/10 border-zaytoon/20'}`}>
-            <div>
-              <p className="font-semibold flex items-center gap-2"><CalendarClock size={18} /> ميعاد تجديد الاشتراك</p>
-              <p className="text-sm text-stone mt-1">تاريخ الانتهاء: {subscriptionEnd} — {remaining < 0 ? `الاشتراك منتهي من ${Math.abs(remaining)} يوم` : remaining === 0 ? 'ينتهي اليوم' : `متبقي ${remaining} يوم`}</p>
+        {countdown && (
+          <div className={`mb-6 rounded-3xl border p-5 ${countdown.expired ? 'bg-sumac/10 border-sumac/30' : isTrial ? 'bg-saffron/10 border-saffron/30' : 'bg-zaytoon/10 border-zaytoon/20'}`}>
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+              <div>
+                <p className="font-semibold flex items-center gap-2"><CalendarClock size={18} /> {isTrial ? 'الفترة التجريبية المجانية — 10 أيام' : 'مدة الاشتراك'}</p>
+                <p className="text-sm text-stone mt-1">{countdown.expired ? 'انتهت المدة الحالية — جدّد الاشتراك لاستمرار الخدمة.' : `ينتهي في ${new Date(subscriptionEnd!).toLocaleString('ar-EG')}`}</p>
+              </div>
+              {!countdown.expired && (
+                <div className="grid grid-cols-4 gap-2 min-w-[280px]" dir="ltr">
+                  <CountdownBox value={countdown.days} label="يوم" />
+                  <CountdownBox value={countdown.hours} label="ساعة" />
+                  <CountdownBox value={countdown.minutes} label="دقيقة" />
+                  <CountdownBox value={countdown.seconds} label="ثانية" />
+                </div>
+              )}
+              {(countdown.expired || countdown.days <= 7) && <a href={renewalUrl} target="_blank" rel="noreferrer" className="rounded-full bg-zaytoon text-paper px-5 py-2.5 text-sm font-semibold flex items-center justify-center gap-2"><MessageCircle size={17} /> اطلب التجديد</a>}
             </div>
-            {remaining <= 7 && <a href={renewalUrl} target="_blank" rel="noreferrer" className="rounded-full bg-zaytoon text-paper px-5 py-2.5 text-sm font-semibold flex items-center justify-center gap-2"><MessageCircle size={17} /> اطلب التجديد</a>}
           </div>
         )}
 
@@ -91,6 +117,15 @@ export default function DashboardPage() {
           <Link to="/dashboard/offers" className="block rounded-2xl bg-paper border border-stone-light/30 p-6 hover:border-saffron/40 transition-colors"><p className="font-display font-semibold flex items-center gap-2"><Gift size={18} className="text-saffron-dim" /> العروض والكوبونات</p><p className="text-stone text-sm mt-1">أنشئ عروض وأكواد خصم لعملائك</p></Link>
         </div>
       </main>
+    </div>
+  )
+}
+
+function CountdownBox({ value, label }: { value: number; label: string }) {
+  return (
+    <div className="rounded-2xl bg-ink text-paper px-3 py-3 text-center">
+      <div className="font-display text-2xl font-bold tabular-nums">{String(value).padStart(2, '0')}</div>
+      <div className="text-[11px] text-stone-light mt-1">{label}</div>
     </div>
   )
 }
