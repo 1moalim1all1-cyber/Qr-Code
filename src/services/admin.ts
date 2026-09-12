@@ -21,18 +21,18 @@ function isStandaloneUserId(userId: string) {
   return userId.startsWith('restaurant:')
 }
 
-function isoDate(date: Date) {
-  return date.toISOString().slice(0, 10)
+function parseSubscriptionEnd(end?: string | null) {
+  if (!end) return null
+  const parsed = new Date(end)
+  if (!Number.isNaN(parsed.getTime())) return parsed
+  const dateOnly = new Date(`${end}T23:59:59`)
+  return Number.isNaN(dateOnly.getTime()) ? null : dateOnly
 }
 
-function addMonths(base: Date, months: number) {
-  const d = new Date(base)
-  const day = d.getDate()
-  d.setDate(1)
-  d.setMonth(d.getMonth() + months)
-  const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
-  d.setDate(Math.min(day, lastDay))
-  return d
+function addDays(base: Date, days: number) {
+  const result = new Date(base)
+  result.setDate(result.getDate() + days)
+  return result
 }
 
 export async function listAllRestaurants() {
@@ -66,7 +66,9 @@ export async function listAdminClients(): Promise<AdminClientRecord[]> {
         payment_note: rawUser.payment_note ?? restaurant?.payment_note ?? '',
         subscription_start: rawUser.subscription_start ?? restaurant?.subscription_start ?? null,
         subscription_end: rawUser.subscription_end ?? restaurant?.subscription_end ?? null,
+        subscription_days: rawUser.subscription_days ?? restaurant?.subscription_days ?? null,
         subscription_months: rawUser.subscription_months ?? restaurant?.subscription_months ?? null,
+        trial_days: rawUser.trial_days ?? restaurant?.trial_days ?? null,
         last_renewed_at: rawUser.last_renewed_at ?? restaurant?.last_renewed_at ?? null,
       }
       return { user, restaurant, standalone: false }
@@ -91,7 +93,9 @@ export async function listAdminClients(): Promise<AdminClientRecord[]> {
         payment_note: restaurant.payment_note || '',
         subscription_start: restaurant.subscription_start ?? null,
         subscription_end: restaurant.subscription_end ?? null,
+        subscription_days: restaurant.subscription_days ?? null,
         subscription_months: restaurant.subscription_months ?? null,
+        trial_days: restaurant.trial_days ?? null,
         last_renewed_at: restaurant.last_renewed_at ?? null,
         created_at: '',
       },
@@ -153,23 +157,24 @@ export async function updateAdminClient(input: {
 export async function renewClient(input: {
   userId: string
   restaurantId?: string | null
-  months: number
+  days: number
   amountPaid?: number
   paymentNote?: string
 }) {
+  const days = Math.max(1, Math.floor(input.days))
   const clients = await listAdminClients()
   const client = clients.find((c) => c.user.id === input.userId)
-  const currentEnd = client?.user.subscription_end
-  const today = new Date()
-  const parsedEnd = currentEnd ? new Date(`${currentEnd}T00:00:00`) : null
-  const base = parsedEnd && parsedEnd.getTime() > today.getTime() ? parsedEnd : today
-  const newEnd = addMonths(base, input.months)
-  const start = client?.user.subscription_start || isoDate(today)
+  const currentEnd = parseSubscriptionEnd(client?.user.subscription_end)
+  const now = new Date()
+  const base = currentEnd && currentEnd.getTime() > now.getTime() ? currentEnd : now
+  const newEnd = addDays(base, days)
+  const start = client?.user.subscription_start || now.toISOString()
   const renewalPatch = {
     subscription_start: start,
-    subscription_end: isoDate(newEnd),
-    subscription_months: input.months,
-    last_renewed_at: isoDate(today),
+    subscription_end: newEnd.toISOString(),
+    subscription_days: days,
+    trial_days: 0,
+    last_renewed_at: now.toISOString(),
     payment_status: 'paid' as const,
     ...(input.amountPaid !== undefined ? { amount_paid: input.amountPaid } : {}),
     ...(input.paymentNote !== undefined ? { payment_note: input.paymentNote } : {}),
@@ -215,8 +220,8 @@ export async function restoreClient(userId: string, restaurantId?: string | null
 }
 
 export function getSubscriptionDaysLeft(end?: string | null) {
-  if (!end) return null
-  const endDate = new Date(`${end}T23:59:59`)
+  const endDate = parseSubscriptionEnd(end)
+  if (!endDate) return null
   const diff = endDate.getTime() - Date.now()
   return Math.ceil(diff / 86400000)
 }
