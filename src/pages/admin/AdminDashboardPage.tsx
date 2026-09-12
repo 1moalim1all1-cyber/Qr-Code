@@ -23,6 +23,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import { signOut } from '@/services/auth'
 import {
   approveClient,
+  createMissingRestaurantForClient,
+  deleteClientCompletely,
   getPlatformStats,
   getSubscriptionDaysLeft,
   listAdminClients,
@@ -191,10 +193,26 @@ export default function AdminDashboardPage() {
                   </div>
 
                   <div className="mt-4 flex gap-2 flex-wrap">
+                    {!c.restaurant && !c.standalone && (
+                      <button onClick={() => action(() => createMissingRestaurantForClient(c).then(() => undefined))} className="rounded-full bg-saffron text-ink px-4 py-2 text-sm font-semibold">
+                        إنشاء النشاط المفقود
+                      </button>
+                    )}
                     {status !== 'active' && status !== 'rejected' && <button onClick={() => action(() => approveClient(c.user.id, c.restaurant?.id))} className="rounded-full bg-zaytoon text-paper px-4 py-2 text-sm font-semibold">قبول + اعتماد الدفع + تفعيل</button>}
                     {status !== 'rejected' && <button onClick={() => { const reason = window.prompt('اكتب سبب الرفض للعميل:'); if (reason !== null) action(() => rejectClient(c.user.id, c.restaurant?.id, reason.trim() || 'تم رفض الطلب بواسطة الإدارة')) }} className="rounded-full bg-sumac/15 text-sumac px-4 py-2 text-sm font-semibold">رفض</button>}
                     {status === 'active' && <button onClick={() => action(() => suspendClient(c.user.id, c.restaurant?.id))} className="rounded-full bg-sumac/15 text-sumac px-4 py-2 text-sm font-semibold">إيقاف الحساب</button>}
                     {(status === 'suspended' || status === 'rejected') && <button onClick={() => action(() => restoreClient(c.user.id, c.restaurant?.id))} className="rounded-full bg-zaytoon/15 text-zaytoon px-4 py-2 text-sm font-semibold">إعادة التفعيل</button>}
+                    <button
+                      onClick={() => {
+                        const first = window.confirm(`تحذير: هيتحذف ${name} نهائيًا من المنصة، بما في ذلك النشاط والبيانات وحساب تسجيل الدخول. هل أنت متأكد؟`)
+                        if (!first) return
+                        const second = window.confirm('تأكيد أخير: العملية دي لا يمكن التراجع عنها. تنفيذ الحذف النهائي؟')
+                        if (second) action(() => deleteClientCompletely(c))
+                      }}
+                      className="rounded-full bg-sumac text-paper px-4 py-2 text-sm font-semibold"
+                    >
+                      حذف الحساب نهائيًا
+                    </button>
                   </div>
 
                   {c.restaurant && (
