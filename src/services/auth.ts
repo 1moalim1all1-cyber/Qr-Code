@@ -9,6 +9,14 @@ import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { auth, db } from '@/lib/firebase'
 import { normalizePhone, phoneToPseudoEmail } from '@/lib/phone'
 
+const FREE_TRIAL_DAYS = 10
+
+function addDays(date: Date, days: number) {
+  const result = new Date(date)
+  result.setDate(result.getDate() + days)
+  return result
+}
+
 export async function signOut() {
   await firebaseSignOut(auth)
 }
@@ -36,18 +44,26 @@ export async function signUpWithPhone(
 
   await cred.user.getIdToken(true)
 
+  const trialStart = new Date()
+  const trialEnd = addDays(trialStart, FREE_TRIAL_DAYS)
+
   try {
     await setDoc(doc(db, 'users', cred.user.uid), {
       full_name: fullName,
       phone: normalizePhone(phone),
       role: 'owner',
       avatar_url: null,
-      account_status: 'pending',
+      account_status: 'active',
       requested_business_name: requestedBusinessName?.trim() || null,
       rejection_reason: null,
       payment_status: 'unpaid',
       amount_paid: 0,
-      payment_note: '',
+      payment_note: 'فترة تجريبية مجانية 10 أيام',
+      subscription_start: trialStart.toISOString(),
+      subscription_end: trialEnd.toISOString(),
+      subscription_days: FREE_TRIAL_DAYS,
+      trial_days: FREE_TRIAL_DAYS,
+      last_renewed_at: null,
       created_at: serverTimestamp(),
     })
   } catch (err) {
