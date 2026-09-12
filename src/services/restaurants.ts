@@ -7,20 +7,25 @@ import { normalizePhone } from '@/lib/phone'
 import type { Restaurant } from '@/types/database'
 
 const restaurantsRef = collection(db, 'restaurants')
+const FREE_TRIAL_DAYS = 10
+
+function addDays(date: Date, days: number) {
+  const result = new Date(date)
+  result.setDate(result.getDate() + days)
+  return result
+}
 
 export async function createRestaurant(
   ownerId: string,
   name: string,
   registration?: { clientName?: string; clientContact?: string }
 ) {
-  // Safety net: never create a second restaurant for an owner who already
-  // has one (e.g. a retried sign-up after a network hiccup). Reuse the
-  // existing one instead — this is what previously caused an account to
-  // randomly see one of several duplicate restaurants.
   const existing = await getRestaurantByOwner(ownerId)
   if (existing) return existing
 
   const slug = generateSlug(name)
+  const trialStart = new Date()
+  const trialEnd = addDays(trialStart, FREE_TRIAL_DAYS)
 
   let docRef
   try {
@@ -38,7 +43,7 @@ export async function createRestaurant(
       address: null,
       google_maps_url: null,
       working_hours: {},
-      status: 'pending', // self-registered accounts require admin approval after payment
+      status: 'active',
       is_open: true,
       theme: { primaryColor: '#E8A33D', font: 'Tajawal', mode: 'light' },
       default_language: 'ar',
@@ -49,8 +54,13 @@ export async function createRestaurant(
       client_contact: registration?.clientContact ? normalizePhone(registration.clientContact) : null,
       payment_status: 'unpaid',
       amount_paid: 0,
-      payment_note: '',
+      payment_note: 'فترة تجريبية مجانية 10 أيام',
       registration_source: 'self_service',
+      subscription_start: trialStart.toISOString(),
+      subscription_end: trialEnd.toISOString(),
+      subscription_days: FREE_TRIAL_DAYS,
+      trial_days: FREE_TRIAL_DAYS,
+      last_renewed_at: null,
       created_at: serverTimestamp(),
     })
   } catch (err) {
@@ -58,17 +68,15 @@ export async function createRestaurant(
     throw new Error(`تعذّر إنشاء المطعم (restaurants): ${err instanceof Error ? err.message : String(err)}`)
   }
 
-  // New restaurants start on the free plan. owner_id is stored directly on
-  // the subscription doc too, so the create security rule can check it
-  // without a get() lookup on the just-created restaurant doc (that lookup
-  // could otherwise race Firestore's own write-then-read consistency).
   try {
     await addDoc(collection(db, 'restaurants', docRef.id, 'subscriptions'), {
       owner_id: ownerId,
       plan: 'free',
       status: 'trialing',
       price: 0,
-      starts_at: serverTimestamp(),
+      starts_at: trialStart.toISOString(),
+      ends_at: trialEnd.toISOString(),
+      duration_days: FREE_TRIAL_DAYS,
     })
   } catch (err) {
     console.error('[createRestaurant] failed writing subscriptions:', err)
@@ -99,9 +107,6 @@ export async function getRestaurantById(id: string) {
   return { id: snap.id, ...snap.data() } as unknown as Restaurant
 }
 
-// Admin-created restaurant on behalf of a walk-in client who paid for a
-// one-off QR (no login needed on their side — the admin manages it).
-// `owner_id` stays null until/unless the client is later given real access.
 export async function createRestaurantByAdmin(input: {
   name: string
   clientName: string
@@ -124,7 +129,7 @@ export async function createRestaurantByAdmin(input: {
     address: null,
     google_maps_url: null,
     working_hours: {},
-    status: 'active', // admin-created restaurants go live immediately
+    status: 'active',
     is_open: true,
     theme: { primaryColor: '#E8A33D', font: 'Tajawal', mode: 'light' },
     default_language: 'ar',
@@ -156,13 +161,12 @@ export async function setPaymentStatus(
   })
 }
 
-// Public showcase for the landing page — a handful of active restaurants
-// that have at least a name and logo/cover, so the homepage can show real
-// menus from real platform users instead of only mockups.
 export async function listFeaturedRestaurants(max: number = 6) {
   const q = query(restaurantsRef, where('status', '==', 'active'), limit(max))
   const snap = await getDocs(q)
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() })) as unknown as Restaurant[]
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() }) as unknown as Restaurant)
+    .filter((restaurant) => !restaurant.subscription_end || new Date(restaurant.subscription_end).getTime() > Date.now())
 }
 
 export async function getRestaurantBySlug(slug: string) {
@@ -170,7 +174,11 @@ export async function getRestaurantBySlug(slug: string) {
   const snap = await getDocs(q)
   if (snap.empty) throw new Error('Restaurant not found')
   const d = snap.docs[0]
-  return { id: d.id, ...d.data() } as unknown as Restaurant
+  const restaurant = { id: d.id, ...d.data() } as unknown as Restaurant
+  if (restaurant.subscription_end && new Date(restaurant.subscription_end).getTime() <= Date.now()) {
+    throw new Error('انتهت مدة الاشتراك')
+  }
+  return restaurant
 }
 
 export async function updateRestaurant(id: string, patch: Partial<Restaurant>) {
