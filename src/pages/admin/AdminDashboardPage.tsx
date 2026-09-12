@@ -52,7 +52,8 @@ function whatsappNumber(phone: string) {
 function renewalMessage(client: AdminClientRecord) {
   const business = client.user.requested_business_name || client.restaurant?.name || 'النشاط'
   const end = client.user.subscription_end
-  return encodeURIComponent(`أهلاً ${client.user.full_name}، بنفكرك إن اشتراك ${business}${end ? ` هينتهي يوم ${end}` : ' محتاج تجديد'}. تواصل معانا لتجديد الخدمة واستمرار المنيو بدون توقف.`)
+  const endLabel = end ? new Date(end).toLocaleString('ar-EG') : ''
+  return encodeURIComponent(`أهلاً ${client.user.full_name}، بنفكرك إن اشتراك ${business}${endLabel ? ` هينتهي ${endLabel}` : ' محتاج تجديد'}. تواصل معانا لتجديد الخدمة واستمرار المنيو بدون توقف.`)
 }
 
 export default function AdminDashboardPage() {
@@ -113,9 +114,7 @@ export default function AdminDashboardPage() {
             <p className="text-sm text-stone-light">لوحة الإدارة الرئيسية</p>
             <h1 className="font-display text-xl font-semibold">أهلاً، {profile?.full_name ?? 'الإدارة'}</h1>
           </div>
-          <button onClick={() => signOut()} className="flex items-center gap-2 text-sm text-stone-light hover:text-paper">
-            <LogOut size={16} /> تسجيل الخروج
-          </button>
+          <button onClick={() => signOut()} className="flex items-center gap-2 text-sm text-stone-light hover:text-paper"><LogOut size={16} /> تسجيل الخروج</button>
         </div>
       </header>
 
@@ -136,26 +135,16 @@ export default function AdminDashboardPage() {
             <Search size={17} className="absolute right-3 top-1/2 -translate-y-1/2 text-stone" />
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="ابحث بالاسم أو رقم الهاتف أو اسم النشاط" className="w-full rounded-2xl border border-stone-light/30 bg-paper py-3 pr-10 pl-4 outline-none focus:border-saffron" />
           </div>
-          <Link to="/admin/clients/new" className="rounded-2xl bg-saffron text-ink font-semibold px-5 py-3 flex items-center justify-center gap-2">
-            <Plus size={18} /> إضافة عميل يدويًا
-          </Link>
+          <Link to="/admin/clients/new" className="rounded-2xl bg-saffron text-ink font-semibold px-5 py-3 flex items-center justify-center gap-2"><Plus size={18} /> إضافة عميل يدويًا</Link>
         </div>
 
         <div className="flex gap-2 flex-wrap mb-5">
           {(['all', 'pending', 'active', 'rejected', 'suspended'] as const).map((f) => (
-            <button key={f} onClick={() => setFilter(f)} className={`rounded-full px-4 py-2 text-sm ${filter === f ? 'bg-ink text-paper' : 'bg-paper border border-stone-light/30'}`}>
-              {f === 'all' ? 'الكل' : STATUS_LABEL[f]}
-            </button>
+            <button key={f} onClick={() => setFilter(f)} className={`rounded-full px-4 py-2 text-sm ${filter === f ? 'bg-ink text-paper' : 'bg-paper border border-stone-light/30'}`}>{f === 'all' ? 'الكل' : STATUS_LABEL[f]}</button>
           ))}
         </div>
 
-        {error && (
-          <div className="mb-5 rounded-2xl border border-sumac/30 bg-sumac/10 text-sumac p-4">
-            <p className="font-semibold">في مشكلة في لوحة الإدارة</p>
-            <p className="text-sm mt-1">{error}</p>
-            <button onClick={load} className="mt-3 text-sm underline">إعادة المحاولة</button>
-          </div>
-        )}
+        {error && <div className="mb-5 rounded-2xl border border-sumac/30 bg-sumac/10 text-sumac p-4"><p className="font-semibold">في مشكلة في لوحة الإدارة</p><p className="text-sm mt-1">{error}</p><button onClick={load} className="mt-3 text-sm underline">إعادة المحاولة</button></div>}
 
         {loading ? (
           <div className="text-center py-12 text-stone">جارِ تحميل كل الحسابات...</div>
@@ -173,6 +162,7 @@ export default function AdminDashboardPage() {
               const daysLeft = getSubscriptionDaysLeft(c.user.subscription_end)
               const expiryLabel = daysLeft === null ? 'ميعاد التجديد غير محدد' : daysLeft < 0 ? `منتهي من ${Math.abs(daysLeft)} يوم` : daysLeft === 0 ? 'ينتهي اليوم' : `متبقي ${daysLeft} يوم`
               const expiryClass = daysLeft === null ? 'bg-paper-dim text-stone' : daysLeft < 0 ? 'bg-sumac/15 text-sumac' : daysLeft <= 7 ? 'bg-saffron/15 text-saffron-dim' : 'bg-zaytoon/15 text-zaytoon'
+              const isTrial = Number(c.user.trial_days || 0) > 0 && !c.user.last_renewed_at
 
               return (
                 <section key={c.user.id} className="rounded-3xl bg-paper border border-stone-light/30 p-5 shadow-sm">
@@ -181,18 +171,19 @@ export default function AdminDashboardPage() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <h2 className="font-display text-xl font-semibold">{name}</h2>
                         <span className="text-xs rounded-full bg-paper-dim border border-stone-light/30 px-3 py-1">{STATUS_LABEL[status]}</span>
+                        {isTrial && <span className="text-xs rounded-full bg-saffron/15 text-saffron-dim px-3 py-1">تجربة مجانية 10 أيام</span>}
                         <span className={`text-xs rounded-full px-3 py-1 ${paid ? 'bg-zaytoon/15 text-zaytoon' : 'bg-sumac/15 text-sumac'}`}>{paid ? `مدفوع${amount ? ` ${amount} ج.م` : ''}` : 'غير مدفوع'}</span>
                         <span className={`text-xs rounded-full px-3 py-1 ${expiryClass}`}>{expiryLabel}</span>
                       </div>
                       <p className="mt-2 text-sm text-stone">{c.user.full_name} {phone ? `• ${phone}` : ''}</p>
-                      {c.user.subscription_end && <p className="mt-1 text-xs text-stone">تاريخ التجديد: {c.user.subscription_end}</p>}
+                      {c.user.subscription_end && <p className="mt-1 text-xs text-stone">ينتهي: {new Date(c.user.subscription_end).toLocaleString('ar-EG')}</p>}
                       {!c.restaurant && <p className="mt-2 text-sm text-sumac">الحساب مسجل لكن النشاط لم يُنشأ في Firestore بعد.</p>}
                       {c.user.rejection_reason && <p className="mt-2 text-sm text-sumac">سبب الرفض: {c.user.rejection_reason}</p>}
                     </div>
 
                     <div className="flex gap-2 flex-wrap">
                       <button onClick={() => setEditing(c)} className="flex items-center gap-1 rounded-full bg-paper-dim px-3 py-2 text-xs hover:bg-stone-light/30"><Pencil size={14} /> تعديل</button>
-                      <button onClick={() => setRenewing(c)} className="flex items-center gap-1 rounded-full bg-saffron/15 text-saffron-dim px-3 py-2 text-xs hover:opacity-80"><CalendarClock size={14} /> تجديد</button>
+                      <button onClick={() => setRenewing(c)} className="flex items-center gap-1 rounded-full bg-saffron/15 text-saffron-dim px-3 py-2 text-xs hover:opacity-80"><CalendarClock size={14} /> تجديد بالأيام</button>
                       {wa && <a href={`https://wa.me/${wa}`} target="_blank" rel="noreferrer" className="flex items-center gap-1 rounded-full bg-paper-dim px-3 py-2 text-xs hover:bg-stone-light/30"><MessageCircle size={14} /> واتساب</a>}
                       {wa && daysLeft !== null && daysLeft <= 7 && <a href={`https://wa.me/${wa}?text=${renewalMessage(c)}`} target="_blank" rel="noreferrer" className="flex items-center gap-1 rounded-full bg-zaytoon text-paper px-3 py-2 text-xs"><MessageCircle size={14} /> رسالة تجديد جاهزة</a>}
                       {c.restaurant && <a href={`${import.meta.env.BASE_URL}m/${c.restaurant.slug}`} target="_blank" rel="noreferrer" className="flex items-center gap-1 rounded-full bg-paper-dim px-3 py-2 text-xs hover:bg-stone-light/30"><ExternalLink size={14} /> عرض المنيو</a>}
@@ -232,16 +223,21 @@ function Stat({ icon: Icon, label, value }: { icon: typeof Store; label: string;
 }
 
 function RenewClientModal({ client, onClose, onSaved }: { client: AdminClientRecord; onClose: () => void; onSaved: () => void }) {
-  const [months, setMonths] = useState('1')
+  const [days, setDays] = useState('30')
   const [amount, setAmount] = useState(String(client.user.amount_paid || 0))
   const [note, setNote] = useState(client.user.payment_note || '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   async function save() {
+    const duration = Math.floor(Number(days))
+    if (!Number.isFinite(duration) || duration < 1) {
+      setError('اكتب عدد أيام صحيح أكبر من صفر')
+      return
+    }
     setSaving(true); setError(null)
     try {
-      await renewClient({ userId: client.user.id, restaurantId: client.restaurant?.id, months: Number(months), amountPaid: Number(amount || 0), paymentNote: note.trim() })
+      await renewClient({ userId: client.user.id, restaurantId: client.restaurant?.id, days: duration, amountPaid: Number(amount || 0), paymentNote: note.trim() })
       onSaved()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'تعذر تسجيل التجديد')
@@ -251,12 +247,15 @@ function RenewClientModal({ client, onClose, onSaved }: { client: AdminClientRec
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" dir="rtl">
       <div className="w-full max-w-md rounded-3xl bg-paper p-6">
-        <div className="flex justify-between items-center mb-5"><h3 className="font-display text-xl font-semibold">تجديد اشتراك العميل</h3><button onClick={onClose}><XCircle size={22} /></button></div>
+        <div className="flex justify-between items-center mb-5"><h3 className="font-display text-xl font-semibold">تجديد اشتراك العميل بالأيام</h3><button onClick={onClose}><XCircle size={22} /></button></div>
         <div className="space-y-4">
-          <div><label className="text-sm font-medium">مدة التجديد</label><select value={months} onChange={(e) => setMonths(e.target.value)} className="mt-1 w-full rounded-xl border border-stone-light/30 bg-paper p-3"><option value="1">شهر</option><option value="3">3 شهور</option><option value="6">6 شهور</option><option value="12">سنة</option></select></div>
+          <Field label="عدد أيام التجديد" value={days} onChange={setDays} type="number" />
+          <div className="flex gap-2 flex-wrap">
+            {[10, 30, 60, 90, 180, 365].map((d) => <button key={d} onClick={() => setDays(String(d))} className={`rounded-full px-3 py-1.5 text-xs border ${days === String(d) ? 'bg-ink text-paper border-ink' : 'border-stone-light/40'}`}>{d} يوم</button>)}
+          </div>
           <Field label="المبلغ المحصل" value={amount} onChange={setAmount} type="number" />
           <div><label className="text-sm font-medium">ملاحظات / طريقة الدفع</label><textarea value={note} onChange={(e) => setNote(e.target.value)} className="mt-1 w-full min-h-20 rounded-xl border border-stone-light/30 bg-paper p-3" /></div>
-          <p className="text-xs text-stone">لو الاشتراك لسه ساري، المدة الجديدة هتتحسب من تاريخ الانتهاء الحالي. لو منتهي، هتبدأ من النهارده.</p>
+          <p className="text-xs text-stone">لو الاشتراك لسه ساري، الأيام الجديدة بتتضاف على تاريخ الانتهاء الحالي. لو منتهي، بتبدأ من لحظة التجديد.</p>
           {error && <p className="text-sm text-sumac">{error}</p>}
           <button disabled={saving} onClick={save} className="w-full rounded-2xl bg-zaytoon text-paper py-3 font-semibold disabled:opacity-50">{saving ? 'جارِ تسجيل التجديد...' : 'تأكيد التجديد'}</button>
         </div>
