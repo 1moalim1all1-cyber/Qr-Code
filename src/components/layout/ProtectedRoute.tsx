@@ -10,6 +10,12 @@ interface ProtectedRouteProps {
   requireActiveRestaurant?: boolean
 }
 
+function subscriptionExpired(end?: string | null) {
+  if (!end) return false
+  const time = new Date(end).getTime()
+  return Number.isFinite(time) && time <= Date.now()
+}
+
 export default function ProtectedRoute({ children, allowedRoles, requireActiveRestaurant = true }: ProtectedRouteProps) {
   const { user, profile, loading } = useAuth()
   const location = useLocation()
@@ -44,8 +50,10 @@ export default function ProtectedRoute({ children, allowedRoles, requireActiveRe
 
   if (profile?.role === 'owner') {
     const accountStatus = profile.account_status || (restaurant?.status === 'active' ? 'active' : 'pending')
+    const end = profile.subscription_end || restaurant?.subscription_end || null
+    const expired = subscriptionExpired(end)
 
-    if (location.pathname !== '/activation-pending' && accountStatus !== 'active') {
+    if (location.pathname !== '/activation-pending' && (accountStatus !== 'active' || expired)) {
       return <Navigate to="/activation-pending" replace />
     }
 
