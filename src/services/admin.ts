@@ -8,7 +8,9 @@ import {
   collectionGroup,
   limit,
 } from 'firebase/firestore'
-import { db } from '@/lib/firebase'
+import { getFunctions, httpsCallable } from 'firebase/functions'
+import { app, db } from '@/lib/firebase'
+import { createRestaurant } from '@/services/restaurants'
 import type { AccountStatus, AppUser, Restaurant, RestaurantStatus } from '@/types/database'
 
 export interface AdminClientRecord {
@@ -103,6 +105,48 @@ export async function listAdminClients(): Promise<AdminClientRecord[]> {
 
   return [...registered, ...standalone]
     .sort((a, b) => (a.user.full_name || '').localeCompare(b.user.full_name || '', 'ar'))
+}
+
+export async function createMissingRestaurantForClient(client: AdminClientRecord) {
+  if (client.restaurant) return client.restaurant
+  if (isStandaloneUserId(client.user.id)) throw new Error('العميل ده نشاط مستقل بالفعل')
+
+  const businessName = client.user.requested_business_name?.trim() || client.user.full_name || 'نشاط جديد'
+  const restaurant = await createRestaurant(client.user.id, businessName, {
+    clientName: client.user.full_name,
+    clientContact: client.user.phone || '',
+  })
+
+  const patch: Record<string, unknown> = {
+    status: client.user.account_status === 'suspended' ? 'suspended' : client.user.account_status === 'rejected' ? 'rejected' : 'active',
+    payment_status: client.user.payment_status || 'unpaid',
+    amount_paid: Number(client.user.amount_paid || 0),
+    payment_note: client.user.payment_note || 'تم إنشاء النشاط المفقود من لوحة الإدارة',
+  }
+
+  if (client.user.subscription_start) patch.subscription_start = client.user.subscription_start
+  if (client.user.subscription_end) patch.subscription_end = client.user.subscription_end
+  if (client.user.subscription_days != null) patch.subscription_days = client.user.subscription_days
+  if (client.user.trial_days != null) patch.trial_days = client.user.trial_days
+  if (client.user.last_renewed_at != null) patch.last_renewed_at = client.user.last_renewed_at
+
+  await updateDoc(doc(db, 'restaurants', restaurant.id), patch)
+  return { ...restaurant, ...patch } as Restaurant
+}
+
+export async function deleteClientCompletely(client: AdminClientRecord) {
+  const functions = getFunctions(app)
+  const removeClient = httpsCallable<{
+    uid?: string
+    restaurantId?: string
+  }, { ok: boolean }>(functions, 'deleteClientCompletely')
+
+  const payload: { uid?: string; restaurantId?: string } = {}
+  if (!isStandaloneUserId(client.user.id)) payload.uid = client.user.id
+  if (client.restaurant?.id) payload.restaurantId = client.restaurant.id
+
+  if (!payload.uid && !payload.restaurantId) throw new Error('مفيش بيانات كفاية لحذف العميل')
+  await removeClient(payload)
 }
 
 export async function setRestaurantStatus(id: string, status: RestaurantStatus) {
