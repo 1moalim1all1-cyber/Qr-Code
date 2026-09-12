@@ -24,8 +24,6 @@ export default function RegisterPage() {
     try {
       const user = await signUpWithPhone(values.phone, values.password, values.fullName, values.restaurantName)
 
-      // The user record is already saved before creating the restaurant, so the
-      // admin will still see this registration even if restaurant creation fails.
       try {
         await createRestaurant(user.uid, values.restaurantName, {
           clientName: values.fullName,
@@ -35,7 +33,7 @@ export default function RegisterPage() {
         console.error('[RegisterPage] restaurant creation failed:', restaurantError)
       }
 
-      navigate('/activation-pending')
+      navigate('/dashboard')
     } catch (err) {
       setServerError(err instanceof Error ? translateAuthError(err.message) : 'حصل خطأ، حاول تاني')
     }
@@ -49,50 +47,22 @@ export default function RegisterPage() {
             <QrCode className="text-saffron" size={22} />
           </div>
           <h1 className="font-display text-2xl font-semibold">أنشئ حساب مطعمك</h1>
-          <p className="text-stone text-sm mt-1">دقيقتين وتسجل طلبك للتفعيل</p>
+          <p className="text-stone text-sm mt-1 text-center">ابدأ فورًا بـ 10 أيام تجربة مجانية — من غير دفع</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
           <Input label="اسمك بالكامل" error={errors.fullName?.message} {...register('fullName')} />
-          <Input
-            label="اسم المطعم أو الكافيه"
-            error={errors.restaurantName?.message}
-            {...register('restaurantName')}
-          />
-          <Input
-            label="رقم الهاتف"
-            type="tel"
-            dir="ltr"
-            placeholder="01xxxxxxxxx"
-            autoComplete="tel"
-            error={errors.phone?.message}
-            {...register('phone')}
-          />
-          <Input
-            label="كلمة المرور"
-            type="password"
-            autoComplete="new-password"
-            error={errors.password?.message}
-            {...register('password')}
-          />
-          <Input
-            label="تأكيد كلمة المرور"
-            type="password"
-            autoComplete="new-password"
-            error={errors.confirmPassword?.message}
-            {...register('confirmPassword')}
-          />
+          <Input label="اسم المطعم أو الكافيه" error={errors.restaurantName?.message} {...register('restaurantName')} />
+          <Input label="رقم الهاتف" type="tel" dir="ltr" placeholder="01xxxxxxxxx" autoComplete="tel" error={errors.phone?.message} {...register('phone')} />
+          <Input label="كلمة المرور" type="password" autoComplete="new-password" error={errors.password?.message} {...register('password')} />
+          <Input label="تأكيد كلمة المرور" type="password" autoComplete="new-password" error={errors.confirmPassword?.message} {...register('confirmPassword')} />
           {serverError && <p className="text-sm text-sumac">{serverError}</p>}
-          <Button type="submit" loading={isSubmitting} className="w-full mt-2">
-            إنشاء الحساب
-          </Button>
+          <Button type="submit" loading={isSubmitting} className="w-full mt-2">ابدأ التجربة المجانية 10 أيام</Button>
         </form>
 
         <p className="text-center text-sm text-stone mt-6">
           عندك حساب بالفعل؟{' '}
-          <Link to="/login" className="text-saffron-dim font-medium hover:underline">
-            سجّل دخولك
-          </Link>
+          <Link to="/login" className="text-saffron-dim font-medium hover:underline">سجّل دخولك</Link>
         </p>
       </div>
     </div>
