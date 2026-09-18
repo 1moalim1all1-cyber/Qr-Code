@@ -1,5 +1,5 @@
 import {
-  collection, doc, addDoc, getDocs, query, where, orderBy, updateDoc, deleteDoc,
+  collection, doc, addDoc, getDocs, query, where, orderBy, updateDoc, deleteDoc, writeBatch,
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { withFirestoreError } from '@/lib/firestoreError'
@@ -72,4 +72,14 @@ export async function toggleAvailability(restaurantId: string, id: string, isAva
   await withFirestoreError('تعذّر تحديث إتاحة الصنف', () =>
     updateDoc(doc(db, 'restaurants', restaurantId, 'products', id), { is_available: isAvailable })
   )
+}
+
+export async function reorderProducts(restaurantId: string, orderedIds: string[]) {
+  await withFirestoreError('تعذّر ترتيب الأصناف', async () => {
+    const batch = writeBatch(db)
+    orderedIds.forEach((id, index) => {
+      batch.update(doc(db, 'restaurants', restaurantId, 'products', id), { sort_order: index })
+    })
+    await batch.commit()
+  })
 }
