@@ -138,7 +138,7 @@ export default function LandingPage() {
               </h1>
               <p className="text-white/58 text-base sm:text-lg leading-8 mt-6 max-w-2xl">منصة واحدة للمطاعم والكافيهات والسوبر ماركت ومستحضرات التجميل. صور، أسعار، طلبات، QR، وقوالب 3D تتغير من لوحة التحكم.</p>
               <div className="flex flex-wrap gap-3 mt-8">
-                <Link to="/register" className="rounded-2xl bg-[#d7b66f] text-[#171714] px-6 py-3.5 font-bold flex items-center gap-2 shadow-[0_18px_45px_rgba(215,182,111,.2)] hover:-translate-y-1 transition-transform">أنشئ منيوك الآن <ArrowLeft size={18} /></Link>
+                <Link to="/register" className="rounded-2xl bg-[#d7b66f] text-[#171714] px-6 py-3.5 font-bold flex items-center gap-2 shadow-[0_18px_45px_rgba(215,182,111,.2)] hover:-translate-y-1 transition-transform">أنشئ المنيو الآن <ArrowLeft size={18} /></Link>
                 <a href="#menus" className="rounded-2xl border border-white/15 bg-white/5 px-6 py-3.5 font-semibold hover:bg-white/10 transition-colors">شوف أشكال المنيو</a>
               </div>
               <div className="grid grid-cols-3 max-w-xl gap-3 mt-10">
