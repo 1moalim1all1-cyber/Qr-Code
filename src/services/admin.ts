@@ -49,12 +49,13 @@ export async function listAllUsers() {
 
 export async function listAdminClients(): Promise<AdminClientRecord[]> {
   const [users, restaurants] = await Promise.all([listAllUsers(), listAllRestaurants()])
+  const ownerUsers = users.filter((u) => u.role === 'owner')
+  const ownerUserIds = new Set(ownerUsers.map((u) => u.id))
   const restaurantByOwner = new Map(
     restaurants.filter((r) => r.owner_id).map((r) => [r.owner_id as string, r]),
   )
 
-  const registered: AdminClientRecord[] = users
-    .filter((u) => u.role === 'owner')
+  const registered: AdminClientRecord[] = ownerUsers
     .map((rawUser) => {
       const restaurant = restaurantByOwner.get(rawUser.id) ?? null
       const inferredStatus: AccountStatus = rawUser.account_status ||
@@ -76,8 +77,11 @@ export async function listAdminClients(): Promise<AdminClientRecord[]> {
       return { user, restaurant, standalone: false }
     })
 
+  // Also surface restaurants that were created while logged in as admin (or whose
+  // owner_id no longer points to an owner account). Those restaurants used to be
+  // skipped because they had an owner_id, but that id belonged to a super admin.
   const standalone: AdminClientRecord[] = restaurants
-    .filter((r) => !r.owner_id)
+    .filter((r) => !r.owner_id || !ownerUserIds.has(r.owner_id))
     .map((restaurant) => ({
       standalone: true,
       restaurant,
