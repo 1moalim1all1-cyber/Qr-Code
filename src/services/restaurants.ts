@@ -43,6 +43,7 @@ export async function createRestaurant(
       business_type: businessType,
       menu_template: 'three_d',
       menu_shape: 'rounded',
+      show_on_home: true,
       description: null,
       logo_url: null,
       cover_url: null,
@@ -126,6 +127,7 @@ export async function createRestaurantByAdmin(input: {
     business_type: input.businessType ?? 'restaurant',
     menu_template: 'three_d',
     menu_shape: 'rounded',
+    show_on_home: true,
     description: null, logo_url: null, cover_url: null,
     phone: input.clientContact || null, whatsapp: input.clientContact || null,
     email: null, website: null, address: null, google_maps_url: null,
@@ -148,11 +150,13 @@ export async function setPaymentStatus(id: string, status: 'paid' | 'unpaid', am
 }
 
 export async function listFeaturedRestaurants(max: number = 6) {
-  const q = query(restaurantsRef, where('status', '==', 'active'), limit(max))
+  const q = query(restaurantsRef, where('status', '==', 'active'), limit(Math.max(max * 3, max)))
   const snap = await getDocs(q)
   return snap.docs
     .map((d) => ({ id: d.id, ...d.data() }) as unknown as Restaurant)
+    .filter((restaurant) => restaurant.show_on_home !== false)
     .filter((restaurant) => !restaurant.subscription_end || new Date(restaurant.subscription_end).getTime() > Date.now())
+    .slice(0, max)
 }
 
 export async function getRestaurantBySlug(slug: string) {
