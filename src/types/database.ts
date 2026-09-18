@@ -5,6 +5,8 @@ export type AccountStatus = 'pending' | 'active' | 'rejected' | 'suspended'
 export type SubscriptionPlan = 'free' | 'basic' | 'pro' | 'business'
 export type SubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'canceled' | 'expired'
 export type RestaurantStatus = 'active' | 'suspended' | 'pending' | 'rejected'
+export type BusinessType = 'restaurant' | 'cafe' | 'supermarket' | 'cosmetics'
+export type MenuTemplate = 'three_d' | 'classic' | 'minimal' | 'dark_luxe'
 
 export interface LocalizedText {
   ar: string
@@ -19,6 +21,7 @@ export interface AppUser {
   role: UserRole
   avatar_url?: string | null
   account_status?: AccountStatus
+  business_type?: BusinessType
   requested_business_name?: string | null
   rejection_reason?: string | null
   payment_status?: 'paid' | 'unpaid'
@@ -38,6 +41,8 @@ export interface Restaurant {
   owner_id: string | null
   slug: string
   name: string
+  business_type?: BusinessType
+  menu_template?: MenuTemplate
   description?: string | null
   logo_url?: string | null
   cover_url?: string | null
@@ -97,6 +102,11 @@ export interface Product {
   id: string
   restaurant_id: string
   category_id?: string | null
+  catalog_id?: string | null
+  barcode?: string | null
+  brand?: string | null
+  unit_label?: string | null
+  shade?: string | null
   name: LocalizedText
   description?: LocalizedText | null
   price: number
@@ -202,9 +212,6 @@ export interface Order {
   created_at: string
 }
 
-// Public, non-sensitive companion doc for order tracking — deliberately
-// excludes customer_name/customer_phone since it's readable by anyone who
-// has the order ID (no login required for a customer to check their order).
 export interface OrderStatusPublic {
   id: string
   restaurant_id: string
@@ -224,7 +231,7 @@ export interface OrderStatusPublic {
 export interface Review {
   id: string
   customer_name: string
-  rating: number // 1-5
+  rating: number
   comment: string
   created_at: string
 }
