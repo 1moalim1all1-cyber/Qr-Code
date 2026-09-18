@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Boxes, Eye, EyeOff, ImagePlus, LoaderCircle, Plus, ShieldCheck, Sparkles, Store } from 'lucide-react'
+import { Boxes, Eye, EyeOff, ImagePlus, LoaderCircle, Plus, Settings, ShieldCheck, Sparkles, Store } from 'lucide-react'
 import AdminDashboardPage from './AdminDashboardPage'
 import { listAdminClients, setRestaurantHomepageVisibility, type AdminClientRecord } from '@/services/admin'
 
@@ -60,10 +60,11 @@ export default function AdminHomePage() {
                 <ShieldCheck size={14} /> مركز تحكم Egy Menu
               </span>
               <h1 className="mt-4 font-display text-3xl md:text-4xl font-bold">لوحة الإدارة</h1>
-              <p className="mt-2 max-w-2xl text-sm md:text-base text-white/60">العملاء والاشتراكات والكتالوج والصور من مكان واحد، بشكل أسرع وأوضح.</p>
+              <p className="mt-2 max-w-2xl text-sm md:text-base text-white/60">العملاء والاشتراكات والكتالوج والصور وإعدادات الموقع من مكان واحد.</p>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full lg:w-auto">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full lg:w-auto">
               <QuickAction to="/admin/catalog" icon={ImagePlus} title="إدارة المنتجات والصور" subtitle="الكتالوج المعتمد" featured />
+              <QuickAction to="/admin/site-settings" icon={Settings} title="بيانات الموقع" subtitle="التواصل والمكان والخصوصية" />
               <QuickAction to="/admin/clients/new" icon={Plus} title="إضافة عميل" subtitle="حساب جديد" />
               <QuickAction to="/restaurants" icon={Store} title="عرض المنيوهات" subtitle="المتاجر المنشورة" />
             </div>
