@@ -17,6 +17,9 @@ export async function importCatalogProducts(
   products: CatalogProduct[],
   prices: Record<string, number>,
 ) {
+  const missingPrice = products.find((item) => !Number.isFinite(Number(prices[item.id])) || Number(prices[item.id]) <= 0)
+  if (missingPrice) throw new Error(`اكتب سعر ${missingPrice.name} قبل الإضافة`)
+
   const categories = await listCategories(restaurant.id)
   const categoryMap = new Map(categories.map((c) => [c.name.ar, c.id]))
 
@@ -29,9 +32,13 @@ export async function importCatalogProducts(
 
     await createProduct(restaurant.id, restaurant.owner_id, {
       category_id: categoryId,
+      catalog_id: item.id,
+      barcode: item.barcode ?? null,
+      brand: item.brand ?? null,
+      unit_label: item.unit ?? null,
       name: { ar: item.name },
-      description: { ar: [item.brand, item.unit].filter(Boolean).join(' • ') },
-      price: Number(prices[item.id] || item.suggestedPrice || 1),
+      description: { ar: item.description || [item.brand, item.unit].filter(Boolean).join(' • ') },
+      price: Number(prices[item.id]),
       discount_price: null,
       is_available: true,
       is_best_seller: false,
@@ -42,7 +49,7 @@ export async function importCatalogProducts(
       allergens: [],
       extras: [],
       sizes: [],
-      images: item.imageUrl ? [{ id: `${item.id}-img`, url: item.imageUrl, sort_order: 0 }] : [],
+      images: [{ id: `${item.id}-img`, url: item.imageUrl, sort_order: 0 }],
     })
   }
 }
@@ -59,6 +66,10 @@ export async function addCustomCatalogProduct(input: {
   const categoryId = await ensureCategory(input.restaurant, input.category)
   await createProduct(input.restaurant.id, input.restaurant.owner_id, {
     category_id: categoryId,
+    catalog_id: null,
+    brand: input.brand?.trim() || null,
+    barcode: input.barcode?.trim() || null,
+    unit_label: input.unit?.trim() || null,
     name: { ar: input.name.trim() },
     description: { ar: [input.brand, input.unit, input.barcode ? `باركود: ${input.barcode}` : ''].filter(Boolean).join(' • ') },
     price: Math.max(0.01, Number(input.price)),
