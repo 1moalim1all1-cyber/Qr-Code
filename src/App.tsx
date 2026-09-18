@@ -21,6 +21,7 @@ const OrdersPage = lazy(() => import('./pages/owner/OrdersPage'))
 const OffersPage = lazy(() => import('./pages/owner/OffersPage'))
 const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'))
 const AdminCreateClientPage = lazy(() => import('./pages/admin/AdminCreateClientPage'))
+const AdminCatalogPage = lazy(() => import('./pages/admin/AdminCatalogPage'))
 
 function RouteLoading() {
   return <div className="min-h-screen flex items-center justify-center bg-paper"><div className="w-8 h-8 rounded-full border-2 border-saffron border-t-transparent animate-spin" /></div>
@@ -48,6 +49,7 @@ function App() {
         <Route path="/dashboard/orders" element={<ProtectedRoute allowedRoles={['owner', 'staff']}><OrdersPage /></ProtectedRoute>} />
         <Route path="/dashboard/offers" element={<ProtectedRoute allowedRoles={['owner', 'staff']}><OffersPage /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute allowedRoles={['super_admin']}><AdminDashboardPage /></ProtectedRoute>} />
+        <Route path="/admin/catalog" element={<ProtectedRoute allowedRoles={['super_admin']}><AdminCatalogPage /></ProtectedRoute>} />
         <Route path="/admin/clients/new" element={<ProtectedRoute allowedRoles={['super_admin']}><AdminCreateClientPage /></ProtectedRoute>} />
         <Route path="/admin/clients/:id/menu" element={<ProtectedRoute allowedRoles={['super_admin']}><MenuPage backTo="/admin" /></ProtectedRoute>} />
         <Route path="/admin/clients/:id/qr" element={<ProtectedRoute allowedRoles={['super_admin']}><QRCodePage backTo="/admin" /></ProtectedRoute>} />
