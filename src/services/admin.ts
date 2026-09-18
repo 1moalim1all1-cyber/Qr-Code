@@ -153,6 +153,10 @@ export async function setRestaurantStatus(id: string, status: RestaurantStatus) 
   await updateDoc(doc(db, 'restaurants', id), { status })
 }
 
+export async function setRestaurantHomepageVisibility(id: string, visible: boolean) {
+  await updateDoc(doc(db, 'restaurants', id), { show_on_home: visible })
+}
+
 export async function setUserAccountStatus(userId: string, status: AccountStatus, rejectionReason?: string) {
   if (isStandaloneUserId(userId)) return
   await updateDoc(doc(db, 'users', userId), {
