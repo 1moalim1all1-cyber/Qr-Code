@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowRight, Plus, Pencil, Trash2, ChevronUp, ChevronDown, Flame, Sparkles, Leaf, Star, X, Save, ImageOff } from 'lucide-react'
+import { ArrowRight, Plus, Pencil, Trash2, ChevronUp, ChevronDown, Flame, Sparkles, Leaf, Star, X, Save, ImageOff, Copy, GripVertical, Smartphone, ExternalLink } from 'lucide-react'
 import { getRestaurantByOwner, getRestaurantById } from '@/services/restaurants'
 import {
   listCategories,
@@ -13,7 +13,7 @@ import {
   deleteCategory,
   reorderCategories,
 } from '@/services/categories'
-import { listProducts, createProduct, updateProduct, deleteProduct, toggleAvailability } from '@/services/products'
+import { listProducts, createProduct, updateProduct, deleteProduct, toggleAvailability, reorderProducts } from '@/services/products'
 import type { Category, Product, Restaurant } from '@/types/database'
 import Modal from '@/components/ui/Modal'
 import Input from '@/components/ui/Input'
@@ -44,6 +44,9 @@ export default function MenuPage({ restaurantIdOverride, backTo = '/dashboard' }
   const [quickSaving, setQuickSaving] = useState(false)
   const [pageError, setPageError] = useState<string | null>(null)
   const [pageMessage, setPageMessage] = useState<string | null>(null)
+  const [draggedProductId, setDraggedProductId] = useState<string | null>(null)
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null)
+  const [previewOpen, setPreviewOpen] = useState(false)
 
   const loadCategories = useCallback(async (restaurantId: string) => {
     const data = await listCategories(restaurantId)
@@ -185,6 +188,74 @@ export default function MenuPage({ restaurantIdOverride, backTo = '/dashboard' }
     }
   }
 
+  async function duplicateProduct(product: Product) {
+    if (!restaurant) return
+    setDuplicatingId(product.id)
+    setPageError(null)
+    try {
+      const liveUid = auth.currentUser?.uid ?? restaurant.owner_id ?? null
+      await createProduct(restaurant.id, liveUid, {
+        category_id: product.category_id,
+        name: { ar: `${product.name.ar} - نسخة`, en: product.name.en ? `${product.name.en} Copy` : '' },
+        description: { ar: product.description?.ar ?? '', en: product.description?.en ?? '' },
+        price: Number(product.price || 0),
+        discount_price: product.discount_price ?? null,
+        is_available: product.is_available,
+        is_best_seller: product.is_best_seller,
+        is_new: product.is_new,
+        is_spicy: product.is_spicy,
+        is_vegetarian: product.is_vegetarian,
+        images: (product.images ?? []).map((img, index) => ({ id: `copy-${Date.now()}-${index}`, url: img.url, sort_order: index })),
+        ingredients: product.ingredients ?? [],
+        allergens: product.allergens ?? [],
+        extras: product.extras ?? [],
+        sizes: product.sizes ?? [],
+      })
+      await loadProducts(restaurant.id)
+      setPageMessage(`تم عمل نسخة من ${product.name.ar}`)
+      window.setTimeout(() => setPageMessage(null), 2400)
+    } catch (err) {
+      setPageError(err instanceof Error ? err.message : 'تعذر تكرار المنتج')
+    } finally {
+      setDuplicatingId(null)
+    }
+  }
+
+  async function handleProductDrop(targetId: string) {
+    if (!restaurant || !activeCategoryId || !draggedProductId || draggedProductId === targetId) {
+      setDraggedProductId(null)
+      return
+    }
+
+    const categoryProducts = products.filter((p) => p.category_id === activeCategoryId)
+    const from = categoryProducts.findIndex((p) => p.id === draggedProductId)
+    const to = categoryProducts.findIndex((p) => p.id === targetId)
+    if (from < 0 || to < 0) {
+      setDraggedProductId(null)
+      return
+    }
+
+    const reordered = [...categoryProducts]
+    const [moved] = reordered.splice(from, 1)
+    reordered.splice(to, 0, moved)
+
+    setProducts((current) => {
+      let categoryIndex = 0
+      return current.map((item) => item.category_id === activeCategoryId ? reordered[categoryIndex++] : item)
+    })
+    setDraggedProductId(null)
+    setPageError(null)
+
+    try {
+      await reorderProducts(restaurant.id, reordered.map((p) => p.id))
+      setPageMessage('تم حفظ ترتيب المنتجات')
+      window.setTimeout(() => setPageMessage(null), 1800)
+    } catch (err) {
+      setPageError(err instanceof Error ? err.message : 'تعذر حفظ ترتيب المنتجات')
+      await loadProducts(restaurant.id)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-paper-dim">
       <header className="bg-paper border-b border-stone-light/40 sticky top-0 z-20">
@@ -192,9 +263,14 @@ export default function MenuPage({ restaurantIdOverride, backTo = '/dashboard' }
           <Link to={backTo} className="text-stone hover:text-ink transition-colors"><ArrowRight size={20} /></Link>
           <div className="flex-1">
             <h1 className="font-display text-lg font-semibold">الأقسام والأصناف {restaurant && adminRestaurantId ? `— ${restaurant.name}` : ''}</h1>
-            <p className="text-xs text-stone mt-0.5">ضيف بسرعة، عدّل السعر من نفس الكارت، وشغّل أو اخفي المنتج بضغطة</p>
+            <p className="text-xs text-stone mt-0.5">ضيف بسرعة، عدّل السعر، انسخ المنتج، ورتّب الأصناف بالسحب</p>
           </div>
-          {restaurant?.slug && <a href={`${import.meta.env.BASE_URL}m/${restaurant.slug}`} target="_blank" rel="noreferrer" className="hidden sm:inline-flex rounded-full bg-ink text-paper px-4 py-2 text-xs font-semibold">عرض المنيو</a>}
+          {restaurant?.slug && (
+            <div className="hidden sm:flex items-center gap-2">
+              <button onClick={() => setPreviewOpen(true)} className="inline-flex rounded-full bg-saffron/15 text-saffron-dim px-4 py-2 text-xs font-semibold items-center gap-1.5"><Smartphone size={14} /> معاينة موبايل</button>
+              <a href={`${import.meta.env.BASE_URL}m/${restaurant.slug}`} target="_blank" rel="noreferrer" className="inline-flex rounded-full bg-ink text-paper px-4 py-2 text-xs font-semibold items-center gap-1.5"><ExternalLink size={14} /> عرض المنيو</a>
+            </div>
+          )}
         </div>
       </header>
 
@@ -241,8 +317,11 @@ export default function MenuPage({ restaurantIdOverride, backTo = '/dashboard' }
             </div>
           </div>
 
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold">{activeCategoryId ? categories.find((c) => c.id === activeCategoryId)?.name.ar : 'كل الأصناف'}<span className="text-stone text-sm font-normal mr-2">({visibleProducts.length})</span></h2>
+          <div className="flex items-end justify-between mb-4 gap-3">
+            <div>
+              <h2 className="font-semibold">{activeCategoryId ? categories.find((c) => c.id === activeCategoryId)?.name.ar : 'كل الأصناف'}<span className="text-stone text-sm font-normal mr-2">({visibleProducts.length})</span></h2>
+              <p className="text-xs text-stone mt-1">{activeCategoryId ? 'اسحب أي كارت من علامة الترتيب وحطه مكانه الجديد.' : 'اختار قسم من اليمين لو عايز ترتب منتجاته بالسحب.'}</p>
+            </div>
             <Button onClick={() => setProductModal({ open: true, editing: null })} className="text-sm py-2 px-4"><Plus size={16} /> صنف جديد</Button>
           </div>
 
@@ -255,7 +334,19 @@ export default function MenuPage({ restaurantIdOverride, backTo = '/dashboard' }
                 const draft = priceDrafts[p.id] ?? String(p.price)
                 const priceChanged = Number(draft) !== Number(p.price)
                 return (
-                  <div key={p.id} className={`rounded-3xl bg-paper border p-4 transition-all ${p.is_available ? 'border-stone-light/30' : 'border-sumac/20 opacity-75'}`}>
+                  <div
+                    key={p.id}
+                    draggable={Boolean(activeCategoryId)}
+                    onDragStart={() => activeCategoryId && setDraggedProductId(p.id)}
+                    onDragEnd={() => setDraggedProductId(null)}
+                    onDragOver={(e) => activeCategoryId && e.preventDefault()}
+                    onDrop={() => handleProductDrop(p.id)}
+                    className={`rounded-3xl bg-paper border p-4 transition-all ${p.is_available ? 'border-stone-light/30' : 'border-sumac/20 opacity-75'} ${draggedProductId === p.id ? 'scale-[.98] opacity-50 border-saffron' : ''}`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      {activeCategoryId ? <span className="inline-flex items-center gap-1 text-[11px] text-stone cursor-grab active:cursor-grabbing"><GripVertical size={14} /> اسحب للترتيب</span> : <span />}
+                      <span className="text-[10px] text-stone-light">{categories.find((c) => c.id === p.category_id)?.name.ar ?? ''}</span>
+                    </div>
                     <div className="flex gap-3">
                       <div className="w-24 h-24 shrink-0 rounded-2xl bg-paper-dim overflow-hidden border border-stone-light/20 flex items-center justify-center">
                         {image ? <img src={image} alt={p.name.ar} className="w-full h-full object-cover" /> : <div className="text-center text-stone-light"><ImageOff size={20} className="mx-auto" /><span className="text-[10px]">بدون صورة</span></div>}
@@ -296,6 +387,7 @@ export default function MenuPage({ restaurantIdOverride, backTo = '/dashboard' }
                     <div className="mt-4 pt-3 border-t border-stone-light/20 flex items-center justify-between gap-2">
                       <span className={`text-xs font-medium ${p.is_available ? 'text-zaytoon' : 'text-sumac'}`}>{p.is_available ? 'ظاهر للعملاء' : 'مخفي من المنيو'}</span>
                       <div className="flex items-center gap-2">
+                        <button disabled={duplicatingId === p.id} onClick={() => duplicateProduct(p)} className="rounded-full bg-saffron/10 text-saffron-dim px-3 py-2 text-xs flex items-center gap-1 disabled:opacity-40" title="اعمل نسخة من المنتج"><Copy size={14} /> {duplicatingId === p.id ? 'نسخ...' : 'تكرار'}</button>
                         <button onClick={() => setProductModal({ open: true, editing: p })} className="rounded-full bg-paper-dim px-3 py-2 text-xs flex items-center gap-1"><Pencil size={14} /> التفاصيل</button>
                         <button onClick={() => handleDeleteProduct(p.id)} className="rounded-full bg-sumac/10 text-sumac p-2" aria-label="حذف"><Trash2 size={15} /></button>
                       </div>
@@ -307,6 +399,22 @@ export default function MenuPage({ restaurantIdOverride, backTo = '/dashboard' }
           )}
         </section>
       </main>
+
+      {previewOpen && restaurant?.slug && (
+        <div className="fixed inset-0 z-50 bg-black/55 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setPreviewOpen(false)}>
+          <div className="w-full max-w-[410px]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between text-white mb-3 px-1">
+              <div><p className="font-semibold flex items-center gap-2"><Smartphone size={17} /> معاينة الموبايل</p><p className="text-xs text-white/55 mt-1">دي الصفحة الحقيقية اللي العميل بيشوفها</p></div>
+              <button onClick={() => setPreviewOpen(false)} className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center"><X size={18} /></button>
+            </div>
+            <div className="rounded-[38px] bg-[#111] p-2.5 shadow-2xl border border-white/15">
+              <div className="h-[78vh] max-h-[760px] rounded-[30px] overflow-hidden bg-white">
+                <iframe title="معاينة المنيو" src={`${import.meta.env.BASE_URL}m/${restaurant.slug}`} className="w-full h-full border-0" />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <CategoryModal open={categoryModal.open} editing={categoryModal.editing} restaurantId={restaurant?.id} ownerId={restaurant?.owner_id ?? null} nextSortOrder={categories.length} onClose={() => setCategoryModal({ open: false, editing: null })} onSaved={() => restaurant && loadCategories(restaurant.id)} />
       <ProductModal open={productModal.open} editing={productModal.editing} restaurantId={restaurant?.id} ownerId={restaurant?.owner_id ?? null} categories={categories} defaultCategoryId={activeCategoryId} onClose={() => setProductModal({ open: false, editing: null })} onSaved={() => restaurant && loadProducts(restaurant.id)} />
