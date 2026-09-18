@@ -3,7 +3,7 @@ import { Routes, Route } from 'react-router-dom'
 import ProtectedRoute from './components/layout/ProtectedRoute'
 
 const LandingPage = lazy(() => import('./pages/public/LandingPage'))
-const PublicMenuPage = lazy(() => import('./pages/public/MenuPage'))
+const PublicMenuPage = lazy(() => import('./pages/public/ThemedMenuPage'))
 const OrderTrackingPage = lazy(() => import('./pages/public/OrderTrackingPage'))
 const TermsPage = lazy(() => import('./pages/public/TermsPage'))
 const PrivacyPage = lazy(() => import('./pages/public/PrivacyPage'))
