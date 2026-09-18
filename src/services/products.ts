@@ -8,8 +8,6 @@ import type { Product } from '@/types/database'
 const productsRef = (restaurantId: string) => collection(db, 'restaurants', restaurantId, 'products')
 
 export async function listProducts(restaurantId: string, categoryId?: string) {
-  // Filtering by category_id + ordering by sort_order needs a composite index;
-  // Firestore will show a one-click link to create it the first time this runs.
   const q = categoryId
     ? query(productsRef(restaurantId), where('category_id', '==', categoryId), orderBy('sort_order', 'asc'))
     : query(productsRef(restaurantId), orderBy('sort_order', 'asc'))
@@ -19,6 +17,11 @@ export async function listProducts(restaurantId: string, categoryId?: string) {
 
 export interface ProductInput {
   category_id: string | null
+  catalog_id?: string | null
+  barcode?: string | null
+  brand?: string | null
+  unit_label?: string | null
+  shade?: string | null
   name: { ar: string; en?: string }
   description?: { ar: string; en?: string }
   price: number
