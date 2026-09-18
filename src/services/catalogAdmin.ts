@@ -61,7 +61,21 @@ export async function createCatalogProduct(input: {
 export async function getCatalogForBusiness(
   businessType: Extract<BusinessType, 'supermarket' | 'cosmetics'>,
 ): Promise<CatalogProduct[]> {
-  const records = await listCatalogAdminRecords()
+  let records: CatalogAdminRecord[] = []
+
+  try {
+    records = await listCatalogAdminRecords()
+  } catch (err) {
+    // If the latest Firestore rules have not been published yet, owners must
+    // still be able to open the catalog instead of getting stuck forever on
+    // "جارِ التحميل". In that case show the built-in catalog without images;
+    // admin-approved images will appear automatically once rules are published.
+    console.warn('[getCatalogForBusiness] catalog_products unavailable, using built-in catalog only:', err)
+    return PRODUCT_CATALOG
+      .filter((p) => p.businessType === businessType)
+      .map((p) => ({ ...p, imageUrl: '' }))
+  }
+
   const byId = new Map(records.map((r) => [r.id, r]))
 
   const builtIn = PRODUCT_CATALOG
@@ -70,8 +84,8 @@ export async function getCatalogForBusiness(
       const override = byId.get(p.id)
       return {
         ...p,
-        // Intentionally ignore old remote/random catalog images. The exact image
-        // shown to owners is the one approved/uploaded from the admin catalog.
+        // Only an image explicitly approved/uploaded from the admin catalog
+        // is shown to owners. Old remote/random seed images are ignored.
         imageUrl: override?.image_url || '',
         ...(override?.brand !== undefined ? { brand: override.brand || undefined } : {}),
         ...(override?.unit !== undefined ? { unit: override.unit || undefined } : {}),
