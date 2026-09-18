@@ -12,6 +12,11 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin';
     }
 
+    function publicMenusVisible() {
+      return !exists(/databases/$(database)/documents/platform_settings/global) ||
+        get(/databases/$(database)/documents/platform_settings/global).data.menus_visible != false;
+    }
+
     function ownsRestaurant(restaurantId) {
       return isSignedIn() &&
         get(/databases/$(database)/documents/restaurants/$(restaurantId)).data.owner_id == request.auth.uid;
@@ -47,7 +52,7 @@ service cloud.firestore {
     }
 
     match /restaurants/{restaurantId} {
-      allow read: if resource.data.status == 'active' ||
+      allow read: if (resource.data.status == 'active' && publicMenusVisible()) ||
         (isSignedIn() && resource.data.owner_id == request.auth.uid) ||
         isSuperAdmin();
 
@@ -163,6 +168,11 @@ service cloud.firestore {
     }
 
     match /languages/{code} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
+    match /platform_settings/{docId} {
       allow read: if true;
       allow write: if isSuperAdmin();
     }
