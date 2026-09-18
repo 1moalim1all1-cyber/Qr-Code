@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import {
   LogOut, QrCode, Eye, UtensilsCrossed, Building2, Settings, ClipboardList, Gift,
   CalendarClock, MessageCircle, CheckCircle2, Cuboid, PackagePlus, Copy, ExternalLink,
-  ImagePlus, ListPlus, BadgeDollarSign, Share2,
+  ImagePlus, ListPlus, BadgeDollarSign, Share2, Database,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { signOut } from '@/services/auth'
@@ -169,6 +169,7 @@ export default function DashboardPage() {
           <Link to="/dashboard/qr" className="block rounded-3xl bg-[#6f7a5b] text-white p-6 hover:-translate-y-1 transition-transform"><p className="font-display font-semibold flex items-center gap-2"><QrCode size={18} className="text-[#ead19a]" /> QR والمشاركة</p><p className="text-white/70 text-sm mt-2">حمّل الكود وشاركه فورًا</p></Link>
           <Link to="/dashboard/orders" className="block rounded-3xl bg-[#8d5f50] text-white p-6 hover:-translate-y-1 transition-transform"><p className="font-display font-semibold flex items-center gap-2"><ClipboardList size={18} className="text-[#ead19a]" /> الطلبات</p><p className="text-white/70 text-sm mt-2">تابع الطلبات وحدّث حالتها</p></Link>
           <Link to="/dashboard/offers" className="block rounded-3xl bg-white border border-black/5 p-6 hover:-translate-y-1 transition-transform"><p className="font-display font-semibold flex items-center gap-2"><Gift size={18} className="text-[#8d7444]" /> العروض</p><p className="text-stone text-sm mt-2">اعمل خصومات وكوبونات</p></Link>
+          <Link to="/dashboard/data" className="block rounded-3xl bg-[#e8e1d5] border border-black/5 p-6 hover:-translate-y-1 transition-transform"><p className="font-display font-semibold flex items-center gap-2"><Database size={18} className="text-[#6f7a5b]" /> استيراد وتصدير</p><p className="text-stone text-sm mt-2">Excel/CSV، نسخة احتياطية ونقل جماعي</p></Link>
         </div>
       </main>
     </div>
