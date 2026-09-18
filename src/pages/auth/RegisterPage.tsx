@@ -17,22 +17,21 @@ export default function RegisterPage() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<PhoneRegisterForm>({ resolver: zodResolver(phoneRegisterSchema) })
+  } = useForm<PhoneRegisterForm>({ resolver: zodResolver(phoneRegisterSchema), defaultValues: { businessType: 'restaurant' } })
 
   async function onSubmit(values: PhoneRegisterForm) {
     setServerError(null)
     try {
-      const user = await signUpWithPhone(values.phone, values.password, values.fullName, values.restaurantName)
-
+      const user = await signUpWithPhone(values.phone, values.password, values.fullName, values.restaurantName, values.businessType)
       try {
         await createRestaurant(user.uid, values.restaurantName, {
           clientName: values.fullName,
           clientContact: values.phone,
+          businessType: values.businessType,
         })
       } catch (restaurantError) {
         console.error('[RegisterPage] restaurant creation failed:', restaurantError)
       }
-
       navigate('/dashboard')
     } catch (err) {
       setServerError(err instanceof Error ? translateAuthError(err.message) : 'حصل خطأ، حاول تاني')
@@ -43,16 +42,24 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-paper flex items-center justify-center px-6 py-12">
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 rounded-2xl bg-ink flex items-center justify-center mb-3">
-            <QrCode className="text-saffron" size={22} />
-          </div>
-          <h1 className="font-display text-2xl font-semibold">أنشئ حساب مطعمك</h1>
-          <p className="text-stone text-sm mt-1 text-center">ابدأ فورًا بـ 10 أيام تجربة مجانية — من غير دفع</p>
+          <div className="w-12 h-12 rounded-2xl bg-ink flex items-center justify-center mb-3"><QrCode className="text-saffron" size={22} /></div>
+          <h1 className="font-display text-2xl font-semibold">أنشئ حساب نشاطك</h1>
+          <p className="text-stone text-sm mt-1 text-center">مطعم، كافيه، سوبر ماركت أو مستحضرات تجميل — 10 أيام تجربة مجانية</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
           <Input label="اسمك بالكامل" error={errors.fullName?.message} {...register('fullName')} />
-          <Input label="اسم المطعم أو الكافيه" error={errors.restaurantName?.message} {...register('restaurantName')} />
+          <div>
+            <label className="block text-sm font-medium mb-1.5">نوع النشاط</label>
+            <select {...register('businessType')} className="w-full rounded-xl border border-stone-light/50 bg-paper px-3 py-3 outline-none focus:border-saffron">
+              <option value="restaurant">مطعم</option>
+              <option value="cafe">كافيه</option>
+              <option value="supermarket">سوبر ماركت</option>
+              <option value="cosmetics">مستحضرات تجميل</option>
+            </select>
+            {errors.businessType?.message && <p className="text-xs text-sumac mt-1">{errors.businessType.message}</p>}
+          </div>
+          <Input label="اسم النشاط" error={errors.restaurantName?.message} {...register('restaurantName')} />
           <Input label="رقم الهاتف" type="tel" dir="ltr" placeholder="01xxxxxxxxx" autoComplete="tel" error={errors.phone?.message} {...register('phone')} />
           <Input label="كلمة المرور" type="password" autoComplete="new-password" error={errors.password?.message} {...register('password')} />
           <Input label="تأكيد كلمة المرور" type="password" autoComplete="new-password" error={errors.confirmPassword?.message} {...register('confirmPassword')} />
@@ -60,10 +67,7 @@ export default function RegisterPage() {
           <Button type="submit" loading={isSubmitting} className="w-full mt-2">ابدأ التجربة المجانية 10 أيام</Button>
         </form>
 
-        <p className="text-center text-sm text-stone mt-6">
-          عندك حساب بالفعل؟{' '}
-          <Link to="/login" className="text-saffron-dim font-medium hover:underline">سجّل دخولك</Link>
-        </p>
+        <p className="text-center text-sm text-stone mt-6">عندك حساب بالفعل؟ <Link to="/login" className="text-saffron-dim font-medium hover:underline">سجّل دخولك</Link></p>
       </div>
     </div>
   )
