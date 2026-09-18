@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { MessageCircle, Phone } from 'lucide-react'
 import { DEFAULT_SITE_SETTINGS, getSiteSettings } from '@/services/siteSettings'
 
@@ -18,12 +18,6 @@ export default function FloatingContact() {
 
   return (
     <div className="fixed bottom-5 right-4 sm:right-6 z-[70] flex flex-col items-end gap-2" dir="rtl">
-      <div className="flex items-center gap-2 text-[11px] bg-white/95 border border-black/5 shadow-sm rounded-full px-3 py-1.5">
-        <Link to="/contact" className="font-semibold hover:text-saffron-dim">تواصل معنا</Link>
-        <span className="text-stone-light">•</span>
-        <Link to="/privacy" className="text-stone hover:text-ink">سياسة الخصوصية</Link>
-      </div>
-
       {settings.contact_phone && (
         <a
           href={`tel:${settings.contact_phone}`}
