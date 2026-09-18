@@ -1,0 +1,1 @@
+function e(e){let t=e.trim().replace(/[\s-]/g,``);return t.startsWith(`00`)&&(t=`+`+t.slice(2)),t.startsWith(`0`)&&(t=`+20`+t.slice(1)),t.startsWith(`+`)||(t=`+20`+t),t}function t(t){return`${e(t).replace(`+`,``)}@phone.smartqrmenu.app`}export{t as n,e as t};
