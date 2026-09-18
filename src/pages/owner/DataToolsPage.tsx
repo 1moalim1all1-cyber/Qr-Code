@@ -1,4 +1,5 @@
-import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { ChangeEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Download, FileSpreadsheet, FolderInput, Save, Undo2, Upload } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -190,7 +191,7 @@ export default function DataToolsPage() {
     setBusy(true)
     setError(null)
     try {
-      const previous = selectedProducts.map((p) => ({ id: p.id, patch: { category_id: p.category_id } }))
+      const previous = selectedProducts.map((p) => ({ id: p.id, patch: { category_id: p.category_id ?? null } }))
       await Promise.all(selectedProducts.map((p) => updateProduct(restaurant.id, p.id, { category_id: moveCategoryId })))
       setUndo({ label: `نقل ${selectedProducts.length} منتج`, values: previous })
       await load()
