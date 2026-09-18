@@ -1,0 +1,69 @@
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore'
+import { db } from '@/lib/firebase'
+import { createCategory, listCategories } from '@/services/categories'
+import { createProduct } from '@/services/products'
+import type { Restaurant } from '@/types/database'
+import type { CatalogProduct } from '@/data/productCatalog'
+
+export async function importCatalogProducts(
+  restaurant: Restaurant,
+  products: CatalogProduct[],
+  prices: Record<string, number>,
+) {
+  const categories = await listCategories(restaurant.id)
+  const categoryMap = new Map(categories.map((c) => [c.name.ar, c.id]))
+
+  for (const item of products) {
+    let categoryId = categoryMap.get(item.category)
+    if (!categoryId) {
+      categoryId = await createCategory(
+        restaurant.id,
+        restaurant.owner_id,
+        item.category,
+        '',
+        categoryMap.size,
+      )
+      categoryMap.set(item.category, categoryId)
+    }
+
+    await createProduct(restaurant.id, restaurant.owner_id, {
+      category_id: categoryId,
+      name: { ar: item.name },
+      description: { ar: [item.brand, item.unit].filter(Boolean).join(' • ') },
+      price: Number(prices[item.id] || item.suggestedPrice || 1),
+      discount_price: null,
+      is_available: true,
+      is_best_seller: false,
+      is_new: false,
+      is_spicy: false,
+      is_vegetarian: false,
+      ingredients: [],
+      allergens: [],
+      extras: [],
+      sizes: [],
+      images: item.imageUrl ? [{ id: `${item.id}-img`, url: item.imageUrl, sort_order: 0 }] : [],
+    })
+  }
+}
+
+export async function suggestCatalogProduct(input: {
+  restaurant: Restaurant
+  name: string
+  category: string
+  brand?: string
+  barcode?: string
+  unit?: string
+}) {
+  await addDoc(collection(db, 'catalog_suggestions'), {
+    restaurant_id: input.restaurant.id,
+    owner_id: input.restaurant.owner_id,
+    business_type: input.restaurant.business_type || 'supermarket',
+    name: input.name.trim(),
+    category: input.category.trim(),
+    brand: input.brand?.trim() || null,
+    barcode: input.barcode?.trim() || null,
+    unit: input.unit?.trim() || null,
+    status: 'pending',
+    created_at: serverTimestamp(),
+  })
+}
