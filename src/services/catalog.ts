@@ -5,6 +5,13 @@ import { createProduct } from '@/services/products'
 import type { Restaurant } from '@/types/database'
 import type { CatalogProduct } from '@/data/productCatalog'
 
+async function ensureCategory(restaurant: Restaurant, categoryName: string) {
+  const categories = await listCategories(restaurant.id)
+  const existing = categories.find((c) => c.name.ar === categoryName)
+  if (existing) return existing.id
+  return createCategory(restaurant.id, restaurant.owner_id, categoryName, '', categories.length)
+}
+
 export async function importCatalogProducts(
   restaurant: Restaurant,
   products: CatalogProduct[],
@@ -16,13 +23,7 @@ export async function importCatalogProducts(
   for (const item of products) {
     let categoryId = categoryMap.get(item.category)
     if (!categoryId) {
-      categoryId = await createCategory(
-        restaurant.id,
-        restaurant.owner_id,
-        item.category,
-        '',
-        categoryMap.size,
-      )
+      categoryId = await createCategory(restaurant.id, restaurant.owner_id, item.category, '', categoryMap.size)
       categoryMap.set(item.category, categoryId)
     }
 
@@ -44,6 +45,36 @@ export async function importCatalogProducts(
       images: item.imageUrl ? [{ id: `${item.id}-img`, url: item.imageUrl, sort_order: 0 }] : [],
     })
   }
+}
+
+export async function addCustomCatalogProduct(input: {
+  restaurant: Restaurant
+  name: string
+  category: string
+  price: number
+  brand?: string
+  barcode?: string
+  unit?: string
+}) {
+  const categoryId = await ensureCategory(input.restaurant, input.category)
+  await createProduct(input.restaurant.id, input.restaurant.owner_id, {
+    category_id: categoryId,
+    name: { ar: input.name.trim() },
+    description: { ar: [input.brand, input.unit, input.barcode ? `باركود: ${input.barcode}` : ''].filter(Boolean).join(' • ') },
+    price: Math.max(0.01, Number(input.price)),
+    discount_price: null,
+    is_available: true,
+    is_best_seller: false,
+    is_new: true,
+    is_spicy: false,
+    is_vegetarian: false,
+    ingredients: [],
+    allergens: [],
+    extras: [],
+    sizes: [],
+    images: [],
+  })
+  await suggestCatalogProduct(input)
 }
 
 export async function suggestCatalogProduct(input: {
