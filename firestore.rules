@@ -146,6 +146,17 @@ service cloud.firestore {
       }
     }
 
+    match /catalog_products/{docId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
+    match /catalog_suggestions/{docId} {
+      allow create: if isSignedIn() && request.resource.data.owner_id == request.auth.uid;
+      allow read: if isSuperAdmin() || (isSignedIn() && resource.data.owner_id == request.auth.uid);
+      allow update, delete: if isSuperAdmin();
+    }
+
     match /plans/{planCode} {
       allow read: if true;
       allow write: if isSuperAdmin();
