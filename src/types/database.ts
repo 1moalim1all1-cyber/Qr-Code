@@ -45,6 +45,7 @@ export interface Restaurant {
   business_type?: BusinessType
   menu_template?: MenuTemplate
   menu_shape?: MenuShape
+  show_on_home?: boolean
   description?: string | null
   logo_url?: string | null
   cover_url?: string | null
@@ -218,14 +219,5 @@ export interface OrderStatusPublic {
   order_type: OrderType
   items_summary: string
   total: number
-  table_label?: string
-  created_at: string
-}
-
-export interface Review {
-  id: string
-  customer_name: string
-  rating: number
-  comment: string
   created_at: string
 }
