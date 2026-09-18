@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Check, Circle, Cuboid, Diamond, Hexagon, LayoutGrid, Moon, Sparkles, Square, Triangle } from 'lucide-react'
+import { ArrowRight, Check, Circle, Cuboid, Diamond, Hexagon, LayoutGrid, Moon, Sparkles, Square, Triangle, Waves } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { getRestaurantByOwner, updateRestaurant } from '@/services/restaurants'
 import type { MenuShape, MenuTemplate, Restaurant } from '@/types/database'
@@ -17,8 +17,11 @@ const SHAPES: { id: MenuShape; name: string; description: string; icon: typeof S
   { id: 'square', name: 'مربّع', description: 'زوايا مستقيمة وشكل منظم وقوي', icon: Square },
   { id: 'capsule', name: 'كبسولة', description: 'زوايا دائرية جدًا وشكل عصري', icon: Circle },
   { id: 'cut_corner', name: 'قصّات هندسية', description: 'زوايا مقصوصة بشكل مودرن', icon: Diamond },
-  { id: 'hex', name: 'سداسي', description: 'شكل مختلف ومناسب للسوبر ماركت والمنتجات', icon: Hexagon },
-  { id: 'triangle', name: 'مثلث مائل', description: 'حواف مائلة بطابع جريء مع الحفاظ على وضوح المحتوى', icon: Triangle },
+  { id: 'hex', name: 'سداسي', description: 'شكل مختلف ومناسب للمنتجات والسوبر ماركت', icon: Hexagon },
+  { id: 'triangle', name: 'مثلث مائل', description: 'إحساس مثلثي بدون ما يضيّق مساحة الاسم والسعر', icon: Triangle },
+  { id: 'diamond', name: 'ماسي', description: 'قصّات ماسية خفيفة تعطي شكل فاخر', icon: Diamond },
+  { id: 'arch', name: 'قوس', description: 'قمة مقوسة وشكل مناسب للمنتجات الفخمة', icon: Circle },
+  { id: 'wave', name: 'موجة', description: 'حواف ناعمة ومتحركة بصريًا', icon: Waves },
 ]
 
 function previewShape(shape: MenuShape) {
@@ -27,6 +30,9 @@ function previewShape(shape: MenuShape) {
   if (shape === 'cut_corner') return '[clip-path:polygon(16px_0,100%_0,100%_calc(100%-16px),calc(100%-16px)_100%,0_100%,0_16px)] rounded-none'
   if (shape === 'hex') return '[clip-path:polygon(14px_0,calc(100%-14px)_0,100%_50%,calc(100%-14px)_100%,14px_100%,0_50%)] rounded-none'
   if (shape === 'triangle') return '[clip-path:polygon(9%_0,100%_0,91%_100%,0_100%)] rounded-none'
+  if (shape === 'diamond') return '[clip-path:polygon(7%_0,93%_0,100%_50%,93%_100%,7%_100%,0_50%)] rounded-none'
+  if (shape === 'arch') return 'rounded-t-[42px] rounded-b-2xl'
+  if (shape === 'wave') return '[clip-path:polygon(0_8%,18%_0,42%_6%,65%_0,100%_8%,100%_92%,78%_100%,55%_94%,30%_100%,0_92%)] rounded-none'
   return 'rounded-2xl'
 }
 
@@ -71,7 +77,7 @@ export default function DesignPage() {
           <Link to="/dashboard" className="text-stone"><ArrowRight size={20} /></Link>
           <div>
             <h1 className="font-display text-lg font-semibold">شكل صفحة نشاطك</h1>
-            <p className="text-xs text-stone">غيّر القالب والشكل الهندسي من غير ما تفقد المنتجات أو الأسعار</p>
+            <p className="text-xs text-stone">غيّر القالب والهندسة من غير ما المنتجات أو الأسعار تتأثر</p>
           </div>
         </div>
       </header>
@@ -101,7 +107,7 @@ export default function DesignPage() {
 
             <div>
               <h2 className="font-display text-xl font-semibold mb-2">2) اختار شكل كروت المنيو</h2>
-              <p className="text-sm text-stone mb-4">المثلث الكامل بيضيّق مساحة الكلام، فعملته بشكل مائل يحافظ على الاسم والسعر واضحين.</p>
+              <p className="text-sm text-stone mb-4">الشكل بيتطبق على كروت المنتجات نفسها في المنيو العام، مش مجرد معاينة.</p>
               <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
                 {SHAPES.map((item) => {
                   const active = shape === item.id
