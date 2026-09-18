@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { LogOut, QrCode, Eye, UtensilsCrossed, Building2, Settings, ClipboardList, Gift, CalendarClock, MessageCircle, CheckCircle2 } from 'lucide-react'
+import { LogOut, QrCode, Eye, UtensilsCrossed, Building2, Settings, ClipboardList, Gift, CalendarClock, MessageCircle, CheckCircle2, Cuboid, PackagePlus } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { signOut } from '@/services/auth'
 import { getRestaurantByOwner } from '@/services/restaurants'
@@ -59,6 +59,7 @@ export default function DashboardPage() {
   }, [profile, restaurant, subscriptionEnd])
 
   const isTrial = Number(profile?.trial_days || restaurant?.trial_days || 0) > 0 && !profile?.last_renewed_at && !restaurant?.last_renewed_at
+  const hasReadyCatalog = restaurant?.business_type === 'supermarket' || restaurant?.business_type === 'cosmetics'
 
   return (
     <div className="min-h-screen bg-paper-dim">
@@ -66,7 +67,7 @@ export default function DashboardPage() {
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div>
             <p className="text-sm text-stone">أهلاً بيك، {profile?.full_name ?? '...'}</p>
-            <h1 className="font-display text-lg font-semibold">{restaurant?.name ?? (error ? 'حصل خطأ' : 'جارِ تحميل بيانات المطعم...')}</h1>
+            <h1 className="font-display text-lg font-semibold">{restaurant?.name ?? (error ? 'حصل خطأ' : 'جارِ تحميل بيانات النشاط...')}</h1>
           </div>
           <button onClick={() => signOut()} className="flex items-center gap-2 text-sm text-stone hover:text-sumac transition-colors"><LogOut size={16} /> تسجيل الخروج</button>
         </div>
@@ -100,20 +101,22 @@ export default function DashboardPage() {
         </div>
 
         <div className="rounded-2xl bg-paper p-6 border border-stone-light/30 mb-4">
-          <h2 className="font-display text-lg font-semibold mb-4">جهّز منيوك بالكامل</h2>
+          <h2 className="font-display text-lg font-semibold mb-4">جهّز نشاطك بالكامل</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
             <div className="flex items-center gap-2"><CheckCircle2 size={17} className={restaurant?.logo_url ? 'text-zaytoon' : 'text-stone'} /> أضف اللوجو والغلاف</div>
-            <div className="flex items-center gap-2"><CheckCircle2 size={17} className="text-stone" /> أضف الأقسام والأصناف</div>
+            <div className="flex items-center gap-2"><CheckCircle2 size={17} className="text-stone" /> أضف الأقسام والمنتجات</div>
             <div className="flex items-center gap-2"><CheckCircle2 size={17} className="text-stone" /> جهّز العروض</div>
             <div className="flex items-center gap-2"><CheckCircle2 size={17} className="text-stone" /> حمّل QR وشاركه</div>
           </div>
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+          <Link to="/dashboard/design" className="block rounded-2xl bg-gradient-to-br from-ink to-ink-soft text-paper p-6 shadow-xl hover:-translate-y-1 transition-transform"><p className="font-display font-semibold flex items-center gap-2"><Cuboid size={18} className="text-saffron" /> شكل الصفحة 3D والقوالب</p><p className="text-stone-light text-sm mt-1">اختار من 4 أشكال وغيّرهم في أي وقت</p></Link>
+          {hasReadyCatalog && <Link to="/dashboard/catalog" className="block rounded-2xl bg-saffron/15 border border-saffron/30 p-6 hover:-translate-y-1 transition-transform"><p className="font-display font-semibold flex items-center gap-2"><PackagePlus size={18} className="text-saffron-dim" /> كتالوج المنتجات الجاهز</p><p className="text-stone text-sm mt-1">اختار منتجاتك وحط السعر بدل ما تبدأ من الصفر</p></Link>}
           <Link to="/dashboard/orders" className="block rounded-2xl bg-sumac text-paper p-6 hover:opacity-90 transition-opacity"><p className="font-display font-semibold flex items-center gap-2"><ClipboardList size={18} className="text-saffron" /> الطلبات</p><p className="text-paper/80 text-sm mt-1">تابع طلبات العملاء الحية وحدّث حالتها</p></Link>
-          <Link to="/dashboard/settings" className="block rounded-2xl bg-paper border border-stone-light/30 p-6 hover:border-saffron/40 transition-colors"><p className="font-display font-semibold flex items-center gap-2"><Settings size={18} className="text-saffron-dim" /> بيانات المطعم</p><p className="text-stone text-sm mt-1">اللوجو، الغلاف، أرقام التواصل والعنوان</p></Link>
-          <Link to="/dashboard/menu" className="block rounded-2xl bg-ink text-paper p-6 hover:bg-ink-soft transition-colors"><p className="font-display font-semibold flex items-center gap-2"><UtensilsCrossed size={18} className="text-saffron" /> إدارة الأقسام والأصناف</p><p className="text-stone-light text-sm mt-1">أضف أقسام مطعمك وأصنافه وابدأ ببناء المنيو</p></Link>
-          <Link to="/dashboard/qr" className="block rounded-2xl bg-zaytoon text-paper p-6 hover:bg-zaytoon-dim transition-colors"><p className="font-display font-semibold flex items-center gap-2"><QrCode size={18} className="text-saffron" /> كود QR الخاص بالمنيو</p><p className="text-paper/80 text-sm mt-1">خصّص الشكل واللون وحمّله جاهز للطباعة</p></Link>
+          <Link to="/dashboard/settings" className="block rounded-2xl bg-paper border border-stone-light/30 p-6 hover:border-saffron/40 transition-colors"><p className="font-display font-semibold flex items-center gap-2"><Settings size={18} className="text-saffron-dim" /> بيانات النشاط</p><p className="text-stone text-sm mt-1">اللوجو، الغلاف، أرقام التواصل والعنوان</p></Link>
+          <Link to="/dashboard/menu" className="block rounded-2xl bg-ink text-paper p-6 hover:bg-ink-soft transition-colors"><p className="font-display font-semibold flex items-center gap-2"><UtensilsCrossed size={18} className="text-saffron" /> إدارة الأقسام والمنتجات</p><p className="text-stone-light text-sm mt-1">أضف أقسامك ومنتجاتك وعدّل الأسعار</p></Link>
+          <Link to="/dashboard/qr" className="block rounded-2xl bg-zaytoon text-paper p-6 hover:bg-zaytoon-dim transition-colors"><p className="font-display font-semibold flex items-center gap-2"><QrCode size={18} className="text-saffron" /> كود QR الخاص بالصفحة</p><p className="text-paper/80 text-sm mt-1">خصّص الشكل واللون وحمّله جاهز للطباعة</p></Link>
           <Link to="/dashboard/offers" className="block rounded-2xl bg-paper border border-stone-light/30 p-6 hover:border-saffron/40 transition-colors"><p className="font-display font-semibold flex items-center gap-2"><Gift size={18} className="text-saffron-dim" /> العروض والكوبونات</p><p className="text-stone text-sm mt-1">أنشئ عروض وأكواد خصم لعملائك</p></Link>
         </div>
       </main>
