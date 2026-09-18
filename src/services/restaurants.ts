@@ -15,6 +15,12 @@ function addDays(date: Date, days: number) {
   return result
 }
 
+function clearPublicMenuShape() {
+  if (typeof document === 'undefined') return
+  delete document.documentElement.dataset.menuPage
+  delete document.documentElement.dataset.menuShape
+}
+
 export async function createRestaurant(
   ownerId: string,
   name: string,
@@ -36,6 +42,7 @@ export async function createRestaurant(
       name,
       business_type: businessType,
       menu_template: 'three_d',
+      menu_shape: 'rounded',
       description: null,
       logo_url: null,
       cover_url: null,
@@ -86,6 +93,7 @@ export async function createRestaurant(
 }
 
 export async function getRestaurantByOwner(ownerId: string) {
+  clearPublicMenuShape()
   const q = query(restaurantsRef, where('owner_id', '==', ownerId), limit(1))
   let snap
   try { snap = await getDocs(q) } catch (err) {
@@ -98,6 +106,7 @@ export async function getRestaurantByOwner(ownerId: string) {
 }
 
 export async function getRestaurantById(id: string) {
+  clearPublicMenuShape()
   const snap = await getDoc(doc(db, 'restaurants', id))
   if (!snap.exists()) throw new Error('Restaurant not found')
   return { id: snap.id, ...snap.data() } as unknown as Restaurant
@@ -116,6 +125,7 @@ export async function createRestaurantByAdmin(input: {
     owner_id: null, slug, name: input.name,
     business_type: input.businessType ?? 'restaurant',
     menu_template: 'three_d',
+    menu_shape: 'rounded',
     description: null, logo_url: null, cover_url: null,
     phone: input.clientContact || null, whatsapp: input.clientContact || null,
     email: null, website: null, address: null, google_maps_url: null,
@@ -153,6 +163,10 @@ export async function getRestaurantBySlug(slug: string) {
   const restaurant = { id: d.id, ...d.data() } as unknown as Restaurant
   if (restaurant.subscription_end && new Date(restaurant.subscription_end).getTime() <= Date.now()) {
     throw new Error('انتهت مدة الاشتراك')
+  }
+  if (typeof document !== 'undefined') {
+    document.documentElement.dataset.menuPage = 'true'
+    document.documentElement.dataset.menuShape = restaurant.menu_shape || 'rounded'
   }
   return restaurant
 }
