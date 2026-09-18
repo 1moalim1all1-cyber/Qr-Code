@@ -1,13 +1,11 @@
 import { motion } from 'framer-motion'
-import { UtensilsCrossed, Coffee, Store, Scissors, Dumbbell, CalendarDays } from 'lucide-react'
+import { UtensilsCrossed, Coffee, Store, Sparkles } from 'lucide-react'
 
 const ITEMS = [
   { icon: UtensilsCrossed, label: 'مطاعم', color: 'var(--color-saffron)' },
   { icon: Coffee, label: 'كافيهات', color: 'var(--color-zaytoon)' },
-  { icon: Store, label: 'محلات ومعارض', color: 'var(--color-sumac)' },
-  { icon: Scissors, label: 'صالونات وحلاقة', color: 'var(--color-saffron-dim)' },
-  { icon: Dumbbell, label: 'نوادي وجيم', color: 'var(--color-zaytoon-dim)' },
-  { icon: CalendarDays, label: 'فعاليات ومؤتمرات', color: 'var(--color-sumac)' },
+  { icon: Store, label: 'سوبر ماركت', color: 'var(--color-sumac)' },
+  { icon: Sparkles, label: 'مستحضرات تجميل', color: 'var(--color-saffron-dim)' },
 ]
 
 export default function Showcase3D() {
@@ -16,16 +14,16 @@ export default function Showcase3D() {
       <div className="max-w-6xl mx-auto px-6">
         <div className="text-center mb-14">
           <span className="inline-block text-sm font-medium text-zaytoon bg-zaytoon/10 rounded-full px-3 py-1 mb-4">
-            مش بس مطاعم
+            مناسب لأنشطة مختلفة
           </span>
-          <h2 className="font-display text-3xl font-semibold mb-3">أي نشاط عنده قائمة أو خدمة، ينفع يبقى ليه QR</h2>
+          <h2 className="font-display text-3xl font-semibold mb-3">اختار نشاطك واعرض منتجاتك بمنيو QR احترافي</h2>
           <p className="text-stone max-w-xl mx-auto">
-            من كافيه صغير لمعرض أو حتى صالون حلاقة — نفس الفكرة، نفس السهولة.
+            مطاعم، كافيهات، سوبر ماركت ومستحضرات تجميل — كل نشاط له عرض واضح وسهل للعميل.
           </p>
         </div>
 
         <div
-          className="grid grid-cols-2 sm:grid-cols-3 gap-6 md:gap-8"
+          className="grid grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8"
           style={{ perspective: '1200px' }}
         >
           {ITEMS.map((item, i) => (
@@ -39,7 +37,7 @@ export default function Showcase3D() {
               className="group"
             >
               <motion.div
-                animate={{ rotateY: [0, 10, 0, -10, 0], rotateX: [0, -4, 0, 4, 0] }}
+                animate={{ rotateY: [0, 8, 0, -8, 0], rotateX: [0, -3, 0, 3, 0] }}
                 transition={{
                   duration: 7 + i * 0.6,
                   repeat: Infinity,
