@@ -1,36 +1,50 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Boxes, Eye, EyeOff, ImagePlus, LoaderCircle, Plus, ShieldCheck, Sparkles, Store } from 'lucide-react'
 import AdminDashboardPage from './AdminDashboardPage'
-import { getGlobalMenuVisibility, setGlobalMenuVisibility } from '@/services/platformSettings'
+import { listAdminClients, setRestaurantHomepageVisibility, type AdminClientRecord } from '@/services/admin'
 
 export default function AdminHomePage() {
-  const [menusVisible, setMenusVisible] = useState<boolean | null>(null)
-  const [menuControlBusy, setMenuControlBusy] = useState(false)
-  const [menuControlError, setMenuControlError] = useState<string | null>(null)
+  const [clients, setClients] = useState<AdminClientRecord[]>([])
+  const [homeMenusLoading, setHomeMenusLoading] = useState(true)
+  const [busyRestaurantId, setBusyRestaurantId] = useState<string | null>(null)
+  const [homeMenusError, setHomeMenusError] = useState<string | null>(null)
+
+  async function loadHomepageMenus() {
+    setHomeMenusLoading(true)
+    setHomeMenusError(null)
+    try {
+      setClients(await listAdminClients())
+    } catch (err) {
+      setHomeMenusError(err instanceof Error ? err.message : 'تعذّر تحميل المنيوهات')
+    } finally {
+      setHomeMenusLoading(false)
+    }
+  }
 
   useEffect(() => {
-    getGlobalMenuVisibility()
-      .then(setMenusVisible)
-      .catch((err) => setMenuControlError(err instanceof Error ? err.message : 'تعذّر تحميل حالة المنيوهات'))
+    loadHomepageMenus()
   }, [])
 
-  async function toggleAllMenus(nextVisible: boolean) {
-    if (menuControlBusy || menusVisible === nextVisible) return
-    if (!nextVisible) {
-      const ok = window.confirm('إخفاء كل المنيوهات؟ العملاء هيشوفوا إن المنيو غير متاح لحد ما تظهرهم تاني من هنا.')
-      if (!ok) return
-    }
+  const restaurants = useMemo(
+    () => clients.map((client) => client.restaurant).filter((restaurant): restaurant is NonNullable<AdminClientRecord['restaurant']> => Boolean(restaurant)),
+    [clients],
+  )
 
-    setMenuControlBusy(true)
-    setMenuControlError(null)
+  const visibleOnHomeCount = restaurants.filter((restaurant) => restaurant.show_on_home !== false).length
+
+  async function toggleHomepageVisibility(restaurantId: string, nextVisible: boolean) {
+    setBusyRestaurantId(restaurantId)
+    setHomeMenusError(null)
     try {
-      await setGlobalMenuVisibility(nextVisible)
-      setMenusVisible(nextVisible)
+      await setRestaurantHomepageVisibility(restaurantId, nextVisible)
+      setClients((current) => current.map((client) => client.restaurant?.id === restaurantId
+        ? { ...client, restaurant: { ...client.restaurant, show_on_home: nextVisible } }
+        : client))
     } catch (err) {
-      setMenuControlError(err instanceof Error ? err.message : 'تعذّر تغيير حالة المنيوهات')
+      setHomeMenusError(err instanceof Error ? err.message : 'تعذّر تغيير ظهور المنيو في الرئيسية')
     } finally {
-      setMenuControlBusy(false)
+      setBusyRestaurantId(null)
     }
   }
 
@@ -56,40 +70,51 @@ export default function AdminHomePage() {
           </div>
 
           <div className="mt-7 rounded-3xl border border-white/10 bg-white/5 p-4 sm:p-5 backdrop-blur">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-              <div className="flex items-start gap-3">
-                <div className={`mt-0.5 w-11 h-11 rounded-2xl flex items-center justify-center ${menusVisible === false ? 'bg-sumac/15 text-sumac' : 'bg-zaytoon/15 text-[#b8c99a]'}`}>
-                  {menusVisible === null ? <LoaderCircle size={20} className="animate-spin" /> : menusVisible ? <Eye size={20} /> : <EyeOff size={20} />}
-                </div>
-                <div>
-                  <p className="text-xs text-white/45">تحكم عام في المنصة</p>
-                  <h2 className="font-display text-lg font-bold mt-0.5">
-                    {menusVisible === null ? 'جارِ تحميل حالة المنيوهات...' : menusVisible ? 'كل المنيوهات ظاهرة حاليًا' : 'كل المنيوهات مخفية حاليًا'}
-                  </h2>
-                  <p className="text-xs text-white/45 mt-1 leading-5">الإخفاء العام بيوقف عرض صفحات المنيو للزوار فقط، من غير ما يغيّر حالة حسابات العملاء أو اشتراكاتهم.</p>
-                </div>
+            <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
+              <div>
+                <p className="text-xs text-white/45">المنيوهات اللي بتظهر في الصفحة الرئيسية</p>
+                <h2 className="font-display text-lg font-bold mt-1">تحكم في ظهور كل منيو على الرئيسية فقط</h2>
+                <p className="text-xs text-white/45 mt-1 leading-5">لو أخفيت منيو من هنا، رابط المنيو نفسه يفضل شغال عادي. اللي بيتغير بس هو ظهوره في قسم المنيوهات الحقيقية في الصفحة الرئيسية.</p>
               </div>
-
-              <div className="flex gap-2 flex-wrap">
-                <button
-                  type="button"
-                  disabled={menuControlBusy || menusVisible === true || menusVisible === null}
-                  onClick={() => toggleAllMenus(true)}
-                  className="rounded-xl bg-zaytoon text-white px-4 py-2.5 text-sm font-semibold flex items-center gap-2 disabled:opacity-35"
-                >
-                  <Eye size={16} /> إظهار كل المنيوهات
-                </button>
-                <button
-                  type="button"
-                  disabled={menuControlBusy || menusVisible === false || menusVisible === null}
-                  onClick={() => toggleAllMenus(false)}
-                  className="rounded-xl bg-sumac text-white px-4 py-2.5 text-sm font-semibold flex items-center gap-2 disabled:opacity-35"
-                >
-                  <EyeOff size={16} /> إخفاء كل المنيوهات
-                </button>
+              <div className="rounded-2xl bg-white/7 border border-white/10 px-4 py-3 text-sm shrink-0">
+                ظاهر على الرئيسية: <strong className="text-[#ead19a]">{visibleOnHomeCount}</strong> / {restaurants.length}
               </div>
             </div>
-            {menuControlError && <p className="mt-3 rounded-xl bg-sumac/10 border border-sumac/20 px-3 py-2 text-xs text-red-200">{menuControlError}</p>}
+
+            {homeMenusError && <p className="mb-3 rounded-xl bg-sumac/10 border border-sumac/20 px-3 py-2 text-xs text-red-200">{homeMenusError}</p>}
+
+            {homeMenusLoading ? (
+              <div className="py-8 flex items-center justify-center gap-2 text-white/45 text-sm"><LoaderCircle size={18} className="animate-spin" /> جارِ تحميل المنيوهات...</div>
+            ) : restaurants.length === 0 ? (
+              <div className="py-8 text-center text-white/45 text-sm">مفيش منيوهات لسه.</div>
+            ) : (
+              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-3 max-h-[430px] overflow-auto pr-1">
+                {restaurants.map((restaurant) => {
+                  const shown = restaurant.show_on_home !== false
+                  const busy = busyRestaurantId === restaurant.id
+                  return (
+                    <div key={restaurant.id} className="rounded-2xl border border-white/10 bg-[#171815] p-3 flex items-center gap-3">
+                      <div className="w-11 h-11 rounded-xl bg-white/8 overflow-hidden flex items-center justify-center shrink-0">
+                        {restaurant.logo_url ? <img src={restaurant.logo_url} alt="" className="w-full h-full object-contain bg-white" /> : <Store size={18} className="text-[#d7b66f]" />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-sm truncate">{restaurant.name}</p>
+                        <p className={`text-[11px] mt-1 ${shown ? 'text-[#aebc91]' : 'text-white/35'}`}>{shown ? 'ظاهر في الرئيسية' : 'مخفي من الرئيسية'}</p>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => toggleHomepageVisibility(restaurant.id, !shown)}
+                        className={`rounded-xl px-3 py-2 text-xs font-semibold flex items-center gap-1.5 disabled:opacity-40 ${shown ? 'bg-sumac/15 text-red-200' : 'bg-zaytoon/20 text-[#c9d9ad]'}`}
+                      >
+                        {busy ? <LoaderCircle size={14} className="animate-spin" /> : shown ? <EyeOff size={14} /> : <Eye size={14} />}
+                        {shown ? 'إخفاء' : 'إظهار'}
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           <div className="mt-4 grid sm:grid-cols-3 gap-3">
