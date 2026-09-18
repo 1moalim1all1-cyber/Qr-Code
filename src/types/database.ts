@@ -219,5 +219,14 @@ export interface OrderStatusPublic {
   order_type: OrderType
   items_summary: string
   total: number
+  table_label?: string
+  created_at: string
+}
+
+export interface Review {
+  id: string
+  customer_name: string
+  rating: number
+  comment: string
   created_at: string
 }
