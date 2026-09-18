@@ -11,7 +11,8 @@ export type PhoneLoginForm = z.infer<typeof phoneLoginSchema>
 export const phoneRegisterSchema = z
   .object({
     fullName: z.string().min(3, 'الاسم لازم يكون 3 أحرف على الأقل'),
-    restaurantName: z.string().min(2, 'اسم المطعم مطلوب'),
+    restaurantName: z.string().min(2, 'اسم النشاط مطلوب'),
+    businessType: z.enum(['restaurant', 'cafe', 'supermarket', 'cosmetics']),
     phone: z.string().regex(phoneRegex, 'رقم الهاتف غير صحيح'),
     password: z.string().min(6, 'كلمة المرور 6 أحرف على الأقل'),
     confirmPassword: z.string(),
@@ -34,12 +35,6 @@ export const productSchema = z.object({
   descriptionAr: z.string().optional(),
   categoryId: z.string().min(1, 'اختار القسم'),
   price: z.coerce.number().positive('السعر لازم يكون أكبر من صفر'),
-  // Kept as a plain string (not z.coerce.number()) on purpose: an empty
-  // discount field used to get coerced to 0 by z.coerce.number(), which
-  // then passed .nonnegative() and silently became a real "0 EGP discount"
-  // instead of "no discount". The actual number conversion happens in the
-  // form's onSubmit handler, where an empty string is explicitly mapped to
-  // null (no discount) instead of 0.
   discountPrice: z.string().optional(),
   isBestSeller: z.boolean().default(false),
   isNew: z.boolean().default(false),
