@@ -1,8 +1,39 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Boxes, ImagePlus, Plus, ShieldCheck, Sparkles, Store } from 'lucide-react'
+import { Boxes, Eye, EyeOff, ImagePlus, LoaderCircle, Plus, ShieldCheck, Sparkles, Store } from 'lucide-react'
 import AdminDashboardPage from './AdminDashboardPage'
+import { getGlobalMenuVisibility, setGlobalMenuVisibility } from '@/services/platformSettings'
 
 export default function AdminHomePage() {
+  const [menusVisible, setMenusVisible] = useState<boolean | null>(null)
+  const [menuControlBusy, setMenuControlBusy] = useState(false)
+  const [menuControlError, setMenuControlError] = useState<string | null>(null)
+
+  useEffect(() => {
+    getGlobalMenuVisibility()
+      .then(setMenusVisible)
+      .catch((err) => setMenuControlError(err instanceof Error ? err.message : 'تعذّر تحميل حالة المنيوهات'))
+  }, [])
+
+  async function toggleAllMenus(nextVisible: boolean) {
+    if (menuControlBusy || menusVisible === nextVisible) return
+    if (!nextVisible) {
+      const ok = window.confirm('إخفاء كل المنيوهات؟ العملاء هيشوفوا إن المنيو غير متاح لحد ما تظهرهم تاني من هنا.')
+      if (!ok) return
+    }
+
+    setMenuControlBusy(true)
+    setMenuControlError(null)
+    try {
+      await setGlobalMenuVisibility(nextVisible)
+      setMenusVisible(nextVisible)
+    } catch (err) {
+      setMenuControlError(err instanceof Error ? err.message : 'تعذّر تغيير حالة المنيوهات')
+    } finally {
+      setMenuControlBusy(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#f7f1e8]" dir="rtl">
       <section className="relative overflow-hidden bg-[#10110f] text-white">
@@ -24,7 +55,44 @@ export default function AdminHomePage() {
             </div>
           </div>
 
-          <div className="mt-7 grid sm:grid-cols-3 gap-3">
+          <div className="mt-7 rounded-3xl border border-white/10 bg-white/5 p-4 sm:p-5 backdrop-blur">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className={`mt-0.5 w-11 h-11 rounded-2xl flex items-center justify-center ${menusVisible === false ? 'bg-sumac/15 text-sumac' : 'bg-zaytoon/15 text-[#b8c99a]'}`}>
+                  {menusVisible === null ? <LoaderCircle size={20} className="animate-spin" /> : menusVisible ? <Eye size={20} /> : <EyeOff size={20} />}
+                </div>
+                <div>
+                  <p className="text-xs text-white/45">تحكم عام في المنصة</p>
+                  <h2 className="font-display text-lg font-bold mt-0.5">
+                    {menusVisible === null ? 'جارِ تحميل حالة المنيوهات...' : menusVisible ? 'كل المنيوهات ظاهرة حاليًا' : 'كل المنيوهات مخفية حاليًا'}
+                  </h2>
+                  <p className="text-xs text-white/45 mt-1 leading-5">الإخفاء العام بيوقف عرض صفحات المنيو للزوار فقط، من غير ما يغيّر حالة حسابات العملاء أو اشتراكاتهم.</p>
+                </div>
+              </div>
+
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  type="button"
+                  disabled={menuControlBusy || menusVisible === true || menusVisible === null}
+                  onClick={() => toggleAllMenus(true)}
+                  className="rounded-xl bg-zaytoon text-white px-4 py-2.5 text-sm font-semibold flex items-center gap-2 disabled:opacity-35"
+                >
+                  <Eye size={16} /> إظهار كل المنيوهات
+                </button>
+                <button
+                  type="button"
+                  disabled={menuControlBusy || menusVisible === false || menusVisible === null}
+                  onClick={() => toggleAllMenus(false)}
+                  className="rounded-xl bg-sumac text-white px-4 py-2.5 text-sm font-semibold flex items-center gap-2 disabled:opacity-35"
+                >
+                  <EyeOff size={16} /> إخفاء كل المنيوهات
+                </button>
+              </div>
+            </div>
+            {menuControlError && <p className="mt-3 rounded-xl bg-sumac/10 border border-sumac/20 px-3 py-2 text-xs text-red-200">{menuControlError}</p>}
+          </div>
+
+          <div className="mt-4 grid sm:grid-cols-3 gap-3">
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur">
               <Boxes className="text-saffron mb-2" size={20} />
               <p className="font-semibold">كتالوج مركزي</p>
