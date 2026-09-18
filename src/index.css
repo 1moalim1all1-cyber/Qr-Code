@@ -1,8 +1,6 @@
 @import "tailwindcss";
 
 @theme {
-  /* Signature palette v3 — deep black + rich metallic gold (used across the
-     customer-facing menu, cart, and order tracking for a premium feel) */
   --color-ink: #0D0B08;
   --color-ink-soft: #1C1712;
   --color-paper: #FBF6EE;
@@ -39,6 +37,62 @@ body {
 ::selection {
   background-color: var(--color-saffron);
   color: var(--color-ink);
+}
+
+/* Public menu geometry. The shape is stored per business and exposed as a
+   data attribute by getRestaurantBySlug(). We scope the selectors to the
+   public menu only so dashboard/admin cards never change shape. */
+html[data-menu-page="true"] .grid.gap-3 > [role="button"] {
+  transition: border-radius .2s ease, clip-path .2s ease, transform .2s ease, box-shadow .2s ease;
+}
+
+html[data-menu-page="true"][data-menu-shape="rounded"] .grid.gap-3 > [role="button"] {
+  border-radius: 1rem !important;
+  clip-path: none;
+}
+
+html[data-menu-page="true"][data-menu-shape="square"] .grid.gap-3 > [role="button"] {
+  border-radius: 0 !important;
+  clip-path: none;
+}
+
+html[data-menu-page="true"][data-menu-shape="capsule"] .grid.gap-3 > [role="button"] {
+  border-radius: 2rem !important;
+  clip-path: none;
+}
+
+html[data-menu-page="true"][data-menu-shape="cut_corner"] .grid.gap-3 > [role="button"] {
+  border-radius: 0 !important;
+  clip-path: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px);
+}
+
+html[data-menu-page="true"][data-menu-shape="hex"] .grid.gap-3 > [role="button"] {
+  border-radius: 0 !important;
+  clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 16px 100%, 0 50%);
+}
+
+html[data-menu-page="true"][data-menu-shape="triangle"] .grid.gap-3 > [role="button"] {
+  border-radius: 0 !important;
+  clip-path: polygon(8% 0, 100% 0, 92% 100%, 0 100%);
+}
+
+/* Make the product photo echo the selected geometry too. */
+html[data-menu-page="true"][data-menu-shape="square"] .grid.gap-3 > [role="button"] > .flex > div:first-child {
+  border-radius: 0 !important;
+}
+
+html[data-menu-page="true"][data-menu-shape="capsule"] .grid.gap-3 > [role="button"] > .flex > div:first-child {
+  border-radius: 9999px !important;
+}
+
+html[data-menu-page="true"][data-menu-shape="hex"] .grid.gap-3 > [role="button"] > .flex > div:first-child {
+  border-radius: 0 !important;
+  clip-path: polygon(20% 0, 80% 0, 100% 50%, 80% 100%, 20% 100%, 0 50%);
+}
+
+html[data-menu-page="true"][data-menu-shape="triangle"] .grid.gap-3 > [role="button"] > .flex > div:first-child {
+  border-radius: 0 !important;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
 }
 
 @media (prefers-reduced-motion: reduce) {
