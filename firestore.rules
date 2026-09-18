@@ -167,6 +167,11 @@ service cloud.firestore {
       allow write: if isSuperAdmin();
     }
 
+    match /platform_settings/{docId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
     match /activity_logs/{docId} {
       allow read: if isSuperAdmin() ||
         (isSignedIn() && ownsRestaurant(resource.data.restaurant_id));
