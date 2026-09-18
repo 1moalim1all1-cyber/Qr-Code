@@ -8,6 +8,7 @@ const PublicMenuPage = lazy(() => import('./pages/public/ThemedMenuPage'))
 const OrderTrackingPage = lazy(() => import('./pages/public/OrderTrackingPage'))
 const TermsPage = lazy(() => import('./pages/public/TermsPage'))
 const PrivacyPage = lazy(() => import('./pages/public/PrivacyPage'))
+const ContactPage = lazy(() => import('./pages/public/ContactPage'))
 const RestaurantsDirectoryPage = lazy(() => import('./pages/public/RestaurantsDirectoryPage'))
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'))
 const RegisterPage = lazy(() => import('./pages/auth/RegisterPage'))
@@ -24,6 +25,7 @@ const DataToolsPage = lazy(() => import('./pages/owner/DataToolsPage'))
 const AdminHomePage = lazy(() => import('./pages/admin/AdminHomePage'))
 const AdminCreateClientPage = lazy(() => import('./pages/admin/AdminCreateClientPage'))
 const AdminCatalogPage = lazy(() => import('./pages/admin/AdminCatalogPage'))
+const AdminSiteSettingsPage = lazy(() => import('./pages/admin/AdminSiteSettingsPage'))
 
 function RouteLoading() {
   return <div className="min-h-screen flex items-center justify-center bg-paper"><div className="w-8 h-8 rounded-full border-2 border-saffron border-t-transparent animate-spin" /></div>
@@ -39,6 +41,7 @@ function App() {
         <Route path="/restaurants" element={<RestaurantsDirectoryPage />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/contact" element={<ContactPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/activation-pending" element={<ProtectedRoute allowedRoles={['owner']} requireActiveRestaurant={false}><ActivationPendingPage /></ProtectedRoute>} />
@@ -53,6 +56,7 @@ function App() {
         <Route path="/dashboard/data" element={<ProtectedRoute allowedRoles={['owner', 'staff']}><DataToolsPage /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute allowedRoles={['super_admin']}><AdminHomePage /></ProtectedRoute>} />
         <Route path="/admin/catalog" element={<ProtectedRoute allowedRoles={['super_admin']}><AdminCatalogPage /></ProtectedRoute>} />
+        <Route path="/admin/site-settings" element={<ProtectedRoute allowedRoles={['super_admin']}><AdminSiteSettingsPage /></ProtectedRoute>} />
         <Route path="/admin/clients/new" element={<ProtectedRoute allowedRoles={['super_admin']}><AdminCreateClientPage /></ProtectedRoute>} />
         <Route path="/admin/clients/:id/menu" element={<ProtectedRoute allowedRoles={['super_admin']}><MenuPage backTo="/admin" /></ProtectedRoute>} />
         <Route path="/admin/clients/:id/qr" element={<ProtectedRoute allowedRoles={['super_admin']}><QRCodePage backTo="/admin" /></ProtectedRoute>} />
