@@ -16,7 +16,7 @@ export async function listProducts(restaurantId: string, categoryId?: string) {
 }
 
 export interface ProductInput {
-  category_id: string | null
+  category_id?: string | null
   catalog_id?: string | null
   barcode?: string | null
   brand?: string | null
@@ -43,6 +43,7 @@ export async function createProduct(restaurantId: string, ownerId: string | null
     const docRef = await addDoc(productsRef(restaurantId), {
       owner_id: ownerId,
       ...input,
+      category_id: input.category_id ?? null,
       calories: null,
       ingredients: input.ingredients ?? [],
       allergens: input.allergens ?? [],
