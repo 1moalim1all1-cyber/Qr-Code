@@ -155,7 +155,7 @@ export default function LandingPage() {
                   <div className="h-36 relative overflow-hidden">
                     <img src="https://images.unsplash.com/photo-1515003197210-e0cd71810b5f?w=1200&auto=format&fit=crop&q=82" alt="مطعم" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
-                    <div className="absolute right-5 bottom-4 text-white"><div className="text-xs text-white/65">Egy Menu Demo</div><div className="font-display text-2xl font-bold mt-1">Urban Kitchen</div></div>
+                    <div className="absolute right-5 bottom-4 text-white"><div className="font-display text-2xl font-bold">Urban Kitchen</div></div>
                   </div>
                   <div className="p-4">
                     <div className="flex gap-2 overflow-hidden mb-4">{['الأكثر طلبًا', 'وجبات', 'مشروبات'].map((x, i) => <div key={x} className={`shrink-0 rounded-full px-4 py-2 text-xs ${i === 0 ? 'bg-[#171714] text-white' : 'bg-[#e5ddd0]'}`}>{x}</div>)}</div>
