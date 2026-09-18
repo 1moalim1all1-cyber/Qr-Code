@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import ProtectedRoute from './components/layout/ProtectedRoute'
 import FloatingContact from './components/public/FloatingContact'
+import SiteFooterLinks from './components/public/SiteFooterLinks'
 
 const LandingPage = lazy(() => import('./pages/public/LandingPage'))
 const PublicMenuPage = lazy(() => import('./pages/public/ThemedMenuPage'))
@@ -63,6 +64,7 @@ function App() {
         <Route path="/admin/clients/:id/orders" element={<ProtectedRoute allowedRoles={['super_admin']}><OrdersPage backTo="/admin" /></ProtectedRoute>} />
         <Route path="/admin/clients/:id/offers" element={<ProtectedRoute allowedRoles={['super_admin']}><OffersPage backTo="/admin" /></ProtectedRoute>} />
       </Routes>
+      <SiteFooterLinks />
       <FloatingContact />
     </Suspense>
   )
