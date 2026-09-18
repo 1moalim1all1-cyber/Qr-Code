@@ -7,6 +7,7 @@ export type SubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'canceled'
 export type RestaurantStatus = 'active' | 'suspended' | 'pending' | 'rejected'
 export type BusinessType = 'restaurant' | 'cafe' | 'supermarket' | 'cosmetics'
 export type MenuTemplate = 'three_d' | 'classic' | 'minimal' | 'dark_luxe'
+export type MenuShape = 'rounded' | 'square' | 'capsule' | 'cut_corner' | 'hex' | 'triangle'
 
 export interface LocalizedText {
   ar: string
@@ -43,6 +44,7 @@ export interface Restaurant {
   name: string
   business_type?: BusinessType
   menu_template?: MenuTemplate
+  menu_shape?: MenuShape
   description?: string | null
   logo_url?: string | null
   cover_url?: string | null
