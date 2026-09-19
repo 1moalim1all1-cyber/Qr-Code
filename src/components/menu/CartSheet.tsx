@@ -26,6 +26,7 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
   const [checkingCoupon, setCheckingCoupon] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [placedOrderId, setPlacedOrderId] = useState<string | null>(null)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const discountAmount = couponDiscount ? Math.round((subtotal * couponDiscount.percent) / 100) : 0
   const total = Math.max(0, subtotal - discountAmount)
@@ -49,7 +50,23 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
 
   async function handleSubmit() {
     if (lines.length === 0) return
+
+    const whatsappNumber = normalizeWhatsappNumber(restaurant.whatsapp)
+    let whatsappWindow: Window | null = null
+
+    if (orderType === 'whatsapp') {
+      if (!whatsappNumber) {
+        setSubmitError('رقم واتساب المطعم غير مضبوط. راجع رقم الواتساب من إعدادات المنيو.')
+        return
+      }
+
+      // افتح النافذة فور ضغط العميل قبل أي await حتى الموبايل ما يمنعهاش كـ popup.
+      whatsappWindow = window.open('about:blank', '_blank')
+    }
+
     setSubmitting(true)
+    setSubmitError(null)
+
     try {
       const items = lines.map((l) => ({
         product_id: l.product_id,
@@ -74,13 +91,31 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
         restaurantName: restaurant.name,
       })
 
-      if (orderType === 'whatsapp' && restaurant.whatsapp) {
-        const message = buildWhatsappMessage(restaurant.name, items, total, customerName)
-        window.open(`https://wa.me/${restaurant.whatsapp.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`, '_blank')
+      if (orderType === 'whatsapp' && whatsappNumber) {
+        const message = buildWhatsappMessage(
+          restaurant.name,
+          items,
+          total,
+          customerName,
+          customerPhone,
+          orderType,
+          tableLabel,
+        )
+        const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`
+
+        if (whatsappWindow && !whatsappWindow.closed) {
+          whatsappWindow.location.href = whatsappUrl
+        } else {
+          // fallback لو المتصفح منع فتح تاب جديد.
+          window.location.href = whatsappUrl
+        }
       }
 
       setPlacedOrderId(orderId)
       clearCart()
+    } catch (err) {
+      if (whatsappWindow && !whatsappWindow.closed) whatsappWindow.close()
+      setSubmitError(err instanceof Error ? err.message : 'حصل خطأ أثناء إرسال الطلب، حاول تاني')
     } finally {
       setSubmitting(false)
     }
@@ -130,7 +165,6 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
           <div className="p-10 text-center text-stone-light">سلتك فاضية.</div>
         ) : (
           <div className="p-5">
-            {/* Items */}
             <div className="flex flex-col gap-3 mb-5">
               {lines.map((l) => (
                 <div key={l.lineId} className="flex items-start justify-between gap-3">
@@ -144,17 +178,11 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
                     )}
                     {l.notes && <p className="text-xs text-stone-light mt-0.5 italic">"{l.notes}"</p>}
                     <div className="flex items-center gap-2 mt-1.5">
-                      <button
-                        onClick={() => updateQuantity(l.lineId, l.quantity - 1)}
-                        className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center"
-                      >
+                      <button onClick={() => updateQuantity(l.lineId, l.quantity - 1)} className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center">
                         <Minus size={12} />
                       </button>
                       <span className="text-sm w-4 text-center">{l.quantity}</span>
-                      <button
-                        onClick={() => updateQuantity(l.lineId, l.quantity + 1)}
-                        className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center"
-                      >
+                      <button onClick={() => updateQuantity(l.lineId, l.quantity + 1)} className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center">
                         <Plus size={12} />
                       </button>
                     </div>
@@ -171,7 +199,6 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
               ))}
             </div>
 
-            {/* Coupon */}
             <div className="flex items-center gap-2 mb-5">
               <div className="flex-1 relative">
                 <Tag className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-light" size={14} />
@@ -182,29 +209,20 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
                   className="w-full rounded-full bg-white/5 pr-9 pl-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-saffron/40"
                 />
               </div>
-              <button
-                onClick={handleApplyCoupon}
-                disabled={checkingCoupon}
-                className="rounded-full bg-white/5 px-4 py-2 text-sm font-medium hover:bg-stone-light/30 disabled:opacity-60"
-              >
+              <button onClick={handleApplyCoupon} disabled={checkingCoupon} className="rounded-full bg-white/5 px-4 py-2 text-sm font-medium hover:bg-stone-light/30 disabled:opacity-60">
                 تطبيق
               </button>
             </div>
             {couponError && <p className="text-xs text-sumac -mt-3 mb-4">{couponError}</p>}
-            {couponDiscount && (
-              <p className="text-xs text-zaytoon -mt-3 mb-4">تم تطبيق كوبون {couponDiscount.code} (خصم {couponDiscount.percent}%)</p>
-            )}
+            {couponDiscount && <p className="text-xs text-zaytoon -mt-3 mb-4">تم تطبيق كوبون {couponDiscount.code} (خصم {couponDiscount.percent}%)</p>}
 
-            {/* Order type */}
             <p className="text-sm font-medium mb-2">طريقة الاستلام</p>
             <div className="grid grid-cols-4 gap-2 mb-4">
               {ORDER_TYPES.map((t) => (
                 <button
                   key={t.value}
-                  onClick={() => setOrderType(t.value)}
-                  className={`flex flex-col items-center gap-1 rounded-xl py-2.5 text-xs transition-colors ${
-                    orderType === t.value ? 'bg-ink text-paper' : 'bg-white/5 text-paper hover:bg-stone-light/30'
-                  }`}
+                  onClick={() => { setOrderType(t.value); setSubmitError(null) }}
+                  className={`flex flex-col items-center gap-1 rounded-xl py-2.5 text-xs transition-colors ${orderType === t.value ? 'bg-ink text-paper' : 'bg-white/5 text-paper hover:bg-stone-light/30'}`}
                 >
                   <t.icon size={16} />
                   {t.label}
@@ -238,23 +256,13 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
               </div>
             )}
 
-            {/* Totals */}
             <div className="border-t border-saffron/30 pt-3 mb-4 space-y-1.5 text-sm">
-              <div className="flex justify-between text-stone-light">
-                <span>الإجمالي الفرعي</span>
-                <span>{subtotal} ج.م</span>
-              </div>
-              {discountAmount > 0 && (
-                <div className="flex justify-between text-zaytoon">
-                  <span>الخصم</span>
-                  <span>-{discountAmount} ج.م</span>
-                </div>
-              )}
-              <div className="flex justify-between font-display font-semibold text-base pt-1.5 border-t border-saffron/20">
-                <span>الإجمالي</span>
-                <span>{total} ج.م</span>
-              </div>
+              <div className="flex justify-between text-stone-light"><span>الإجمالي الفرعي</span><span>{subtotal} ج.م</span></div>
+              {discountAmount > 0 && <div className="flex justify-between text-zaytoon"><span>الخصم</span><span>-{discountAmount} ج.م</span></div>}
+              <div className="flex justify-between font-display font-semibold text-base pt-1.5 border-t border-saffron/20"><span>الإجمالي</span><span>{total} ج.م</span></div>
             </div>
+
+            {submitError && <p className="text-sm text-sumac bg-sumac/10 rounded-xl px-3 py-2 mb-3">{submitError}</p>}
 
             <button
               onClick={handleSubmit}
@@ -270,19 +278,42 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
   )
 }
 
+function normalizeWhatsappNumber(value?: string | null) {
+  if (!value) return ''
+
+  let digits = value.replace(/[^0-9]/g, '')
+  if (!digits) return ''
+
+  if (digits.startsWith('0020')) digits = digits.slice(2)
+  if (digits.startsWith('01') && digits.length === 11) digits = `20${digits}`
+  else if (digits.startsWith('1') && digits.length === 10) digits = `20${digits}`
+
+  return digits
+}
+
 function buildWhatsappMessage(
   restaurantName: string,
-  items: { name: string; quantity: number; price: number; extras: { name: string; price: number }[] }[],
+  items: { name: string; quantity: number; price: number; extras: { name: string; price: number }[]; size?: string; notes?: string }[],
   total: number,
-  customerName: string
+  customerName: string,
+  customerPhone: string,
+  orderType: OrderType,
+  tableLabel: string,
 ) {
+  const typeLabel = ORDER_TYPES.find((type) => type.value === orderType)?.label ?? orderType
   const lines = items.map((it) => {
+    const sizeText = it.size ? ` - ${it.size}` : ''
     const extrasText = it.extras.length ? ` (${it.extras.map((e) => e.name).join('، ')})` : ''
-    return `- ${it.name}${extrasText} × ${it.quantity}`
+    const notesText = it.notes ? ` | ملاحظة: ${it.notes}` : ''
+    return `- ${it.name}${sizeText}${extrasText} × ${it.quantity}${notesText}`
   })
+
   return [
     `طلب جديد من ${restaurantName}`,
+    `نوع الطلب: ${typeLabel}`,
     customerName ? `الاسم: ${customerName}` : '',
+    customerPhone ? `التليفون: ${customerPhone}` : '',
+    orderType === 'dine_in' && tableLabel ? `الطاولة: ${tableLabel}` : '',
     '',
     ...lines,
     '',
