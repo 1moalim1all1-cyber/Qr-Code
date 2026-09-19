@@ -132,6 +132,7 @@ export interface Product {
 export interface ProductSize {
   name: string
   price: number
+  stock?: number | null
 }
 
 export interface Offer {
