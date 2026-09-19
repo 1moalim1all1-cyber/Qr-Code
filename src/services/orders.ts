@@ -19,8 +19,18 @@ export interface CreateOrderInput {
 }
 
 export async function createOrder(restaurantId: string, input: CreateOrderInput) {
+  const cleanItems = input.items.map((item) => ({
+    product_id: item.product_id,
+    name: item.name,
+    price: item.price,
+    quantity: item.quantity,
+    extras: item.extras ?? [],
+    size: item.size ?? null,
+    notes: item.notes ?? null,
+  }))
+
   const docRef = await addDoc(ordersRef(restaurantId), {
-    items: input.items,
+    items: cleanItems,
     subtotal: input.subtotal,
     delivery_fee: input.deliveryFee,
     tax: input.tax,
@@ -37,7 +47,7 @@ export async function createOrder(restaurantId: string, input: CreateOrderInput)
   // A public, non-sensitive companion doc (no customer name/phone) with the
   // SAME id as the order, so a customer can check "where's my order" via a
   // simple link without needing an account or exposing anyone else's data.
-  const itemsSummary = input.items.map((it) => `${it.quantity}× ${it.name}`).join('، ')
+  const itemsSummary = cleanItems.map((it) => `${it.quantity}× ${it.name}`).join('، ')
   await setDoc(doc(db, 'restaurants', restaurantId, 'order_status', docRef.id), {
     restaurant_id: restaurantId,
     restaurant_name: input.restaurantName,
