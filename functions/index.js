@@ -5,18 +5,65 @@ const { getAuth } = require('firebase-admin/auth')
 
 initializeApp()
 
+function normalizeEgyptPhone(raw) {
+  let digits = String(raw || '').replace(/\D/g, '')
+  if (digits.startsWith('0020')) digits = digits.slice(4)
+  else if (digits.startsWith('20')) digits = digits.slice(2)
+  if (digits.startsWith('0')) digits = digits.slice(1)
+  if (!/^1\d{9}$/.test(digits)) {
+    throw new HttpsError('invalid-argument', 'اكتب رقم مصري صحيح مثل 01012345678')
+  }
+  return {
+    local: `0${digits}`,
+    international: `20${digits}`,
+    pseudoEmail: `20${digits}@phone.smartqrmenu.app`,
+  }
+}
+
+async function assertSuperAdmin(uid) {
+  const db = getFirestore()
+  const callerSnap = await db.collection('users').doc(uid).get()
+  if (!callerSnap.exists || callerSnap.data().role !== 'super_admin') {
+    throw new HttpsError('permission-denied', 'العملية دي متاحة للسوبر أدمن فقط')
+  }
+  return { db, callerSnap }
+}
+
+exports.changeMyLoginPhone = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'لازم تسجل دخول كمسؤول')
+  }
+
+  const { db } = await assertSuperAdmin(request.auth.uid)
+  const phone = normalizeEgyptPhone(request.data?.phone)
+  const auth = getAuth()
+
+  try {
+    const existing = await auth.getUserByEmail(phone.pseudoEmail)
+    if (existing.uid !== request.auth.uid) {
+      throw new HttpsError('already-exists', 'الرقم ده مستخدم في حساب تاني بالفعل')
+    }
+  } catch (err) {
+    if (err instanceof HttpsError) throw err
+    if (err?.code !== 'auth/user-not-found') throw err
+  }
+
+  await auth.updateUser(request.auth.uid, { email: phone.pseudoEmail })
+  await db.collection('users').doc(request.auth.uid).set({ phone: phone.local }, { merge: true })
+
+  return {
+    ok: true,
+    phone: phone.local,
+    loginEmail: phone.pseudoEmail,
+  }
+})
+
 exports.deleteClientCompletely = onCall(async (request) => {
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'لازم تسجل دخول كمسؤول')
   }
 
-  const db = getFirestore()
-  const callerRef = db.collection('users').doc(request.auth.uid)
-  const callerSnap = await callerRef.get()
-
-  if (!callerSnap.exists || callerSnap.data().role !== 'super_admin') {
-    throw new HttpsError('permission-denied', 'الحذف الكامل متاح للسوبر أدمن فقط')
-  }
+  const { db } = await assertSuperAdmin(request.auth.uid)
 
   const uid = typeof request.data?.uid === 'string' ? request.data.uid.trim() : ''
   const restaurantId = typeof request.data?.restaurantId === 'string' ? request.data.restaurantId.trim() : ''
