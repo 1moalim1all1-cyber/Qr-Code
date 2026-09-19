@@ -153,6 +153,13 @@ export async function deleteClientCompletely(client: AdminClientRecord) {
   await removeClient(payload)
 }
 
+export async function changeMyLoginPhone(phone: string) {
+  const functions = getFunctions(app)
+  const changePhone = httpsCallable<{ phone: string }, { ok: boolean; phone: string; loginEmail: string }>(functions, 'changeMyLoginPhone')
+  const result = await changePhone({ phone })
+  return result.data
+}
+
 export async function setRestaurantStatus(id: string, status: RestaurantStatus) {
   await updateDoc(doc(db, 'restaurants', id), { status })
 }
