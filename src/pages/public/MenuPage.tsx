@@ -194,6 +194,8 @@ function MenuPageContent() {
 function ProductCard({ product: p, restaurant, ui, shape, index, onOpen }: { product: Product; restaurant: Restaurant; ui: ReturnType<typeof templateClasses>; shape: MenuShape; index: number; onOpen: () => void }) {
   const { addItem } = useCart()
   const threeD = (restaurant.menu_template || 'three_d') === 'three_d'
+  const availableOptions = (p.sizes ?? []).filter((s) => s.stock == null || s.stock > 0)
+  const optionPrice = availableOptions.length > 0 ? Math.min(...availableOptions.map((s) => Number(s.price))) : null
   return (
     <article onClick={onOpen} className={`${ui.card} ${shapeClass(shape)} overflow-hidden cursor-pointer transition-all hover:-translate-y-1 ${threeD ? 'hover:shadow-[0_24px_40px_rgba(0,0,0,.38)]' : ''}`} style={threeD ? { transform: `perspective(900px) rotateY(${index % 2 ? -1.4 : 1.4}deg)` } : undefined}>
       <div className="relative aspect-square overflow-hidden bg-white/5">
@@ -206,8 +208,8 @@ function ProductCard({ product: p, restaurant, ui, shape, index, onOpen }: { pro
           <div className="flex gap-1 shrink-0">{p.is_best_seller && <Star size={12} className="text-saffron" fill="currentColor" />}{p.is_new && <Sparkles size={12} className="text-zaytoon" />}{p.is_spicy && <Flame size={12} className="text-sumac" />}{p.is_vegetarian && <Leaf size={12} className="text-zaytoon" />}</div>
         </div>
         <div className="mt-3 flex items-center justify-between gap-2">
-          <div>{p.discount_price ? <><span className="font-bold text-saffron-dim">{p.discount_price} ج.م</span><span className={`text-[11px] line-through mr-1 ${ui.muted}`}>{p.price}</span></> : <span className="font-bold">{p.price} ج.م</span>}</div>
-          <button onClick={(e) => { e.stopPropagation(); addItem({ productId: p.id, name: p.name.ar, price: p.discount_price || p.price, extras: [] }, 1) }} className="rounded-full bg-saffron text-ink w-8 h-8 flex items-center justify-center"><Plus size={15} /></button>
+          <div>{p.sizes?.length ? (optionPrice != null ? <span className="font-bold">من {optionPrice} ج.م</span> : <span className="text-xs text-sumac">غير متاح حاليًا</span>) : p.discount_price ? <><span className="font-bold text-saffron-dim">{p.discount_price} ج.م</span><span className={`text-[11px] line-through mr-1 ${ui.muted}`}>{p.price}</span></> : <span className="font-bold">{p.price} ج.م</span>}</div>
+          <button onClick={(e) => { e.stopPropagation(); if (p.sizes?.length) onOpen(); else addItem({ productId: p.id, name: p.name.ar, price: p.discount_price || p.price, extras: [] }, 1) }} className="rounded-full bg-saffron text-ink w-8 h-8 flex items-center justify-center"><Plus size={15} /></button>
         </div>
       </div>
     </article>
@@ -216,12 +218,16 @@ function ProductCard({ product: p, restaurant, ui, shape, index, onOpen }: { pro
 
 function ProductDetailSheet({ product, ui, onClose }: { product: Product; ui: ReturnType<typeof templateClasses>; onClose: () => void }) {
   const { addItem } = useCart()
+  const firstAvailableSize = (product.sizes ?? []).find((s) => s.stock == null || s.stock > 0) ?? null
   const [quantity, setQuantity] = useState(1)
   const [selectedExtras, setSelectedExtras] = useState<OrderItemExtra[]>([])
-  const [selectedSize, setSelectedSize] = useState(product.sizes?.[0] || null)
+  const [selectedSize, setSelectedSize] = useState(firstAvailableSize)
   const basePrice = selectedSize ? selectedSize.price : product.discount_price || product.price
   const extrasTotal = selectedExtras.reduce((sum, e) => sum + e.price, 0)
   const total = (basePrice + extrasTotal) * quantity
+  const selectedStock = selectedSize?.stock == null ? null : Math.max(0, Number(selectedSize.stock))
+  const hasWeightedOptions = Boolean(product.sizes?.length)
+  const canAdd = !hasWeightedOptions || (selectedSize != null && selectedStock !== 0)
 
   return (
     <div className="fixed inset-0 z-50 bg-black/65 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
@@ -235,13 +241,13 @@ function ProductDetailSheet({ product, ui, onClose }: { product: Product; ui: Re
           {product.brand && <p className="text-saffron-dim text-sm mt-1">{product.brand}</p>}
           {product.description?.ar && <p className={`text-sm mt-2 ${ui.muted}`}>{product.description.ar}</p>}
 
-          {product.sizes && product.sizes.length > 0 && <div className="mt-4"><p className="text-sm font-medium mb-2">الحجم</p><div className="flex flex-wrap gap-2">{product.sizes.map((s) => <button key={s.name} onClick={() => setSelectedSize(s)} className={`rounded-full px-3 py-2 text-sm border ${selectedSize?.name === s.name ? 'border-saffron bg-saffron/15' : 'border-current/20'}`}>{s.name} · {s.price} ج.م</button>)}</div></div>}
+          {product.sizes && product.sizes.length > 0 && <div className="mt-4"><p className="text-sm font-medium mb-2">اختار الوزن / الحجم</p><div className="flex flex-wrap gap-2">{product.sizes.map((s) => { const outOfStock = s.stock === 0; return <button key={s.name} disabled={outOfStock} onClick={() => { setSelectedSize(s); setQuantity(1) }} className={`rounded-xl px-3 py-2 text-sm border text-right ${selectedSize?.name === s.name ? 'border-saffron bg-saffron/15' : 'border-current/20'} ${outOfStock ? 'opacity-45 cursor-not-allowed' : ''}`}><span className="font-semibold">{s.name}</span><span className="block text-xs mt-0.5">{s.price} ج.م{s.stock != null ? ` · المتاح ${s.stock}` : ''}</span></button> })}</div>{!firstAvailableSize && <p className="text-sm text-sumac mt-2">كل الاختيارات غير متاحة حاليًا.</p>}</div>}
 
           {product.extras?.length > 0 && <div className="mt-4"><p className="text-sm font-medium mb-2">إضافات</p><div className="space-y-2">{product.extras.map((e) => { const active = selectedExtras.some((x) => x.name === e.name); return <button key={e.name} onClick={() => setSelectedExtras((prev) => active ? prev.filter((x) => x.name !== e.name) : [...prev, e])} className={`w-full flex items-center justify-between rounded-xl px-3 py-2 border ${active ? 'border-saffron bg-saffron/10' : 'border-current/15'}`}><span>{e.name}</span><span>+{e.price} ج.م</span></button> })}</div></div>}
 
           <div className="mt-5 flex items-center gap-3">
-            <div className="flex items-center gap-2 rounded-full border border-current/15 px-2 py-1"><button onClick={() => setQuantity((q) => Math.max(1, q - 1))} className="w-8 h-8 flex items-center justify-center"><Minus size={15} /></button><span className="w-5 text-center">{quantity}</span><button onClick={() => setQuantity((q) => q + 1)} className="w-8 h-8 flex items-center justify-center"><Plus size={15} /></button></div>
-            <button onClick={() => { addItem({ productId: product.id, name: product.name.ar, price: basePrice, extras: selectedExtras, size: selectedSize?.name }, quantity); onClose() }} className="flex-1 rounded-full bg-saffron text-ink py-3 font-bold flex items-center justify-center gap-2"><ShoppingBag size={16} /> أضف للسلة — {total} ج.م</button>
+            <div className="flex items-center gap-2 rounded-full border border-current/15 px-2 py-1"><button onClick={() => setQuantity((q) => Math.max(1, q - 1))} className="w-8 h-8 flex items-center justify-center"><Minus size={15} /></button><span className="w-5 text-center">{quantity}</span><button disabled={selectedStock != null && quantity >= selectedStock} onClick={() => setQuantity((q) => selectedStock == null ? q + 1 : Math.min(selectedStock, q + 1))} className="w-8 h-8 flex items-center justify-center disabled:opacity-35"><Plus size={15} /></button></div>
+            <button disabled={!canAdd} onClick={() => { if (!canAdd) return; addItem({ productId: product.id, name: product.name.ar, price: basePrice, extras: selectedExtras, size: selectedSize?.name }, quantity); onClose() }} className="flex-1 rounded-full bg-saffron text-ink py-3 font-bold flex items-center justify-center gap-2 disabled:opacity-45 disabled:cursor-not-allowed"><ShoppingBag size={16} /> {canAdd ? `أضف للسلة — ${total} ج.م` : 'غير متاح'}</button>
           </div>
         </div>
       </div>
