@@ -8,8 +8,10 @@ import {
   collectionGroup,
   limit,
 } from 'firebase/firestore'
+import { updateEmail } from 'firebase/auth'
 import { getFunctions, httpsCallable } from 'firebase/functions'
-import { app, db } from '@/lib/firebase'
+import { app, auth, db } from '@/lib/firebase'
+import { normalizePhone, phoneToPseudoEmail } from '@/lib/phone'
 import { createRestaurant } from '@/services/restaurants'
 import type { AccountStatus, AppUser, Restaurant, RestaurantStatus } from '@/types/database'
 
@@ -154,10 +156,29 @@ export async function deleteClientCompletely(client: AdminClientRecord) {
 }
 
 export async function changeMyLoginPhone(phone: string) {
-  const functions = getFunctions(app)
-  const changePhone = httpsCallable<{ phone: string }, { ok: boolean; phone: string; loginEmail: string }>(functions, 'changeMyLoginPhone')
-  const result = await changePhone({ phone })
-  return result.data
+  const currentUser = auth.currentUser
+  if (!currentUser) throw new Error('لازم تسجل دخول الأول')
+
+  const normalized = normalizePhone(phone)
+  const digits = normalized.replace(/\D/g, '')
+  if (!/^201\d{9}$/.test(digits)) {
+    throw new Error('اكتب رقم مصري صحيح مثل 01012345678')
+  }
+
+  const localPhone = `0${digits.slice(2)}`
+  const loginEmail = phoneToPseudoEmail(phone)
+
+  try {
+    await updateEmail(currentUser, loginEmail)
+  } catch (err) {
+    const code = (err as { code?: string })?.code
+    if (code === 'auth/email-already-in-use') throw new Error('الرقم ده مستخدم في حساب تاني بالفعل')
+    if (code === 'auth/requires-recent-login') throw new Error('سجّل خروج وادخل تاني بالرقم الحالي، وبعدها غيّر الرقم مباشرة')
+    throw err
+  }
+
+  await updateDoc(doc(db, 'users', currentUser.uid), { phone: localPhone })
+  return { ok: true, phone: localPhone, loginEmail }
 }
 
 export async function setRestaurantStatus(id: string, status: RestaurantStatus) {
