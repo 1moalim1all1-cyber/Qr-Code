@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Boxes, Eye, EyeOff, ImagePlus, LoaderCircle, Plus, Settings, ShieldCheck, Sparkles, Store } from 'lucide-react'
+import { Boxes, Eye, EyeOff, ImagePlus, LoaderCircle, PhoneCall, Plus, Settings, ShieldCheck, Sparkles, Store } from 'lucide-react'
 import AdminDashboardPage from './AdminDashboardPage'
-import { listAdminClients, setRestaurantHomepageVisibility, type AdminClientRecord } from '@/services/admin'
+import { changeMyLoginPhone, listAdminClients, setRestaurantHomepageVisibility, type AdminClientRecord } from '@/services/admin'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function AdminHomePage() {
+  const { profile } = useAuth()
   const [clients, setClients] = useState<AdminClientRecord[]>([])
   const [homeMenusLoading, setHomeMenusLoading] = useState(true)
   const [busyRestaurantId, setBusyRestaurantId] = useState<string | null>(null)
   const [homeMenusError, setHomeMenusError] = useState<string | null>(null)
+  const [changingLoginPhone, setChangingLoginPhone] = useState(false)
 
   async function loadHomepageMenus() {
     setHomeMenusLoading(true)
@@ -48,6 +51,30 @@ export default function AdminHomePage() {
     }
   }
 
+  async function handleChangeLoginPhone() {
+    const nextPhone = window.prompt(
+      'اكتب رقم تسجيل الدخول الجديد للإدارة. الرقم ده هيحل محل رقم الدخول الحالي مع الحفاظ على نفس الحساب وكل المنيوهات المرتبطة به.',
+      profile?.phone || '',
+    )
+    if (nextPhone === null) return
+    const trimmed = nextPhone.trim()
+    if (!trimmed) return
+
+    const confirmed = window.confirm(`تأكيد تغيير رقم تسجيل الدخول إلى ${trimmed}؟\nكلمة السر هتفضل زي ما هي.`)
+    if (!confirmed) return
+
+    setChangingLoginPhone(true)
+    setHomeMenusError(null)
+    try {
+      const result = await changeMyLoginPhone(trimmed)
+      window.alert(`تم تغيير رقم تسجيل الدخول بنجاح إلى ${result.phone}.\nمن المرة الجاية استخدم الرقم الجديد مع نفس كلمة السر.`)
+    } catch (err) {
+      setHomeMenusError(err instanceof Error ? err.message : 'تعذّر تغيير رقم تسجيل الدخول')
+    } finally {
+      setChangingLoginPhone(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#f7f1e8]" dir="rtl">
       <section className="relative overflow-hidden bg-[#10110f] text-white">
@@ -62,11 +89,21 @@ export default function AdminHomePage() {
               <h1 className="mt-4 font-display text-3xl md:text-4xl font-bold">لوحة الإدارة</h1>
               <p className="mt-2 max-w-2xl text-sm md:text-base text-white/60">العملاء والاشتراكات والكتالوج والصور وإعدادات الموقع من مكان واحد.</p>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full lg:w-auto">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 w-full lg:w-auto">
               <QuickAction to="/admin/catalog" icon={ImagePlus} title="إدارة المنتجات والصور" subtitle="الكتالوج المعتمد" featured />
               <QuickAction to="/admin/site-settings" icon={Settings} title="بيانات الموقع" subtitle="التواصل والمكان والخصوصية" />
               <QuickAction to="/admin/clients/new" icon={Plus} title="إضافة عميل" subtitle="حساب جديد" />
               <QuickAction to="/restaurants" icon={Store} title="عرض المنيوهات" subtitle="المتاجر المنشورة" />
+              <button
+                type="button"
+                onClick={handleChangeLoginPhone}
+                disabled={changingLoginPhone}
+                className="min-w-0 rounded-2xl px-4 py-3 text-right bg-white/7 border border-white/10 text-white hover:bg-white/10 transition-all hover:-translate-y-0.5 disabled:opacity-50"
+              >
+                {changingLoginPhone ? <LoaderCircle size={20} className="mb-2 animate-spin" /> : <PhoneCall size={20} className="mb-2" />}
+                <p className="text-sm font-bold leading-5">تغيير رقم الدخول</p>
+                <p className="text-[11px] mt-0.5 text-white/45">نفس الحساب ونفس كلمة السر</p>
+              </button>
             </div>
           </div>
 
