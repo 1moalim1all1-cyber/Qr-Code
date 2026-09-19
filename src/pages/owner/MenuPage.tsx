@@ -510,7 +510,7 @@ export default function MenuPage({ restaurantIdOverride, backTo = '/dashboard' }
                       <div className="w-24 h-24 shrink-0 rounded-2xl bg-paper-dim overflow-hidden border border-stone-light/20 flex items-center justify-center">{image ? <img src={image} alt={p.name.ar} className="w-full h-full object-cover" /> : <div className="text-center text-stone-light"><ImageOff size={20} className="mx-auto" /><span className="text-[10px]">بدون صورة</span></div>}</div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-start justify-between gap-2">
-                          <div><h3 className="font-semibold flex items-center gap-1.5 flex-wrap">{p.name.ar}{p.is_best_seller && <Star size={14} className="text-saffron" fill="currentColor" />}{p.is_new && <Sparkles size={14} className="text-zaytoon" />}{p.is_spicy && <Flame size={14} className="text-sumac" />}{p.is_vegetarian && <Leaf size={14} className="text-zaytoon" />}</h3>{p.description?.ar && <p className="text-xs text-stone mt-1 line-clamp-2">{p.description.ar}</p>}{p.unit_label && <p className="text-[11px] text-stone mt-1">الوزن: {p.unit_label}</p>}</div>
+                          <div><h3 className="font-semibold flex items-center gap-1.5 flex-wrap">{p.name.ar}{p.is_best_seller && <Star size={14} className="text-saffron" fill="currentColor" />}{p.is_new && <Sparkles size={14} className="text-zaytoon" />}{p.is_spicy && <Flame size={14} className="text-sumac" />}{p.is_vegetarian && <Leaf size={14} className="text-zaytoon" />}</h3>{p.description?.ar && <p className="text-xs text-stone mt-1 line-clamp-2">{p.description.ar}</p>}{p.unit_label && <p className="text-[11px] text-stone mt-1">الوزن: {p.unit_label}</p>}{p.sizes && p.sizes.length > 0 && <p className="text-[11px] text-saffron-dim mt-1">اختيارات: {p.sizes.map((s) => `${s.name}${s.stock != null ? ` (${s.stock})` : ''}`).join(' • ')}</p>}</div>
                           <button onClick={async () => { if (!restaurant) return; try { await toggleAvailability(restaurant.id, p.id, !p.is_available); setProducts((current) => current.map((item) => item.id === p.id ? { ...item, is_available: !p.is_available } : item)) } catch (err) { setPageError(err instanceof Error ? err.message : 'تعذر تحديث حالة المنتج') } }} className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${p.is_available ? 'bg-zaytoon' : 'bg-stone-light'}`} aria-label={p.is_available ? 'إخفاء المنتج' : 'إتاحة المنتج'}><span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${p.is_available ? 'right-6' : 'right-1'}`} /></button>
                         </div>
                         <div className="mt-3 flex items-center gap-2"><div className="relative flex-1"><input value={draft} onChange={(e) => setPriceDrafts({ ...priceDrafts, [p.id]: e.target.value })} onKeyDown={(e) => { if (e.key === 'Enter' && priceChanged) saveQuickPrice(p) }} type="number" min="0" step="0.01" className={`w-full rounded-xl border py-2 pr-3 pl-11 text-sm outline-none ${priceChanged ? 'border-saffron bg-saffron/5' : 'border-stone-light/30'}`} /><span className="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] text-stone">ج.م</span></div><button disabled={!priceChanged || savingProductId === p.id} onClick={() => saveQuickPrice(p)} className="w-10 h-10 rounded-xl bg-ink text-paper flex items-center justify-center disabled:opacity-25"><Save size={16} /></button></div>
@@ -561,7 +561,7 @@ function ProductModal({ open, editing, restaurantId, ownerId, categories, defaul
   const [ingredientsText, setIngredientsText] = useState('')
   const [allergensText, setAllergensText] = useState('')
   const [extras, setExtras] = useState<{ name: string; price: string }[]>([])
-  const [sizes, setSizes] = useState<{ name: string; price: string }[]>([])
+  const [sizes, setSizes] = useState<{ name: string; price: string; stock: string }[]>([])
   const [weight, setWeight] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
 
@@ -572,19 +572,26 @@ function ProductModal({ open, editing, restaurantId, ownerId, categories, defaul
       setIngredientsText(editing?.ingredients?.join('، ') ?? '')
       setAllergensText(editing?.allergens?.join('، ') ?? '')
       setExtras(editing?.extras?.map((e) => ({ name: e.name, price: String(e.price) })) ?? [])
-      setSizes(editing?.sizes?.map((s) => ({ name: s.name, price: String(s.price) })) ?? [])
+      setSizes(editing?.sizes?.map((s) => ({ name: s.name, price: String(s.price), stock: s.stock == null ? '' : String(s.stock) })) ?? [])
       setWeight(editing?.unit_label ?? '')
       setFormError(null)
     }
   }, [open, editing, defaultCategoryId, reset])
 
-  function addPresetSize(name: 'Small' | 'Medium' | 'Large') {
+  function addPresetSize(name: string) {
     if (sizes.some((s) => s.name === name)) return
-    setSizes([...sizes, { name, price: '' }])
+    setSizes([...sizes, { name, price: '', stock: '' }])
   }
 
   async function onSubmit(values: ProductForm) {
-    const payload = { category_id: values.categoryId, unit_label: weight.trim() || null, name: { ar: values.nameAr, en: values.nameEn }, description: { ar: values.descriptionAr ?? '' }, price: Number(values.price), discount_price: values.discountPrice === '' ? null : Number(values.discountPrice), is_available: editing?.is_available ?? true, is_best_seller: values.isBestSeller ?? false, is_new: values.isNew ?? false, is_spicy: values.isSpicy ?? false, is_vegetarian: values.isVegetarian ?? false, images: images.map((url, i) => ({ id: `img-${i}`, url, sort_order: i })), ingredients: ingredientsText.split('،').map((s) => s.trim()).filter(Boolean), allergens: allergensText.split('،').map((s) => s.trim()).filter(Boolean), extras: extras.filter((e) => e.name.trim()).map((e) => ({ name: e.name.trim(), price: Number(e.price) || 0 })), sizes: sizes.filter((s) => s.name.trim()).map((s) => ({ name: s.name.trim(), price: Number(s.price) || 0 })) }
+    const normalizedSizes = sizes
+      .filter((s) => s.name.trim())
+      .map((s) => ({
+        name: s.name.trim(),
+        price: Number(s.price) || 0,
+        stock: s.stock.trim() === '' ? null : Math.max(0, Math.floor(Number(s.stock) || 0)),
+      }))
+    const payload = { category_id: values.categoryId, unit_label: weight.trim() || null, name: { ar: values.nameAr, en: values.nameEn }, description: { ar: values.descriptionAr ?? '' }, price: Number(values.price), discount_price: values.discountPrice === '' ? null : Number(values.discountPrice), is_available: editing?.is_available ?? true, is_best_seller: values.isBestSeller ?? false, is_new: values.isNew ?? false, is_spicy: values.isSpicy ?? false, is_vegetarian: values.isVegetarian ?? false, images: images.map((url, i) => ({ id: `img-${i}`, url, sort_order: i })), ingredients: ingredientsText.split('،').map((s) => s.trim()).filter(Boolean), allergens: allergensText.split('،').map((s) => s.trim()).filter(Boolean), extras: extras.filter((e) => e.name.trim()).map((e) => ({ name: e.name.trim(), price: Number(e.price) || 0 })), sizes: normalizedSizes }
     try {
       if (editing && restaurantId) await updateProduct(restaurantId, editing.id, payload)
       else if (restaurantId) await createProduct(restaurantId, auth.currentUser?.uid ?? ownerId, payload)
@@ -600,21 +607,25 @@ function ProductModal({ open, editing, restaurantId, ownerId, categories, defaul
         <Input label="اسم الصنف بالإنجليزي (اختياري)" {...register('nameEn')} />
         <div className="flex flex-col gap-1.5"><label className="text-sm font-medium text-ink">القسم</label><select {...register('categoryId')} className="rounded-xl border border-stone-light/60 bg-white px-4 py-2.5"><option value="">اختار القسم</option>{categories.map((c) => <option key={c.id} value={c.id}>{c.name.ar}</option>)}</select>{errors.categoryId && <span className="text-sm text-sumac">{errors.categoryId.message}</span>}</div>
         <Input label="الوصف (اختياري)" {...register('descriptionAr')} />
-        <div className="grid sm:grid-cols-3 gap-4"><Input label="السعر" type="number" step="0.01" error={errors.price?.message} {...register('price')} /><Input label="سعر بعد الخصم (اختياري)" type="number" step="0.01" {...register('discountPrice')} /><Input label="الوزن (اختياري)" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="مثال: 250 جم أو 1 كجم" /></div>
+        <div className="grid sm:grid-cols-3 gap-4"><Input label="السعر الأساسي" type="number" step="0.01" error={errors.price?.message} {...register('price')} /><Input label="سعر بعد الخصم (اختياري)" type="number" step="0.01" {...register('discountPrice')} /><Input label="وصف وزن عام (اختياري)" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="مثال: يباع بالوزن" /></div>
         <Input label="المكونات (افصل بفاصلة عربي ،)" value={ingredientsText} onChange={(e) => setIngredientsText(e.target.value)} placeholder="عيش، جبنة، طماطم" />
         <Input label="مسببات الحساسية (اختياري)" value={allergensText} onChange={(e) => setAllergensText(e.target.value)} placeholder="جلوتين، مكسرات، لاكتوز" />
-        <div>
-          <label className="text-sm font-medium text-ink block mb-2">الأحجام (اختياري)</label>
+        <div className="rounded-2xl border border-saffron/25 bg-saffron/5 p-4">
+          <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+            <div><label className="text-sm font-semibold text-ink block">اختيارات الوزن / الحجم للصنف</label><p className="text-[11px] text-stone mt-1">كل اختيار له سعر وكمية متاحة منفصلة.</p></div>
+            <button type="button" onClick={() => setSizes([...sizes, { name: '', price: '', stock: '' }])} className="rounded-full bg-ink text-paper px-3 py-2 text-xs font-semibold">+ اختيار مخصص</button>
+          </div>
           <div className="flex flex-wrap gap-2 mb-3">
-            {(['Small', 'Medium', 'Large'] as const).map((name) => {
+            {['ربع كيلو', 'نص كيلو', 'كيلو'].map((name) => {
               const selected = sizes.some((s) => s.name === name)
               return <button key={name} type="button" onClick={() => selected ? setSizes(sizes.filter((s) => s.name !== name)) : addPresetSize(name)} className={`rounded-full px-4 py-2 text-xs font-semibold border transition-colors ${selected ? 'bg-ink text-paper border-ink' : 'bg-white text-ink border-stone-light/50 hover:border-saffron'}`}>{name}</button>
             })}
           </div>
           <div className="flex flex-col gap-2">
-            {sizes.map((s, i) => <div key={`${s.name}-${i}`} className="flex items-center gap-2"><div className="flex-1 rounded-lg border border-stone-light/50 px-3 py-2 text-sm font-semibold bg-paper-dim">{s.name}</div><input value={s.price} onChange={(e) => setSizes(sizes.map((x, idx) => idx === i ? { ...x, price: e.target.value } : x))} type="number" min="0" step="0.01" placeholder="سعر الحجم" className="w-32 rounded-lg border border-stone-light/50 px-3 py-2 text-sm" /><button type="button" onClick={() => setSizes(sizes.filter((_, idx) => idx !== i))} className="text-stone hover:text-sumac"><X size={16} /></button></div>)}
+            {sizes.map((s, i) => <div key={i} className="grid grid-cols-[1fr_105px_100px_auto] gap-2 items-center"><input value={s.name} onChange={(e) => setSizes(sizes.map((x, idx) => idx === i ? { ...x, name: e.target.value } : x))} placeholder="مثال: ربع كيلو" className="rounded-lg border border-stone-light/50 px-3 py-2 text-sm" /><input value={s.price} onChange={(e) => setSizes(sizes.map((x, idx) => idx === i ? { ...x, price: e.target.value } : x))} type="number" min="0" step="0.01" placeholder="السعر" className="rounded-lg border border-stone-light/50 px-3 py-2 text-sm" /><input value={s.stock} onChange={(e) => setSizes(sizes.map((x, idx) => idx === i ? { ...x, stock: e.target.value } : x))} type="number" min="0" step="1" placeholder="الكمية" className="rounded-lg border border-stone-light/50 px-3 py-2 text-sm" /><button type="button" onClick={() => setSizes(sizes.filter((_, idx) => idx !== i))} className="text-stone hover:text-sumac"><X size={16} /></button></div>)}
           </div>
-          <p className="text-[11px] text-stone mt-2">اختار Small أو Medium أو Large، وبعدها حط سعر كل حجم.</p>
+          {sizes.length === 0 && <p className="text-xs text-stone">اختار ربع / نص / كيلو، أو ضيف اختيار مخصص زي 250 جم أو 2 كيلو.</p>}
+          <p className="text-[11px] text-stone mt-2">سيب الكمية فاضية لو مش عايز تحدد مخزون. لو كتبت 0 هيظهر الاختيار غير متاح للعميل.</p>
         </div>
         <div><label className="text-sm font-medium text-ink block mb-1.5">الإضافات (اختياري)</label><div className="flex flex-col gap-2">{extras.map((ex, i) => <div key={i} className="flex items-center gap-2"><input value={ex.name} onChange={(e) => setExtras(extras.map((x, idx) => idx === i ? { ...x, name: e.target.value } : x))} placeholder="جبنة إضافية" className="flex-1 rounded-lg border border-stone-light/50 px-3 py-1.5 text-sm" /><input value={ex.price} onChange={(e) => setExtras(extras.map((x, idx) => idx === i ? { ...x, price: e.target.value } : x))} type="number" placeholder="السعر" className="w-24 rounded-lg border border-stone-light/50 px-3 py-1.5 text-sm" /><button type="button" onClick={() => setExtras(extras.filter((_, idx) => idx !== i))} className="text-stone hover:text-sumac"><X size={16} /></button></div>)}<button type="button" onClick={() => setExtras([...extras, { name: '', price: '' }])} className="text-xs text-saffron-dim font-medium self-start">+ ضيف إضافة</button></div></div>
         <div className="grid grid-cols-2 gap-2 text-sm"><label className="flex items-center gap-2"><input type="checkbox" {...register('isBestSeller')} /> الأكثر مبيعًا</label><label className="flex items-center gap-2"><input type="checkbox" {...register('isNew')} /> جديد</label><label className="flex items-center gap-2"><input type="checkbox" {...register('isSpicy')} /> حار</label><label className="flex items-center gap-2"><input type="checkbox" {...register('isVegetarian')} /> نباتي</label></div>
