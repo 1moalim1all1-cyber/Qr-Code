@@ -35,7 +35,7 @@ export interface ProductInput {
   ingredients?: string[]
   allergens?: string[]
   extras?: { name: string; price: number }[]
-  sizes?: { name: string; price: number }[]
+  sizes?: { name: string; price: number; stock?: number | null }[]
 }
 
 export async function createProduct(restaurantId: string, ownerId: string | null, input: ProductInput) {
