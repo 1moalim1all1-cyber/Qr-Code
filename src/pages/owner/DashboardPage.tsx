@@ -10,6 +10,7 @@ import { signOut } from '@/services/auth'
 import { getRestaurantByOwner } from '@/services/restaurants'
 import { listCategories } from '@/services/categories'
 import { listProducts } from '@/services/products'
+import { getVisitStats } from '@/services/visits'
 import type { Restaurant } from '@/types/database'
 
 const SUPPORT_WHATSAPP = '201039177959'
@@ -35,6 +36,8 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null)
   const [categoryCount, setCategoryCount] = useState(0)
   const [productCount, setProductCount] = useState(0)
+  const [visitCount, setVisitCount] = useState(0)
+  const [qrScanCount, setQrScanCount] = useState(0)
   const [copied, setCopied] = useState(false)
   const subscriptionEnd = profile?.subscription_end || restaurant?.subscription_end || null
   const [countdown, setCountdown] = useState(() => getCountdown(subscriptionEnd))
@@ -45,12 +48,15 @@ export default function DashboardPage() {
       .then(async (r) => {
         setRestaurant(r)
         if (!r) return
-        const [cats, products] = await Promise.all([
+        const [cats, products, visitStats] = await Promise.all([
           listCategories(r.id).catch(() => []),
           listProducts(r.id).catch(() => []),
+          getVisitStats(r.id).catch(() => ({ visits: 0, qrScans: 0 })),
         ])
         setCategoryCount(cats.length)
         setProductCount(products.length)
+        setVisitCount(visitStats.visits)
+        setQrScanCount(visitStats.qrScans)
       })
       .catch((err) => setError(err instanceof Error ? err.message : 'حصل خطأ، حاول تاني'))
   }, [user])
@@ -76,7 +82,8 @@ export default function DashboardPage() {
 
   const shareUrl = useMemo(() => {
     if (!menuUrl) return '#'
-    const text = `شوف منيو ${restaurant?.name || 'النشاط'} هنا: ${menuUrl}`
+    const sharedMenuUrl = `${menuUrl}?src=share`
+    const text = `شوف منيو ${restaurant?.name || 'النشاط'} هنا: ${sharedMenuUrl}`
     return `https://wa.me/?text=${encodeURIComponent(text)}`
   }, [menuUrl, restaurant?.name])
 
@@ -157,8 +164,8 @@ export default function DashboardPage() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
           <Metric icon={UtensilsCrossed} label="الأصناف" value={productCount} />
           <Metric icon={Building2} label="الأقسام" value={categoryCount} />
-          <Metric icon={Eye} label="الزيارات" value="—" />
-          <Metric icon={QrCode} label="مسحات QR" value="—" />
+          <Metric icon={Eye} label="الزيارات الحقيقية" value={visitCount} />
+          <Metric icon={QrCode} label="مسحات QR" value={qrScanCount} />
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
