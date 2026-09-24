@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowRight, Check, ExternalLink, Globe2, LoaderCircle, MessageCircle, Save, Store } from 'lucide-react'
+import { ArrowRight, Check, ExternalLink, Globe2, LoaderCircle, Save, Store } from 'lucide-react'
 import { getRestaurantById, updateRestaurant } from '@/services/restaurants'
 import { listBusinessTypes, type BusinessTypeRecord } from '@/services/businessTypes'
 import type { Restaurant, RestaurantSocialLinks } from '@/types/database'
