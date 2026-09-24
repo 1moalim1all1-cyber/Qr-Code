@@ -5,7 +5,7 @@ import { listBusinessTypes, type BusinessTypeRecord } from '@/services/businessT
 import { listActiveRestaurants, listFeaturedRestaurants } from '@/services/restaurants'
 
 const SUPPORT_WHATSAPP = '201039177959'
-const HIDDEN_HOME_TYPES = new Set(['restaurant', 'cafe', 'supermarket', 'cosmetics'])
+const HIDDEN_HOME_TYPES = new Set(['restaurant', 'cafe', 'supermarket', 'cosmetics', 'pharmacy'])
 
 const FALLBACK_IMAGES: Record<string, string> = {
   mobiles: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=900&q=80',
@@ -13,7 +13,6 @@ const FALLBACK_IMAGES: Record<string, string> = {
   clothing: 'https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&w=900&q=80',
   shoes_bags: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=900&q=80',
   perfumes: 'https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&w=900&q=80',
-  pharmacy: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=900&q=80',
   homeware: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=900&q=80',
   bookstores: 'https://images.unsplash.com/photo-1526243741027-444d633d7365?auto=format&fit=crop&w=900&q=80',
   sweets_bakery: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=900&q=80',
@@ -101,7 +100,7 @@ export default function DynamicBusinessTypesSection() {
             <div>
               <p className="text-sm text-[#756d61]">متاجر حديثة لأنشطة مختلفة</p>
               <h2 className="font-display text-2xl sm:text-3xl font-bold mt-2">اكتشف الأنشطة والمتاجر</h2>
-              <p className="text-sm text-[#776f63] mt-2 max-w-2xl leading-6">موبايلات، إلكترونيات، ملابس، عطور، صيدليات، أثاث وتشطيبات وغيرهم.</p>
+              <p className="text-sm text-[#776f63] mt-2 max-w-2xl leading-6">موبايلات، إلكترونيات، ملابس، عطور، أثاث، أدوات منزلية وتشطيبات وغيرهم.</p>
             </div>
             <Link to="/restaurants" className="inline-flex items-center gap-2 rounded-2xl bg-[#171714] text-white px-4 py-2.5 text-sm font-bold self-start sm:self-auto">كل المتاجر <ArrowLeft size={16} /></Link>
           </div>
@@ -115,18 +114,23 @@ export default function DynamicBusinessTypesSection() {
               {homepageItems.map((item) => {
                 const image = item.image_url || FALLBACK_IMAGES[item.code] || GENERIC_STORE_IMAGE
                 return (
-                  <Link key={item.id} to={`/restaurants?type=${encodeURIComponent(item.code)}`} className="group rounded-[26px] bg-[#f8f4ed] border border-black/5 overflow-hidden shadow-[0_16px_36px_rgba(53,45,34,.07)] hover:-translate-y-1 hover:shadow-[0_22px_48px_rgba(53,45,34,.11)] transition-all">
-                    <div className="relative h-32 sm:h-40 overflow-hidden bg-[#ddd3c5]">
-                      <img src={image} alt={item.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent" />
-                      <div className="absolute top-3 right-3 w-10 h-10 rounded-2xl bg-black/65 backdrop-blur text-white flex items-center justify-center text-xl border border-white/15">{item.icon || '🏪'}</div>
-                    </div>
+                  <div key={item.id} className="group rounded-[26px] bg-[#f8f4ed] border border-black/5 overflow-hidden shadow-[0_16px_36px_rgba(53,45,34,.07)] hover:-translate-y-1 hover:shadow-[0_22px_48px_rgba(53,45,34,.11)] transition-all">
+                    <Link to={`/restaurants?type=${encodeURIComponent(item.code)}`} className="block">
+                      <div className="relative h-32 sm:h-40 overflow-hidden bg-[#ddd3c5]">
+                        <img src={image} alt={item.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent" />
+                        <div className="absolute top-3 right-3 w-10 h-10 rounded-2xl bg-black/65 backdrop-blur text-white flex items-center justify-center text-xl border border-white/15">{item.icon || '🏪'}</div>
+                      </div>
+                    </Link>
                     <div className="p-4 sm:p-5">
                       <h3 className="font-display font-bold leading-6">{item.name}</h3>
                       <p className="text-xs text-[#776f63] leading-5 mt-1 line-clamp-2">{item.description || 'متاجر ومنتجات متخصصة على Egy Menu'}</p>
-                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#8d7444] mt-3">عرض المتاجر <ArrowLeft size={13} className="group-hover:-translate-x-1 transition-transform" /></span>
+                      <div className="mt-4 grid gap-2">
+                        <Link to={`/restaurants?type=${encodeURIComponent(item.code)}`} className="inline-flex items-center gap-1 text-xs font-semibold text-[#8d7444]">عرض المتاجر <ArrowLeft size={13} /></Link>
+                        <Link to={`/register?type=${encodeURIComponent(item.code)}&src=business-type`} className="rounded-xl bg-[#171714] px-3 py-2.5 text-center text-xs font-bold text-white">ابدأ بنفس النشاط</Link>
+                      </div>
                     </div>
-                  </Link>
+                  </div>
                 )
               })}
             </div>
