@@ -16,6 +16,8 @@ const RegisterPage = lazy(() => import('./pages/auth/RegisterPage'))
 const ActivationPendingPage = lazy(() => import('./pages/auth/ActivationPendingPage'))
 const DashboardPage = lazy(() => import('./pages/owner/DashboardPage'))
 const MenuPage = lazy(() => import('./pages/owner/MenuPage'))
+const MenuStudioPage = lazy(() => import('./pages/owner/MenuStudioPage'))
+const ProductStudioPage = lazy(() => import('./pages/owner/ProductStudioPage'))
 const CatalogPage = lazy(() => import('./pages/owner/CatalogPage'))
 const DesignPage = lazy(() => import('./pages/owner/DesignPage'))
 const QRCodePage = lazy(() => import('./pages/owner/QRCodePage'))
@@ -48,7 +50,8 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/activation-pending" element={<ProtectedRoute allowedRoles={['owner']} requireActiveRestaurant={false}><ActivationPendingPage /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute allowedRoles={['owner', 'staff']}><DashboardPage /></ProtectedRoute>} />
-        <Route path="/dashboard/menu" element={<ProtectedRoute allowedRoles={['owner', 'staff']}><MenuPage /></ProtectedRoute>} />
+        <Route path="/dashboard/menu" element={<ProtectedRoute allowedRoles={['owner', 'staff']}><MenuStudioPage /></ProtectedRoute>} />
+        <Route path="/dashboard/products" element={<ProtectedRoute allowedRoles={['owner', 'staff']}><ProductStudioPage /></ProtectedRoute>} />
         <Route path="/dashboard/catalog" element={<ProtectedRoute allowedRoles={['owner', 'staff']}><CatalogPage /></ProtectedRoute>} />
         <Route path="/dashboard/design" element={<ProtectedRoute allowedRoles={['owner', 'staff']}><DesignPage /></ProtectedRoute>} />
         <Route path="/dashboard/qr" element={<ProtectedRoute allowedRoles={['owner', 'staff']}><QRCodePage /></ProtectedRoute>} />
