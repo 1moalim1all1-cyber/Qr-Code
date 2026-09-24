@@ -1,5 +1,5 @@
 import {
-  collection, doc, addDoc, getDocs, query, where, orderBy, updateDoc, deleteDoc, writeBatch,
+  collection, doc, addDoc, getDoc, getDocs, query, where, orderBy, updateDoc, deleteDoc, writeBatch,
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { withFirestoreError } from '@/lib/firestoreError'
@@ -76,9 +76,52 @@ export async function createProduct(restaurantId: string, ownerId: string | null
 }
 
 export async function updateProduct(restaurantId: string, id: string, patch: Partial<ProductInput>) {
-  await withFirestoreError('تعذّر تعديل الصنف', () =>
-    updateDoc(doc(db, 'restaurants', restaurantId, 'products', id), patch)
-  )
+  await withFirestoreError('تعذّر تعديل الصنف', async () => {
+    const ref = doc(db, 'restaurants', restaurantId, 'products', id)
+    const safePatch: Partial<ProductInput> = { ...patch }
+
+    // The professional product editor intentionally exposes generic catalog fields,
+    // while the legacy food editor still owns ingredients, allergens, extras,
+    // sizes and food-only flags. When an existing restaurant product is edited in
+    // the professional editor, preserve those hidden legacy values instead of
+    // silently wiping them with the editor's empty defaults.
+    const advancedEdit = 'variant_options' in patch && 'specifications' in patch && 'compare_at_price' in patch
+
+    if (advancedEdit) {
+      const snap = await getDoc(ref)
+      if (snap.exists()) {
+        const existing = snap.data() as Partial<ProductInput>
+
+        if (Array.isArray(patch.ingredients) && patch.ingredients.length === 0 && Array.isArray(existing.ingredients) && existing.ingredients.length > 0) safePatch.ingredients = existing.ingredients
+        if (Array.isArray(patch.allergens) && patch.allergens.length === 0 && Array.isArray(existing.allergens) && existing.allergens.length > 0) safePatch.allergens = existing.allergens
+        if (Array.isArray(patch.extras) && patch.extras.length === 0 && Array.isArray(existing.extras) && existing.extras.length > 0) safePatch.extras = existing.extras
+        if (Array.isArray(patch.sizes) && patch.sizes.length === 0 && Array.isArray(existing.sizes) && existing.sizes.length > 0) safePatch.sizes = existing.sizes
+        if (patch.is_spicy === false && existing.is_spicy === true) safePatch.is_spicy = true
+        if (patch.is_vegetarian === false && existing.is_vegetarian === true) safePatch.is_vegetarian = true
+
+        // Older restaurant products store the sale price in discount_price.
+        // If the advanced editor opens such a product and the user did not change
+        // its price fields, keep the old discount representation intact.
+        const existingPrice = typeof existing.price === 'number' ? existing.price : null
+        const existingDiscount = typeof existing.discount_price === 'number' ? existing.discount_price : null
+        const looksUnchangedFromLegacyDiscount =
+          existingPrice !== null &&
+          existingDiscount !== null &&
+          existingDiscount < existingPrice &&
+          patch.price === existingPrice &&
+          patch.discount_price == null &&
+          patch.compare_at_price === existingPrice
+
+        if (looksUnchangedFromLegacyDiscount) {
+          safePatch.discount_price = existingDiscount
+          safePatch.compare_at_price = existing.compare_at_price ?? existingPrice
+          safePatch.discount_percent = existing.discount_percent ?? Math.round(((existingPrice - existingDiscount) / existingPrice) * 100)
+        }
+      }
+    }
+
+    await updateDoc(ref, safePatch)
+  })
 }
 
 export async function deleteProduct(restaurantId: string, id: string) {
