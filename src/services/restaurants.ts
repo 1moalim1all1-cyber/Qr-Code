@@ -28,7 +28,13 @@ function hasActiveSubscription(restaurant: Restaurant) {
 export async function createRestaurant(
   ownerId: string,
   name: string,
-  registration?: { clientName?: string; clientContact?: string; businessType?: BusinessType; businessTypeName?: string }
+  registration?: {
+    clientName?: string
+    clientContact?: string
+    businessType?: BusinessType
+    businessTypeName?: string
+    registrationSource?: string
+  }
 ) {
   const existing = await getRestaurantByOwner(ownerId)
   if (existing) return existing
@@ -73,7 +79,7 @@ export async function createRestaurant(
       payment_status: 'unpaid',
       amount_paid: 0,
       payment_note: 'فترة تجريبية مجانية 10 أيام',
-      registration_source: 'self_service',
+      registration_source: registration?.registrationSource || 'self_service',
       subscription_start: trialStart.toISOString(),
       subscription_end: trialEnd.toISOString(),
       subscription_days: FREE_TRIAL_DAYS,
