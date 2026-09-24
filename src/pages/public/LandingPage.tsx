@@ -7,10 +7,14 @@ import {
   CheckCircle2,
   ChevronDown,
   MessageCircle,
+  PackageCheck,
   QrCode,
+  Search,
+  Share2,
   ShoppingBag,
   Sparkles,
   Store,
+  Tags,
 } from 'lucide-react'
 import DynamicBusinessTypesSection from '@/components/landing/DynamicBusinessTypesSection'
 import FeaturedMenus from '@/components/landing/FeaturedMenus'
@@ -22,6 +26,7 @@ const NAV_LINKS = [
   { label: 'الأنشطة', href: '#business-types' },
   { label: 'المتاجر', href: '#stores' },
   { label: 'المميزات', href: '#features' },
+  { label: 'طريقة العمل', href: '#how-it-works' },
   { label: 'الباقات', href: '#pricing' },
 ]
 
@@ -53,13 +58,14 @@ const features = [
   { icon: QrCode, title: 'QR ورابط مباشر', text: 'شارك الكتالوج على واتساب والسوشيال أو اطبع QR في المحل.' },
   { icon: ShoppingBag, title: 'اختيارات وطلب سريع', text: 'اعرض اللون والمقاس والسعة والسعر وخلي العميل يوصل للمنتج بسرعة.' },
   { icon: BarChart3, title: 'إدارة بسيطة', text: 'ضيف وعدل المنتجات والأسعار والعروض والإتاحة من لوحة تحكم واحدة.' },
+  { icon: Search, title: 'بحث وفلاتر', text: 'العميل يقدر يوصل للمنتج بسرعة حسب القسم أو الاسم أو الاختيارات.' },
+  { icon: Tags, title: 'خصومات وأسعار واضحة', text: 'اعرض السعر الحالي والسعر قبل الخصم والعروض بشكل واضح وجذاب.' },
 ]
 
 const plans = [
-  { title: 'شهر', text: 'للتجربة والبداية' },
-  { title: '3 شهور', text: 'مدة مناسبة للتشغيل' },
-  { title: '6 شهور', text: 'اختيار عملي للنشاط المستقر' },
-  { title: 'سنة', text: 'أفضل مدة للاستمرار', badge: 'الأوفر' },
+  { title: '3 شهور', price: '599', text: 'مناسبة للبداية وتجربة البيع بالكتالوج' },
+  { title: '6 شهور', price: '899', text: 'اختيار عملي للنشاط اللي عايز يستمر' },
+  { title: 'سنة', price: '1499', text: 'الأوفر للاستمرار طول السنة', badge: 'الأوفر' },
 ]
 
 const FAQS = [
@@ -114,8 +120,8 @@ export default function LandingPage() {
             <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }}>
               <span className="inline-flex items-center gap-2 rounded-full border border-[#d7b66f]/30 bg-[#d7b66f]/10 text-[#efd59d] px-4 py-2 text-sm mb-6"><Sparkles size={15} /> اعرض منتجاتك بشكل يليق بنشاطك</span>
               <h1 className="font-display text-4xl sm:text-5xl lg:text-[64px] font-black leading-[1.12] max-w-3xl">
-                كتالوج منتجات
-                <span className="block text-transparent bg-clip-text bg-gradient-to-l from-[#f0dcae] via-[#d7b66f] to-[#97a279]">شكله متجر حقيقي</span>
+                اعرض منتجاتك
+                <span className="block text-transparent bg-clip-text bg-gradient-to-l from-[#f0dcae] via-[#d7b66f] to-[#97a279]">في كتالوج شكله متجر حقيقي</span>
               </h1>
               <p className="text-white/58 text-base sm:text-lg leading-8 mt-6 max-w-2xl">موبايلات، إلكترونيات، ملابس، عطور، أثاث، تشطيبات وغيرهم. صور واضحة، أسعار، مواصفات، ألوان ومقاسات في رابط واحد.</p>
               <div className="flex flex-wrap gap-3 mt-8">
@@ -155,36 +161,75 @@ export default function LandingPage() {
 
         <div id="business-types" className="scroll-mt-20"><DynamicBusinessTypesSection /></div>
 
-        <section id="stores" className="py-18 bg-[#151612] text-white scroll-mt-20">
+        <section id="stores" className="bg-[#151612] text-white scroll-mt-20">
           <div className="max-w-7xl mx-auto px-5 sm:px-7 py-16">
             <div className="max-w-2xl mb-9">
-              <span className="text-[#d7b66f] text-sm font-semibold">متاجر حقيقية على المنصة</span>
-              <h2 className="font-display text-3xl sm:text-4xl font-bold mt-2">شوف شكل الكتالوج بعد إضافة المنتجات</h2>
-              <p className="text-white/50 mt-3 leading-7">الصور والمنتجات والأقسام بتظهر بشكل واضح ومناسب للموبايل.</p>
+              <span className="text-[#d7b66f] text-sm font-semibold">متاجر حقيقية موجودة بالفعل</span>
+              <h2 className="font-display text-3xl sm:text-4xl font-bold mt-2">شوف متاجر شغالة على Egy Menu</h2>
+              <p className="text-white/50 mt-3 leading-7">المتاجر اللي الإدارة مفعّلة ظهورها في الرئيسية بتظهر هنا بالصور والمنتجات والبيانات الحقيقية.</p>
             </div>
             <FeaturedMenus />
           </div>
         </section>
 
-        <section id="features" className="py-20 bg-[#f7f3ec] scroll-mt-20">
-          <div className="max-w-7xl mx-auto px-5 sm:px-7">
-            <div className="grid lg:grid-cols-[0.8fr_1.2fr] gap-10 items-start">
-              <div className="lg:sticky lg:top-28">
-                <span className="text-[#8d7444] text-sm font-semibold">كل حاجة من مكان واحد</span>
-                <h2 className="font-display text-3xl sm:text-4xl font-bold mt-2">من إضافة المنتج لحد ما العميل يشوفه</h2>
-                <p className="text-[#776f63] leading-7 mt-4">الهدف إن صاحب النشاط يضيف منتجاته بسهولة، والعميل يوصل للمعلومة من غير تعقيد.</p>
+        <section className="py-20 bg-[#eee7dc]">
+          <div className="max-w-7xl mx-auto px-5 sm:px-7 grid lg:grid-cols-2 gap-10 items-center">
+            <div>
+              <span className="text-[#8d7444] text-sm font-semibold">شكل المنتج قدام العميل</span>
+              <h2 className="font-display text-3xl sm:text-4xl font-bold mt-2">كل تفاصيل المنتج في شاشة واحدة</h2>
+              <p className="text-[#776f63] leading-7 mt-4 max-w-xl">الصورة والسعر والخصم والألوان والمقاسات والمواصفات بتظهر بشكل واضح بدل ما العميل يسأل عن كل تفصيلة لوحدها.</p>
+              <div className="grid sm:grid-cols-2 gap-3 mt-7">
+                {['صور متعددة للمنتج', 'سعر قبل وبعد الخصم', 'ألوان ومقاسات وسعات', 'مواصفات وبيانات واضحة'].map((item) => <div key={item} className="rounded-2xl bg-white border border-black/5 px-4 py-3 text-sm font-semibold flex items-center gap-2"><CheckCircle2 size={17} className="text-[#788360]" />{item}</div>)}
               </div>
-              <div className="grid sm:grid-cols-2 gap-4">
-                {features.map((feature, i) => <motion.div key={feature.title} initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.06 }} className="rounded-[26px] bg-white p-6 border border-black/5 shadow-[0_18px_40px_rgba(0,0,0,.05)]"><div className="w-11 h-11 rounded-2xl bg-[#ece5d9] text-[#657052] flex items-center justify-center mb-4"><feature.icon size={21} /></div><h3 className="font-display font-bold text-lg">{feature.title}</h3><p className="text-sm text-[#776f63] leading-6 mt-2">{feature.text}</p></motion.div>)}
+            </div>
+            <div className="max-w-md mx-auto w-full rounded-[34px] bg-[#11120f] p-4 shadow-[0_35px_75px_rgba(0,0,0,.22)]">
+              <div className="rounded-[27px] bg-white overflow-hidden">
+                <div className="relative aspect-[4/3] bg-[#eee8de] overflow-hidden">
+                  <img src="https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=900&q=85" alt="هاتف ذكي" className="w-full h-full object-cover" />
+                  <span className="absolute top-4 right-4 rounded-full bg-[#b73e48] text-white text-xs font-bold px-3 py-1.5">خصم 12%</span>
+                </div>
+                <div className="p-5">
+                  <p className="text-xs text-[#8d7444] font-semibold">موبايلات</p>
+                  <h3 className="font-display text-2xl font-bold mt-1">هاتف ذكي Pro</h3>
+                  <div className="flex items-end gap-3 mt-3"><span className="text-2xl font-black">18,500 ج.م</span><span className="text-sm text-black/35 line-through pb-1">21,000 ج.م</span></div>
+                  <div className="mt-5"><p className="text-xs font-bold mb-2">الألوان</p><div className="flex gap-2"><span className="w-8 h-8 rounded-full bg-black border-2 border-[#d7b66f]" /><span className="w-8 h-8 rounded-full bg-[#d6d2c8] border border-black/10" /><span className="w-8 h-8 rounded-full bg-[#8aa0b6] border border-black/10" /></div></div>
+                  <div className="mt-5"><p className="text-xs font-bold mb-2">السعة</p><div className="flex gap-2"><span className="rounded-xl border border-black/10 px-3 py-2 text-xs">128 GB</span><span className="rounded-xl bg-[#171714] text-white px-3 py-2 text-xs">256 GB</span></div></div>
+                  <button className="mt-5 w-full rounded-2xl bg-[#d7b66f] py-3 font-bold flex items-center justify-center gap-2"><ShoppingBag size={17} /> اطلب المنتج</button>
+                </div>
               </div>
             </div>
           </div>
         </section>
 
-        <section id="pricing" className="py-20 bg-[#0f100e] text-white scroll-mt-20">
+        <section id="features" className="py-20 bg-[#f7f3ec] scroll-mt-20">
           <div className="max-w-7xl mx-auto px-5 sm:px-7">
-            <div className="text-center max-w-2xl mx-auto mb-12"><span className="text-[#d7b66f] text-sm font-semibold">اشتراك مرن</span><h2 className="font-display text-3xl sm:text-4xl font-bold mt-2">اختار المدة المناسبة لنشاطك</h2><p className="text-white/45 mt-3">ابدأ بالتجربة وبعدها اختار الباقة المناسبة.</p></div>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">{plans.map((plan) => <div key={plan.title} className={`relative rounded-[28px] p-6 border ${plan.badge ? 'border-[#d7b66f]/50 bg-[#d7b66f]/10' : 'border-white/10 bg-white/[0.04]'}`}>{plan.badge && <span className="absolute -top-3 right-5 rounded-full bg-[#d7b66f] text-[#171714] text-xs font-bold px-3 py-1">{plan.badge}</span>}<h3 className="font-display text-2xl font-bold">{plan.title}</h3><p className="text-sm text-white/45 mt-2 min-h-10">{plan.text}</p><a href={`https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent(`السلام عليكم، عايز أعرف سعر باقة ${plan.title} في Egy Menu`)}`} target="_blank" rel="noreferrer" className="mt-6 rounded-2xl bg-white/8 border border-white/10 py-3 flex items-center justify-center gap-2 hover:bg-white/12 transition-colors"><MessageCircle size={16} /> اعرف السعر</a></div>)}</div>
+            <div className="text-center max-w-2xl mx-auto mb-12">
+              <span className="text-[#8d7444] text-sm font-semibold">كل حاجة من مكان واحد</span>
+              <h2 className="font-display text-3xl sm:text-4xl font-bold mt-2">أدوات تخلي الكتالوج أسهل لصاحب النشاط والعميل</h2>
+            </div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {features.map((feature, i) => <motion.div key={feature.title} initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }} className="rounded-[26px] bg-white p-6 border border-black/5 shadow-[0_18px_40px_rgba(0,0,0,.05)]"><div className="w-11 h-11 rounded-2xl bg-[#ece5d9] text-[#657052] flex items-center justify-center mb-4"><feature.icon size={21} /></div><h3 className="font-display font-bold text-lg">{feature.title}</h3><p className="text-sm text-[#776f63] leading-6 mt-2">{feature.text}</p></motion.div>)}
+            </div>
+          </div>
+        </section>
+
+        <section id="how-it-works" className="py-20 bg-[#171815] text-white scroll-mt-20">
+          <div className="max-w-7xl mx-auto px-5 sm:px-7">
+            <div className="text-center max-w-2xl mx-auto mb-12"><span className="text-[#d7b66f] text-sm font-semibold">3 خطوات بس</span><h2 className="font-display text-3xl sm:text-4xl font-bold mt-2">من التسجيل لحد مشاركة متجرك</h2></div>
+            <div className="grid md:grid-cols-3 gap-5">
+              {[
+                { icon: Store, n: '01', title: 'سجّل نشاطك', text: 'اعمل حساب وحدد اسم ونوع النشاط وبيانات التواصل.' },
+                { icon: PackageCheck, n: '02', title: 'ضيف منتجاتك', text: 'ارفع الصور واكتب الأسعار والمواصفات والألوان والمقاسات.' },
+                { icon: Share2, n: '03', title: 'شارك الرابط أو QR', text: 'ابعت الكتالوج لعملائك أو حط QR في المحل وعلى السوشيال.' },
+              ].map((step) => <div key={step.n} className="relative rounded-[28px] bg-white/[0.05] border border-white/10 p-6"><span className="absolute left-5 top-4 text-5xl font-black text-white/[0.05]">{step.n}</span><div className="w-12 h-12 rounded-2xl bg-[#d7b66f] text-[#171714] flex items-center justify-center mb-5"><step.icon size={22} /></div><h3 className="font-display text-xl font-bold">{step.title}</h3><p className="text-sm text-white/50 leading-6 mt-2">{step.text}</p></div>)}
+            </div>
+          </div>
+        </section>
+
+        <section id="pricing" className="py-20 bg-[#0f100e] text-white scroll-mt-20">
+          <div className="max-w-6xl mx-auto px-5 sm:px-7">
+            <div className="text-center max-w-2xl mx-auto mb-12"><span className="text-[#d7b66f] text-sm font-semibold">أسعار واضحة</span><h2 className="font-display text-3xl sm:text-4xl font-bold mt-2">اختار المدة المناسبة لنشاطك</h2><p className="text-white/45 mt-3">10 أيام تجربة، وبعدها اختار الباقة المناسبة ليك.</p></div>
+            <div className="grid md:grid-cols-3 gap-5">{plans.map((plan) => <div key={plan.title} className={`relative rounded-[30px] p-7 border ${plan.badge ? 'border-[#d7b66f]/60 bg-[#d7b66f]/10 shadow-[0_22px_60px_rgba(215,182,111,.08)]' : 'border-white/10 bg-white/[0.04]'}`}>{plan.badge && <span className="absolute -top-3 right-6 rounded-full bg-[#d7b66f] text-[#171714] text-xs font-bold px-4 py-1.5">{plan.badge}</span>}<h3 className="font-display text-xl font-bold text-white/75">{plan.title}</h3><div className="mt-4 flex items-end gap-2"><span className="text-5xl font-black text-[#efd59d]">{plan.price}</span><span className="text-sm text-white/45 pb-2">ج.م</span></div><p className="text-sm text-white/45 mt-4 min-h-10">{plan.text}</p><a href={`https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent(`السلام عليكم، عايز أشترك في باقة ${plan.title} بسعر ${plan.price} جنيه في Egy Menu`)}`} target="_blank" rel="noreferrer" className={`mt-6 rounded-2xl py-3.5 flex items-center justify-center gap-2 font-bold ${plan.badge ? 'bg-[#d7b66f] text-[#171714]' : 'bg-white/8 border border-white/10 text-white'}`}><MessageCircle size={16} /> اشترك الآن</a></div>)}</div>
           </div>
         </section>
 
@@ -200,8 +245,8 @@ export default function LandingPage() {
             <div className="rounded-[36px] border border-white/10 bg-gradient-to-br from-[#25271f] to-[#121310] p-8 sm:p-12 shadow-[0_35px_80px_rgba(0,0,0,.35)]">
               <div className="flex justify-center mb-6"><BrandLogo compact /></div>
               <h2 className="font-display text-3xl sm:text-4xl font-bold">حوّل منتجاتك لكتالوج احترافي</h2>
-              <p className="text-white/50 mt-3">ضيف منتجاتك وصورك وأسعارك وشارك الرابط مع عملائك.</p>
-              <Link to="/register" className="inline-flex mt-7 rounded-2xl bg-[#d7b66f] text-[#171714] px-7 py-3.5 font-bold items-center gap-2">ابدأ الآن <ArrowLeft size={18} /></Link>
+              <p className="text-white/50 mt-3">ضيف منتجاتك وصورك وأسعارك وشارك الرابط أو QR مع عملائك.</p>
+              <div className="mt-7 flex flex-wrap justify-center gap-3"><Link to="/register" className="inline-flex rounded-2xl bg-[#d7b66f] text-[#171714] px-7 py-3.5 font-bold items-center gap-2">ابدأ الآن <ArrowLeft size={18} /></Link><a href={`https://wa.me/${SUPPORT_WHATSAPP}`} target="_blank" rel="noreferrer" className="inline-flex rounded-2xl border border-white/15 bg-white/5 px-7 py-3.5 font-bold items-center gap-2"><MessageCircle size={18} /> واتساب</a></div>
             </div>
           </div>
         </section>
