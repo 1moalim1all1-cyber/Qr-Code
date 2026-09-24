@@ -12,7 +12,7 @@ export const phoneRegisterSchema = z
   .object({
     fullName: z.string().min(3, 'الاسم لازم يكون 3 أحرف على الأقل'),
     restaurantName: z.string().min(2, 'اسم النشاط مطلوب'),
-    businessType: z.enum(['restaurant', 'cafe', 'supermarket', 'cosmetics']),
+    businessType: z.string().min(1, 'اختار نوع النشاط'),
     phone: z.string().regex(phoneRegex, 'رقم الهاتف غير صحيح'),
     password: z.string().min(6, 'كلمة المرور 6 أحرف على الأقل'),
     confirmPassword: z.string(),
