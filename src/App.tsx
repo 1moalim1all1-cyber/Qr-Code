@@ -65,6 +65,7 @@ function App() {
         <Route path="/admin/business-types" element={<ProtectedRoute allowedRoles={['super_admin']}><AdminBusinessTypesPage /></ProtectedRoute>} />
         <Route path="/admin/clients/new" element={<ProtectedRoute allowedRoles={['super_admin']}><AdminCreateClientPage /></ProtectedRoute>} />
         <Route path="/admin/clients/:id/menu" element={<ProtectedRoute allowedRoles={['super_admin']}><MenuPage backTo="/admin" /></ProtectedRoute>} />
+        <Route path="/admin/clients/:id/products" element={<ProtectedRoute allowedRoles={['super_admin']}><ProductStudioPage /></ProtectedRoute>} />
         <Route path="/admin/clients/:id/qr" element={<ProtectedRoute allowedRoles={['super_admin']}><QRCodePage backTo="/admin" /></ProtectedRoute>} />
         <Route path="/admin/clients/:id/orders" element={<ProtectedRoute allowedRoles={['super_admin']}><OrdersPage backTo="/admin" /></ProtectedRoute>} />
         <Route path="/admin/clients/:id/offers" element={<ProtectedRoute allowedRoles={['super_admin']}><OffersPage backTo="/admin" /></ProtectedRoute>} />
