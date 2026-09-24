@@ -26,7 +26,7 @@ export default function RegisterSuccessPage() {
             <Link to="/dashboard" className="flex items-center justify-center gap-2 rounded-2xl border border-white/12 bg-white/[0.05] px-5 py-4 font-bold hover:bg-white/[0.08]"><LayoutDashboard size={18} /> افتح لوحة التحكم</Link>
           </div>
 
-          <div className="mt-6 rounded-2xl bg-[#d7b66f]/10 p-4 text-sm text-[#e6d1a2]">عندك 10 أيام تجربة مجانية. استخدمهم في تجهيز المتجر وإضافة المنتجات وتجربة الرابط مع العملاء.</div>
+          <div className="mt-6 rounded-2xl bg-[#d7b66f]/10 p-4 text-sm text-[#e6d1a2]">عندك 72 ساعة تجربة مجانية. استخدمهم في تجهيز المتجر وإضافة المنتجات وتجربة الرابط مع العملاء.</div>
         </div>
       </div>
     </div>
