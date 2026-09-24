@@ -74,22 +74,22 @@ export default function DashboardPage() {
     return `https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent(msg)}`
   }, [profile, restaurant, subscriptionEnd])
 
-  const menuUrl = useMemo(() => {
+  const catalogUrl = useMemo(() => {
     if (!restaurant?.slug) return ''
     const base = import.meta.env.BASE_URL === '/' ? '' : import.meta.env.BASE_URL.replace(/\/$/, '')
     return `${window.location.origin}${base}/m/${restaurant.slug}`
   }, [restaurant?.slug])
 
   const shareUrl = useMemo(() => {
-    if (!menuUrl) return '#'
-    const sharedMenuUrl = `${menuUrl}?src=share`
-    const text = `شوف منيو ${restaurant?.name || 'النشاط'} هنا: ${sharedMenuUrl}`
+    if (!catalogUrl) return '#'
+    const sharedCatalogUrl = `${catalogUrl}?src=share`
+    const text = `شوف كتالوج ${restaurant?.name || 'النشاط'} هنا: ${sharedCatalogUrl}`
     return `https://wa.me/?text=${encodeURIComponent(text)}`
-  }, [menuUrl, restaurant?.name])
+  }, [catalogUrl, restaurant?.name])
 
-  async function copyMenuLink() {
-    if (!menuUrl) return
-    await navigator.clipboard.writeText(menuUrl)
+  async function copyCatalogLink() {
+    if (!catalogUrl) return
+    await navigator.clipboard.writeText(catalogUrl)
     setCopied(true)
     window.setTimeout(() => setCopied(false), 1800)
   }
@@ -98,10 +98,10 @@ export default function DashboardPage() {
   const hasReadyCatalog = restaurant?.business_type === 'supermarket' || restaurant?.business_type === 'cosmetics'
 
   const setupSteps = [
-    { done: Boolean(restaurant?.logo_url), title: 'اللوجو والغلاف', text: 'خلي الصفحة باسم وشكل نشاطك', to: '/dashboard/settings', icon: ImagePlus },
-    { done: categoryCount > 0, title: 'اعمل أول قسم', text: 'مثلاً وجبات، مشروبات أو عناية بالبشرة', to: '/dashboard/menu', icon: ListPlus },
-    { done: productCount > 0, title: 'ضيف أول منتج', text: 'اسم + صورة + سعر، والباقي اختياري', to: hasReadyCatalog ? '/dashboard/catalog' : '/dashboard/menu', icon: BadgeDollarSign },
-    { done: productCount > 0 && Boolean(restaurant?.slug), title: 'شارك المنيو', text: 'انسخ الرابط أو حمّل QR', to: '/dashboard/qr', icon: Share2 },
+    { done: Boolean(restaurant?.logo_url), title: 'اللوجو والغلاف', text: 'خلي واجهة متجرك باسم وشكل نشاطك', to: '/dashboard/settings', icon: ImagePlus },
+    { done: categoryCount > 0, title: 'اعمل أول قسم', text: 'مثلاً موبايلات، ملابس، مشروبات أو عناية', to: '/dashboard/menu', icon: ListPlus },
+    { done: productCount > 0, title: 'ضيف أول منتج', text: 'اسم + صورة + سعر، والباقي اختياري', to: hasReadyCatalog ? '/dashboard/catalog' : '/dashboard/products', icon: BadgeDollarSign },
+    { done: productCount > 0 && Boolean(restaurant?.slug), title: 'شارك الكتالوج', text: 'انسخ الرابط أو حمّل QR', to: '/dashboard/qr', icon: Share2 },
   ]
   const completedSteps = setupSteps.filter((step) => step.done).length
   const progress = Math.round((completedSteps / setupSteps.length) * 100)
@@ -115,7 +115,7 @@ export default function DashboardPage() {
             <h1 className="font-display text-xl font-bold mt-1">{restaurant?.name ?? (error ? 'حصل خطأ' : 'جارِ تحميل بيانات النشاط...')}</h1>
           </div>
           <div className="flex items-center gap-2">
-            {menuUrl && <a href={menuUrl} target="_blank" rel="noreferrer" className="hidden sm:flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm hover:bg-white/10"><ExternalLink size={16} /> عرض المنيو</a>}
+            {catalogUrl && <a href={catalogUrl} target="_blank" rel="noreferrer" className="hidden sm:flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm hover:bg-white/10"><ExternalLink size={16} /> عرض الكتالوج</a>}
             <button onClick={() => signOut()} className="flex items-center gap-2 text-sm text-white/55 hover:text-white transition-colors"><LogOut size={16} /> خروج</button>
           </div>
         </div>
@@ -131,14 +131,14 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between gap-3 mb-3">
                 <div>
                   <p className="text-[#d7b66f] text-sm font-semibold">ابدأ من هنا</p>
-                  <h2 className="font-display text-2xl font-bold mt-1">جهّز منيوك في 4 خطوات بس</h2>
+                  <h2 className="font-display text-2xl font-bold mt-1">جهّز متجرك في 4 خطوات بس</h2>
                 </div>
                 <div className="text-left"><div className="text-3xl font-bold text-[#d7b66f]">{progress}%</div><div className="text-xs text-white/40">اكتمل</div></div>
               </div>
               <div className="h-2 rounded-full bg-white/8 overflow-hidden"><div className="h-full rounded-full bg-gradient-to-l from-[#d7b66f] to-[#85906e] transition-all" style={{ width: `${progress}%` }} /></div>
             </div>
-            {menuUrl && <div className="flex flex-wrap gap-2 lg:justify-end">
-              <button onClick={copyMenuLink} className="rounded-xl bg-white/8 border border-white/10 px-4 py-2.5 text-sm flex items-center gap-2 hover:bg-white/12"><Copy size={16} /> {copied ? 'تم النسخ ✓' : 'نسخ الرابط'}</button>
+            {catalogUrl && <div className="flex flex-wrap gap-2 lg:justify-end">
+              <button onClick={copyCatalogLink} className="rounded-xl bg-white/8 border border-white/10 px-4 py-2.5 text-sm flex items-center gap-2 hover:bg-white/12"><Copy size={16} /> {copied ? 'تم النسخ ✓' : 'نسخ رابط الكتالوج'}</button>
               <a href={shareUrl} target="_blank" rel="noreferrer" className="rounded-xl bg-[#6f7a5b] px-4 py-2.5 text-sm flex items-center gap-2 font-semibold"><MessageCircle size={16} /> مشاركة واتساب</a>
             </div>}
           </div>
@@ -162,18 +162,19 @@ export default function DashboardPage() {
         )}
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
-          <Metric icon={UtensilsCrossed} label="الأصناف" value={productCount} />
+          <Metric icon={UtensilsCrossed} label="المنتجات" value={productCount} />
           <Metric icon={Building2} label="الأقسام" value={categoryCount} />
-          <Metric icon={Eye} label="الزيارات الحقيقية" value={visitCount} />
+          <Metric icon={Eye} label="زيارات الكتالوج" value={visitCount} />
           <Metric icon={QrCode} label="مسحات QR" value={qrScanCount} />
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Link to="/dashboard/menu" className="block rounded-3xl bg-[#11120f] text-white p-6 shadow-xl hover:-translate-y-1 transition-transform"><p className="font-display font-semibold flex items-center gap-2"><UtensilsCrossed size={18} className="text-[#d7b66f]" /> المنتجات والأسعار</p><p className="text-white/45 text-sm mt-2">إضافة سريعة وتعديل السعر والإتاحة</p></Link>
+          <Link to="/dashboard/products" className="block rounded-3xl bg-[#11120f] text-white p-6 shadow-xl hover:-translate-y-1 transition-transform"><p className="font-display font-semibold flex items-center gap-2"><UtensilsCrossed size={18} className="text-[#d7b66f]" /> إدارة المنتجات</p><p className="text-white/45 text-sm mt-2">صور، أسعار، خصومات، مواصفات وVariants</p></Link>
+          <Link to="/dashboard/menu" className="block rounded-3xl bg-white border border-black/5 p-6 hover:-translate-y-1 transition-transform"><p className="font-display font-semibold flex items-center gap-2"><ListPlus size={18} className="text-[#8d7444]" /> الأقسام والترتيب</p><p className="text-stone text-sm mt-2">نظّم الأقسام ورتّب المنتجات بسهولة</p></Link>
           {hasReadyCatalog && <Link to="/dashboard/catalog" className="block rounded-3xl bg-[#d7b66f]/15 border border-[#d7b66f]/30 p-6 hover:-translate-y-1 transition-transform"><p className="font-display font-semibold flex items-center gap-2"><PackagePlus size={18} className="text-[#8d7444]" /> الكتالوج الجاهز</p><p className="text-stone text-sm mt-2">اختار المنتجات واكتب السعر فقط</p></Link>}
-          <Link to="/dashboard/design" className="block rounded-3xl bg-gradient-to-br from-[#25271f] to-[#11120f] text-white p-6 shadow-xl hover:-translate-y-1 transition-transform"><p className="font-display font-semibold flex items-center gap-2"><Cuboid size={18} className="text-[#d7b66f]" /> شكل المنيو 3D</p><p className="text-white/45 text-sm mt-2">اختار قالب وشكل الكروت</p></Link>
+          <Link to="/dashboard/design" className="block rounded-3xl bg-gradient-to-br from-[#25271f] to-[#11120f] text-white p-6 shadow-xl hover:-translate-y-1 transition-transform"><p className="font-display font-semibold flex items-center gap-2"><Cuboid size={18} className="text-[#d7b66f]" /> شكل الكتالوج 3D</p><p className="text-white/45 text-sm mt-2">اختار قالب وشكل الكروت</p></Link>
           <Link to="/dashboard/settings" className="block rounded-3xl bg-white border border-black/5 p-6 hover:-translate-y-1 transition-transform"><p className="font-display font-semibold flex items-center gap-2"><Settings size={18} className="text-[#7a8467]" /> بيانات النشاط</p><p className="text-stone text-sm mt-2">اللوجو، الغلاف والتواصل</p></Link>
-          <Link to="/dashboard/qr" className="block rounded-3xl bg-[#6f7a5b] text-white p-6 hover:-translate-y-1 transition-transform"><p className="font-display font-semibold flex items-center gap-2"><QrCode size={18} className="text-[#ead19a]" /> QR والمشاركة</p><p className="text-white/70 text-sm mt-2">حمّل الكود وشاركه فورًا</p></Link>
+          <Link to="/dashboard/qr" className="block rounded-3xl bg-[#6f7a5b] text-white p-6 hover:-translate-y-1 transition-transform"><p className="font-display font-semibold flex items-center gap-2"><QrCode size={18} className="text-[#ead19a]" /> QR والمشاركة</p><p className="text-white/70 text-sm mt-2">حمّل الكود وشارك الكتالوج فورًا</p></Link>
           <Link to="/dashboard/orders" className="block rounded-3xl bg-[#8d5f50] text-white p-6 hover:-translate-y-1 transition-transform"><p className="font-display font-semibold flex items-center gap-2"><ClipboardList size={18} className="text-[#ead19a]" /> الطلبات</p><p className="text-white/70 text-sm mt-2">تابع الطلبات وحدّث حالتها</p></Link>
           <Link to="/dashboard/offers" className="block rounded-3xl bg-white border border-black/5 p-6 hover:-translate-y-1 transition-transform"><p className="font-display font-semibold flex items-center gap-2"><Gift size={18} className="text-[#8d7444]" /> العروض</p><p className="text-stone text-sm mt-2">اعمل خصومات وكوبونات</p></Link>
           <Link to="/dashboard/data" className="block rounded-3xl bg-[#e8e1d5] border border-black/5 p-6 hover:-translate-y-1 transition-transform"><p className="font-display font-semibold flex items-center gap-2"><Database size={18} className="text-[#6f7a5b]" /> استيراد وتصدير</p><p className="text-stone text-sm mt-2">Excel/CSV، نسخة احتياطية ونقل جماعي</p></Link>
