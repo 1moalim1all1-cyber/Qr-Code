@@ -1,11 +1,10 @@
 import { collection, doc, getDocs, setDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { PRODUCT_CATALOG, type CatalogProduct } from '@/data/productCatalog'
-import type { BusinessType } from '@/types/database'
+import { PRODUCT_CATALOG, type CatalogBusinessType, type CatalogProduct } from '@/data/productCatalog'
 
 export interface CatalogAdminRecord {
   id: string
-  business_type?: Extract<BusinessType, 'supermarket' | 'cosmetics'>
+  business_type?: CatalogBusinessType
   name?: string
   category?: string
   brand?: string | null
@@ -33,7 +32,7 @@ export async function saveCatalogAdminRecord(id: string, patch: Omit<Partial<Cat
 
 export async function createCatalogProduct(input: {
   id: string
-  businessType: Extract<BusinessType, 'supermarket' | 'cosmetics'>
+  businessType: CatalogBusinessType
   name: string
   category: string
   brand?: string
@@ -59,17 +58,13 @@ export async function createCatalogProduct(input: {
 }
 
 export async function getCatalogForBusiness(
-  businessType: Extract<BusinessType, 'supermarket' | 'cosmetics'>,
+  businessType: CatalogBusinessType,
 ): Promise<CatalogProduct[]> {
   let records: CatalogAdminRecord[] = []
 
   try {
     records = await listCatalogAdminRecords()
   } catch (err) {
-    // If the latest Firestore rules have not been published yet, owners must
-    // still be able to open the catalog instead of getting stuck forever on
-    // "جارِ التحميل". In that case show the built-in catalog without images;
-    // admin-approved images will appear automatically once rules are published.
     console.warn('[getCatalogForBusiness] catalog_products unavailable, using built-in catalog only:', err)
     return PRODUCT_CATALOG
       .filter((p) => p.businessType === businessType)
@@ -84,8 +79,6 @@ export async function getCatalogForBusiness(
       const override = byId.get(p.id)
       return {
         ...p,
-        // Only an image explicitly approved/uploaded from the admin catalog
-        // is shown to owners. Old remote/random seed images are ignored.
         imageUrl: override?.image_url || '',
         ...(override?.brand !== undefined ? { brand: override.brand || undefined } : {}),
         ...(override?.unit !== undefined ? { unit: override.unit || undefined } : {}),
