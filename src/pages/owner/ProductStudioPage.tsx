@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { ArrowRight, ImagePlus, LoaderCircle, PackagePlus, Pencil, Plus, Save, Search, Sparkles, Trash2, X } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { auth } from '@/lib/firebase'
-import { getRestaurantByOwner } from '@/services/restaurants'
+import { getRestaurantById, getRestaurantByOwner } from '@/services/restaurants'
 import { listCategories } from '@/services/categories'
 import { createProduct, deleteProduct, listProducts, updateProduct } from '@/services/products'
 import type { Category, Product, ProductSpecification, ProductVariant, Restaurant } from '@/types/database'
@@ -18,7 +18,10 @@ const emptyForm = {
 }
 
 export default function ProductStudioPage() {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
+  const { id: routeRestaurantId } = useParams<{ id?: string }>()
+  const adminMode = Boolean(routeRestaurantId && profile?.role === 'super_admin')
+  const backTo = adminMode ? '/admin' : '/dashboard/menu'
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
   const [products, setProducts] = useState<Product[]>([])
@@ -41,14 +44,19 @@ export default function ProductStudioPage() {
 
   useEffect(() => {
     if (!user) return
-    getRestaurantByOwner(user.uid)
+    setLoading(true)
+    const restaurantPromise = adminMode && routeRestaurantId
+      ? getRestaurantById(routeRestaurantId)
+      : getRestaurantByOwner(user.uid)
+
+    restaurantPromise
       .then(async (r) => {
         setRestaurant(r)
         if (r) await load(r.id)
       })
       .catch((err) => setError(err instanceof Error ? err.message : 'تعذّر تحميل بيانات النشاط'))
       .finally(() => setLoading(false))
-  }, [user])
+  }, [user, adminMode, routeRestaurantId])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -155,7 +163,7 @@ export default function ProductStudioPage() {
       }
 
       if (editing) await updateProduct(restaurant.id, editing.id, payload)
-      else await createProduct(restaurant.id, auth.currentUser?.uid ?? restaurant.owner_id, payload)
+      else await createProduct(restaurant.id, restaurant.owner_id ?? (adminMode ? null : auth.currentUser?.uid ?? null), payload)
       await load(restaurant.id)
       setMessage(editing ? 'تم تحديث المنتج بنجاح' : 'تمت إضافة المنتج بنجاح')
       resetForm()
@@ -180,11 +188,13 @@ export default function ProductStudioPage() {
     <div className="min-h-screen bg-[#f4efe7]" dir="rtl">
       <header className="sticky top-0 z-30 bg-[#11120f] text-white border-b border-white/10">
         <div className="max-w-7xl mx-auto px-5 py-4 flex items-center gap-3">
-          <Link to="/dashboard/menu" className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center"><ArrowRight size={19} /></Link>
-          <div className="flex-1"><p className="text-xs text-white/40">{restaurant.name}</p><h1 className="font-display text-xl font-bold flex items-center gap-2"><Sparkles size={19} className="text-[#d7b66f]" /> إدارة المنتجات الاحترافية</h1></div>
+          <Link to={backTo} className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center"><ArrowRight size={19} /></Link>
+          <div className="flex-1"><p className="text-xs text-white/40">{adminMode ? 'إدارة المتجر من لوحة الأدمن' : restaurant.name}</p><h1 className="font-display text-xl font-bold flex items-center gap-2"><Sparkles size={19} className="text-[#d7b66f]" /> إدارة منتجات {restaurant.name}</h1></div>
           <a href={`${import.meta.env.BASE_URL}m/${restaurant.slug}`} target="_blank" rel="noreferrer" className="rounded-xl bg-[#d7b66f] text-[#171714] px-4 py-2 text-sm font-bold">عرض المتجر</a>
         </div>
       </header>
+
+      {adminMode && <div className="max-w-7xl mx-auto px-5 pt-5"><div className="rounded-2xl bg-[#d7b66f]/15 border border-[#d7b66f]/30 px-4 py-3 text-sm text-[#6d572e]">أنت بتدير المنتجات كـ Super Admin. التعديلات بتتطبق مباشرة على كتالوج المتجر.</div></div>}
 
       <main className="max-w-7xl mx-auto px-5 py-6 grid xl:grid-cols-[430px_1fr] gap-6 items-start">
         <section className="rounded-[28px] bg-white border border-black/5 shadow-sm p-5 xl:sticky xl:top-24">
