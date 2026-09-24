@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ArrowLeft, ArrowRight, CheckCircle2, MessageCircle, QrCode, ShieldCheck, Sparkles, Store, X } from 'lucide-react'
@@ -12,6 +12,7 @@ import { listBusinessTypes, type BusinessTypeRecord } from '@/services/businessT
 
 const SUPPORT_WHATSAPP = '201039177959'
 const DRAFT_KEY = 'egy-menu-register-draft-v1'
+const SOURCE_KEY = 'egy-menu-register-source-v1'
 
 const steps = [
   { number: 1, title: 'بيانات النشاط', text: 'اختار النشاط واكتب اسم المتجر' },
@@ -25,13 +26,13 @@ const previewByType: Record<string, { title: string; subtitle: string; chips: st
   clothing: { title: 'Style Store', subtitle: 'ملابس', chips: ['S', 'M', 'L'] },
   shoes_bags: { title: 'Fashion Store', subtitle: 'أحذية وشنط', chips: ['مقاس', 'لون', 'متاح'] },
   perfumes: { title: 'Perfume House', subtitle: 'عطور', chips: ['50ml', '100ml', 'عرض'] },
-  pharmacy: { title: 'Health Store', subtitle: 'صيدلية', chips: ['الاسم', 'السعر', 'التوفر'] },
   furniture: { title: 'Home Store', subtitle: 'أثاث ومفروشات', chips: ['الخامة', 'المقاس', 'اللون'] },
   decor_finishing: { title: 'Finish Store', subtitle: 'تشطيبات وديكور', chips: ['الخامة', 'المقاس', 'السعر'] },
 }
 
 export default function RegisterPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [serverError, setServerError] = useState<string | null>(null)
   const [businessTypes, setBusinessTypes] = useState<BusinessTypeRecord[]>([])
   const [step, setStep] = useState(1)
@@ -59,6 +60,13 @@ export default function RegisterPage() {
     subtitle: selectedType?.name || 'كتالوج منتجات احترافي',
     chips: ['صور', 'سعر', 'مواصفات'],
   }
+
+  useEffect(() => {
+    const sourceFromUrl = searchParams.get('src') || searchParams.get('source')
+    const typeFromUrl = searchParams.get('type')
+    if (sourceFromUrl) localStorage.setItem(SOURCE_KEY, sourceFromUrl)
+    if (typeFromUrl) setValue('businessType', typeFromUrl)
+  }, [searchParams, setValue])
 
   useEffect(() => {
     try {
@@ -131,20 +139,24 @@ export default function RegisterPage() {
     setServerError(null)
     try {
       const type = businessTypes.find((item) => item.code === formValues.businessType)
+      const source = localStorage.getItem(SOURCE_KEY) || 'self_service'
       const user = await signUpWithPhone(formValues.phone, formValues.password, formValues.fullName, formValues.restaurantName, formValues.businessType)
+      let restaurantId = ''
       try {
-        await createRestaurant(user.uid, formValues.restaurantName, {
+        const restaurant = await createRestaurant(user.uid, formValues.restaurantName, {
           clientName: formValues.fullName,
           clientContact: formValues.phone,
           businessType: formValues.businessType,
           businessTypeName: type?.name,
+          registrationSource: source,
         })
+        restaurantId = restaurant.id
       } catch (restaurantError) {
         console.error('[RegisterPage] restaurant creation failed:', restaurantError)
       }
       localStorage.removeItem(DRAFT_KEY)
-      window.alert('تم إنشاء متجرك بنجاح 🎉\nهتدخل دلوقتي لوحة التحكم وتبدأ بإضافة أول منتج.')
-      navigate('/dashboard')
+      localStorage.removeItem(SOURCE_KEY)
+      navigate(`/welcome${restaurantId ? `?restaurant=${encodeURIComponent(restaurantId)}` : ''}`)
     } catch (err) {
       setServerError(err instanceof Error ? translateAuthError(err.message) : 'حصل خطأ، حاول تاني')
     }
@@ -272,7 +284,7 @@ export default function RegisterPage() {
                     <ReviewItem label="رقم الدخول" value={values.phone || '—'} />
                   </div>
                 </div>
-                <div className="rounded-2xl bg-[#eef2e8] p-4 text-sm leading-6 text-[#59624a]">بعد التسجيل هتدخل مباشرة لوحة التحكم، وتلاقي خطوات واضحة لإضافة اللوجو وأول قسم وأول منتج ومشاركة الرابط.</div>
+                <div className="rounded-2xl bg-[#eef2e8] p-4 text-sm leading-6 text-[#59624a]">بعد التسجيل هتدخل صفحة نجاح واضحة، وبعدها تقدر تضيف أول منتج أو تفتح لوحة التحكم.</div>
                 <div className="grid gap-2 sm:grid-cols-3 text-xs">
                   {['بدون دفع الآن', '10 أيام تجربة', 'تعديل في أي وقت'].map((item) => <div key={item} className="flex items-center gap-2 rounded-xl bg-[#f7f3ec] p-3"><CheckCircle2 size={15} className="text-[#758060]" />{item}</div>)}
                 </div>
