@@ -12,22 +12,25 @@ interface FeaturedEntry {
   products: Product[]
 }
 
+const HIDDEN_HOME_TYPES = new Set(['restaurant', 'cafe', 'supermarket', 'cosmetics'])
+
 export default function FeaturedMenus() {
   const [entries, setEntries] = useState<FeaturedEntry[]>([])
   const [businessTypes, setBusinessTypes] = useState<BusinessTypeRecord[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    Promise.all([listFeaturedRestaurants(6), listBusinessTypes()])
+    Promise.all([listFeaturedRestaurants(12), listBusinessTypes()])
       .then(async ([restaurants, types]) => {
         setBusinessTypes(types)
+        const modernStores = restaurants.filter((restaurant) => !HIDDEN_HOME_TYPES.has(restaurant.business_type || ''))
         const withProducts = await Promise.all(
-          restaurants.map(async (restaurant) => {
+          modernStores.map(async (restaurant) => {
             const products = await listProducts(restaurant.id).catch(() => [])
             return { restaurant, products: products.filter((p) => p.is_available).slice(0, 3) }
           })
         )
-        setEntries(withProducts.filter((e) => e.products.length > 0))
+        setEntries(withProducts.filter((e) => e.products.length > 0).slice(0, 6))
       })
       .finally(() => setLoading(false))
   }, [])
@@ -45,7 +48,7 @@ export default function FeaturedMenus() {
             متاجر وكتالوجات حقيقية على المنصة
           </span>
           <h2 className="font-display text-3xl font-semibold">اكتشف المتاجر على Egy Menu</h2>
-          <p className="mt-3 text-sm text-stone">مطاعم، كافيهات، موبايلات، ملابس، إلكترونيات وأنشطة تانية في كتالوج واحد احترافي.</p>
+          <p className="mt-3 text-sm text-stone">موبايلات، إلكترونيات، ملابس، عطور، أثاث، تشطيبات وأنشطة حديثة في كتالوج واحد احترافي.</p>
         </div>
 
         {loading ? (
@@ -71,11 +74,13 @@ export default function FeaturedMenus() {
                   transition={{ duration: 0.4, delay: i * 0.06 }}
                   className="rounded-2xl bg-paper border border-stone-light/30 overflow-hidden hover:border-saffron/40 hover:shadow-md transition-all group"
                 >
-                  <div className="h-24 bg-zaytoon relative overflow-hidden">
-                    {restaurant.cover_url && (
+                  <div className="h-36 bg-zaytoon relative overflow-hidden">
+                    {restaurant.cover_url ? (
                       <img src={restaurant.cover_url} alt="" loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-ink/50 to-transparent" />
+                    ) : type?.image_url ? (
+                      <img src={type.image_url} alt="" loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    ) : null}
+                    <div className="absolute inset-0 bg-gradient-to-t from-ink/65 to-transparent" />
                     <span className="absolute left-3 bottom-3 rounded-full bg-black/45 backdrop-blur px-2.5 py-1 text-[10px] text-white">{type?.icon || '🏪'} {typeName}</span>
                   </div>
                   <div className="p-4">
