@@ -13,7 +13,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions'
 import { app, auth, db } from '@/lib/firebase'
 import { normalizePhone, phoneToPseudoEmail } from '@/lib/phone'
 import { createRestaurant } from '@/services/restaurants'
-import type { AccountStatus, AppUser, Restaurant, RestaurantStatus } from '@/types/database'
+import type { AccountStatus, AppUser, BusinessType, Restaurant, RestaurantStatus } from '@/types/database'
 
 export interface AdminClientRecord {
   user: AppUser
@@ -79,9 +79,6 @@ export async function listAdminClients(): Promise<AdminClientRecord[]> {
       return { user, restaurant, standalone: false }
     })
 
-  // Also surface restaurants that were created while logged in as admin (or whose
-  // owner_id no longer points to an owner account). Those restaurants used to be
-  // skipped because they had an owner_id, but that id belonged to a super admin.
   const standalone: AdminClientRecord[] = restaurants
     .filter((r) => !r.owner_id || !ownerUserIds.has(r.owner_id))
     .map((restaurant) => ({
@@ -203,13 +200,19 @@ export async function updateAdminClient(input: {
   fullName: string
   phone: string
   businessName: string
+  businessType?: BusinessType
+  businessTypeName?: string | null
+  city?: string
+  address?: string
+  whatsapp?: string
   paymentStatus: 'paid' | 'unpaid'
   amountPaid: number
   paymentNote: string
 }) {
-  const patch = {
+  const cleanPhone = input.phone.trim()
+  const userPatch = {
     full_name: input.fullName,
-    phone: input.phone,
+    phone: cleanPhone,
     requested_business_name: input.businessName,
     payment_status: input.paymentStatus,
     amount_paid: input.amountPaid,
@@ -217,16 +220,20 @@ export async function updateAdminClient(input: {
   }
 
   if (!isStandaloneUserId(input.userId)) {
-    await updateDoc(doc(db, 'users', input.userId), patch)
+    await updateDoc(doc(db, 'users', input.userId), userPatch)
   }
 
   if (input.restaurantId) {
     await updateDoc(doc(db, 'restaurants', input.restaurantId), {
       name: input.businessName,
       client_name: input.fullName,
-      client_contact: input.phone,
-      phone: input.phone,
-      whatsapp: input.phone,
+      client_contact: cleanPhone || null,
+      phone: cleanPhone || null,
+      whatsapp: input.whatsapp?.trim() || cleanPhone || null,
+      business_type: input.businessType || 'restaurant',
+      business_type_name: input.businessTypeName?.trim() || null,
+      city: input.city?.trim() || null,
+      address: input.address?.trim() || null,
       payment_status: input.paymentStatus,
       amount_paid: input.amountPaid,
       payment_note: input.paymentNote,
