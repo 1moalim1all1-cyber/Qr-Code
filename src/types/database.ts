@@ -38,6 +38,14 @@ export interface AppUser {
   created_at: string
 }
 
+export interface RestaurantSocialLinks {
+  facebook?: string | null
+  instagram?: string | null
+  tiktok?: string | null
+  youtube?: string | null
+  x?: string | null
+}
+
 export interface Restaurant {
   id: string
   owner_id: string | null
@@ -56,7 +64,9 @@ export interface Restaurant {
   email?: string | null
   website?: string | null
   address?: string | null
+  city?: string | null
   google_maps_url?: string | null
+  social_links?: RestaurantSocialLinks
   working_hours: Record<string, { open: string; close: string; closed?: boolean }>
   status: RestaurantStatus
   is_open: boolean
@@ -103,6 +113,29 @@ export interface ProductExtra {
   price: number
 }
 
+export interface ProductVariantOption {
+  id?: string
+  label: string
+  value: string
+}
+
+export interface ProductVariant {
+  id: string
+  label?: string | null
+  options: Record<string, string>
+  price: number
+  compare_at_price?: number | null
+  stock?: number | null
+  sku?: string | null
+  is_available?: boolean
+  image_url?: string | null
+}
+
+export interface ProductSpecification {
+  name: string
+  value: string
+}
+
 export interface Product {
   id: string
   restaurant_id: string
@@ -116,11 +149,20 @@ export interface Product {
   description?: LocalizedText | null
   price: number
   discount_price?: number | null
+  compare_at_price?: number | null
+  discount_percent?: number | null
   calories?: number | null
   ingredients: string[]
   allergens?: string[]
   extras: ProductExtra[]
   sizes?: ProductSize[]
+  variant_options?: ProductVariantOption[]
+  variants?: ProductVariant[]
+  specifications?: ProductSpecification[]
+  colors?: string[]
+  badges?: string[]
+  is_featured?: boolean
+  views_count?: number
   video_url?: string | null
   is_available: boolean
   is_best_seller: boolean
