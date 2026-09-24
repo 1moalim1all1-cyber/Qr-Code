@@ -21,6 +21,10 @@ function clearPublicMenuShape() {
   delete document.documentElement.dataset.menuShape
 }
 
+function hasActiveSubscription(restaurant: Restaurant) {
+  return !restaurant.subscription_end || new Date(restaurant.subscription_end).getTime() > Date.now()
+}
+
 export async function createRestaurant(
   ownerId: string,
   name: string,
@@ -53,6 +57,8 @@ export async function createRestaurant(
       email: null,
       website: null,
       address: null,
+      city: null,
+      social_links: {},
       google_maps_url: null,
       working_hours: {},
       status: 'active',
@@ -77,7 +83,7 @@ export async function createRestaurant(
     })
   } catch (err) {
     console.error('[createRestaurant] failed writing restaurants/{id}:', err)
-    throw new Error(`تعذّر إنشاء المطعم (restaurants): ${err instanceof Error ? err.message : String(err)}`)
+    throw new Error(`تعذّر إنشاء النشاط (restaurants): ${err instanceof Error ? err.message : String(err)}`)
   }
 
   try {
@@ -100,7 +106,7 @@ export async function getRestaurantByOwner(ownerId: string) {
   let snap
   try { snap = await getDocs(q) } catch (err) {
     console.error('[getRestaurantByOwner] failed reading restaurants:', err)
-    throw new Error(`تعذّر تحميل بيانات المطعم (قراءة restaurants): ${err instanceof Error ? err.message : String(err)}`)
+    throw new Error(`تعذّر تحميل بيانات النشاط (قراءة restaurants): ${err instanceof Error ? err.message : String(err)}`)
   }
   if (snap.empty) return null
   const d = snap.docs[0]
@@ -110,7 +116,7 @@ export async function getRestaurantByOwner(ownerId: string) {
 export async function getRestaurantById(id: string) {
   clearPublicMenuShape()
   const snap = await getDoc(doc(db, 'restaurants', id))
-  if (!snap.exists()) throw new Error('Restaurant not found')
+  if (!snap.exists()) throw new Error('Store not found')
   return { id: snap.id, ...snap.data() } as unknown as Restaurant
 }
 
@@ -134,7 +140,7 @@ export async function createRestaurantByAdmin(input: {
     show_on_home: true,
     description: null, logo_url: null, cover_url: null,
     phone: normalizedContact, whatsapp: normalizedContact,
-    email: null, website: null, address: null, google_maps_url: null,
+    email: null, website: null, address: null, city: null, social_links: {}, google_maps_url: null,
     working_hours: {}, status: 'active', is_open: true,
     theme: { primaryColor: '#E8A33D', font: 'Tajawal', mode: 'light' },
     default_language: 'ar', supported_languages: ['ar', 'en'], rating: 0,
@@ -159,17 +165,25 @@ export async function listFeaturedRestaurants(max: number = 6) {
   return snap.docs
     .map((d) => ({ id: d.id, ...d.data() }) as unknown as Restaurant)
     .filter((restaurant) => restaurant.show_on_home !== false)
-    .filter((restaurant) => !restaurant.subscription_end || new Date(restaurant.subscription_end).getTime() > Date.now())
+    .filter(hasActiveSubscription)
     .slice(0, max)
+}
+
+export async function listActiveRestaurants(max: number = 250) {
+  const q = query(restaurantsRef, where('status', '==', 'active'), limit(Math.max(1, max)))
+  const snap = await getDocs(q)
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() }) as unknown as Restaurant)
+    .filter(hasActiveSubscription)
 }
 
 export async function getRestaurantBySlug(slug: string) {
   const q = query(restaurantsRef, where('slug', '==', slug), where('status', '==', 'active'), limit(1))
   const snap = await getDocs(q)
-  if (snap.empty) throw new Error('Restaurant not found')
+  if (snap.empty) throw new Error('Store not found')
   const d = snap.docs[0]
   const restaurant = { id: d.id, ...d.data() } as unknown as Restaurant
-  if (restaurant.subscription_end && new Date(restaurant.subscription_end).getTime() <= Date.now()) {
+  if (!hasActiveSubscription(restaurant)) {
     throw new Error('انتهت مدة الاشتراك')
   }
   if (typeof document !== 'undefined') {
@@ -183,6 +197,6 @@ export async function updateRestaurant(id: string, patch: Partial<Restaurant>) {
   try { await updateDoc(doc(db, 'restaurants', id), patch) }
   catch (err) {
     console.error('[updateRestaurant] failed updating restaurants/{id}:', err)
-    throw new Error(`تعذّر حفظ بيانات المطعم: ${err instanceof Error ? err.message : String(err)}`)
+    throw new Error(`تعذّر حفظ بيانات النشاط: ${err instanceof Error ? err.message : String(err)}`)
   }
 }
