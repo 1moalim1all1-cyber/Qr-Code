@@ -171,7 +171,7 @@ export default function RegisterPage() {
           <div className="relative w-full max-w-md rounded-[28px] bg-white p-6 shadow-2xl">
             <button type="button" onClick={() => setShowExitOffer(false)} className="absolute left-4 top-4 rounded-full bg-black/5 p-2"><X size={18} /></button>
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#d7b66f]/20 text-[#8d7444]"><Sparkles size={22} /></div>
-            <h3 className="mt-4 font-display text-2xl font-bold">قبل ما تمشي… جرّب 10 أيام مجانًا</h3>
+            <h3 className="mt-4 font-display text-2xl font-bold">قبل ما تمشي… جرّب 72 ساعة مجانًا</h3>
             <p className="mt-2 text-sm leading-7 text-stone">مش مطلوب بطاقة بنكية ولا دفع أثناء التسجيل، وبياناتك اللي كتبتها محفوظة عشان تقدر تكمل من نفس المكان.</p>
             <div className="mt-5 grid grid-cols-2 gap-2">
               <button type="button" onClick={() => setShowExitOffer(false)} className="rounded-xl bg-[#171714] px-4 py-3 text-sm font-bold text-white">كمّل التسجيل</button>
@@ -189,7 +189,7 @@ export default function RegisterPage() {
           </div>
 
           <h1 className="mt-8 font-display text-3xl font-bold leading-tight">اعمل متجرك في 3 خطوات وخد الرابط فورًا</h1>
-          <p className="mt-3 text-sm leading-7 text-white/55">10 أيام تجربة مجانية. مفيش دفع أثناء التسجيل، ومش محتاج بطاقة بنكية.</p>
+          <p className="mt-3 text-sm leading-7 text-white/55">72 ساعة تجربة مجانية. مفيش دفع أثناء التسجيل، ومش محتاج بطاقة بنكية.</p>
 
           {draftRecovered && <div className="mt-4 rounded-2xl border border-[#8da274]/25 bg-[#8da274]/10 p-3 text-xs text-[#cbd8b7]">رجّعنا البيانات اللي كنت كاتبها قبل كده، تقدر تكمل من مكانك.</div>}
 
@@ -286,7 +286,7 @@ export default function RegisterPage() {
                 </div>
                 <div className="rounded-2xl bg-[#eef2e8] p-4 text-sm leading-6 text-[#59624a]">بعد التسجيل هتدخل صفحة نجاح واضحة، وبعدها تقدر تضيف أول منتج أو تفتح لوحة التحكم.</div>
                 <div className="grid gap-2 sm:grid-cols-3 text-xs">
-                  {['بدون دفع الآن', '10 أيام تجربة', 'تعديل في أي وقت'].map((item) => <div key={item} className="flex items-center gap-2 rounded-xl bg-[#f7f3ec] p-3"><CheckCircle2 size={15} className="text-[#758060]" />{item}</div>)}
+                  {['بدون دفع الآن', '72 ساعة تجربة', 'تعديل في أي وقت'].map((item) => <div key={item} className="flex items-center gap-2 rounded-xl bg-[#f7f3ec] p-3"><CheckCircle2 size={15} className="text-[#758060]" />{item}</div>)}
                 </div>
               </div>
             )}
@@ -298,7 +298,7 @@ export default function RegisterPage() {
               {step < 3 ? (
                 <button type="button" onClick={nextStep} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#171714] px-4 py-3 text-sm font-bold text-white">التالي <ArrowLeft size={16} /></button>
               ) : (
-                <Button type="submit" loading={isSubmitting} className="w-full flex-1">ابدأ التجربة المجانية 10 أيام</Button>
+                <Button type="submit" loading={isSubmitting} className="w-full flex-1">ابدأ التجربة المجانية 72 ساعة</Button>
               )}
             </div>
           </form>
@@ -311,7 +311,7 @@ export default function RegisterPage() {
           <div className="mt-5 rounded-2xl border border-black/5 bg-[#faf8f4] p-4">
             <p className="text-sm font-bold">أسئلة قبل التسجيل</p>
             <div className="mt-3 grid gap-3 text-xs leading-5 text-stone sm:grid-cols-3">
-              <div><b className="text-[#171714]">هل لازم أدفع دلوقتي؟</b><br />لا، تبدأ 10 أيام تجربة مجانية.</div>
+              <div><b className="text-[#171714]">هل لازم أدفع دلوقتي؟</b><br />لا، تبدأ 72 ساعة تجربة مجانية.</div>
               <div><b className="text-[#171714]">هل أقدر أعدل بعدين؟</b><br />أيوه، المنتجات والأسعار قابلة للتعديل.</div>
               <div><b className="text-[#171714]">العميل يحتاج تطبيق؟</b><br />لا، بيفتح المتجر من الرابط أو QR.</div>
             </div>
