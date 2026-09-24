@@ -21,8 +21,8 @@ export default function FloatingContact() {
       <div className="fixed inset-x-3 bottom-3 z-[68] sm:hidden" dir="rtl">
         <div className="rounded-[20px] border border-white/10 bg-[#11120f]/95 p-2.5 shadow-[0_18px_50px_rgba(0,0,0,.32)] backdrop-blur-xl">
           <div className="mb-2 flex items-center justify-between gap-2 px-1 text-[11px] text-white/55">
-            <span className="inline-flex items-center gap-1.5"><Sparkles size={12} className="text-[#d7b66f]" /> التسجيل في أقل من دقيقتين</span>
-            <span>10 أيام مجانًا</span>
+            <span className="inline-flex items-center gap-1.5"><Sparkles size={12} className="text-[#d7b66f]" /> أقل من دقيقتين</span>
+            <span>10 أيام مجانًا • بدون بطاقة</span>
           </div>
           <div className="grid grid-cols-[1fr_auto] gap-2">
             <Link to="/register" className="flex items-center justify-center rounded-2xl bg-[#d7b66f] px-4 py-3 text-sm font-black text-[#171714]">ابدأ متجرك مجانًا</Link>
@@ -45,6 +45,8 @@ export default function FloatingContact() {
           </a>
         )}
 
+        <div className="rounded-full border border-white/10 bg-[#11120f]/95 px-4 py-2 text-[11px] text-white/65 shadow-lg backdrop-blur">10 أيام مجانًا • بدون بطاقة بنكية • تقدر تكمل تسجيلك لاحقًا</div>
+
         <Link to="/register" className="rounded-full bg-[#d7b66f] text-[#171714] shadow-[0_16px_40px_rgba(215,182,111,.28)] px-5 py-3 flex items-center gap-2 font-black hover:-translate-y-1 transition-transform">
           <Sparkles size={18} /> ابدأ متجرك مجانًا
         </Link>
@@ -59,7 +61,7 @@ export default function FloatingContact() {
           >
             <span className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center"><MessageCircle size={20} fill="currentColor" /></span>
             <span className="leading-tight text-right">
-              <span className="block text-[11px] font-medium text-white/80">نساعدك تعمل المتجر</span>
+              <span className="block text-[11px] font-medium text-white/80">مش عايز تسجل لوحدك؟ نساعدك</span>
               <span className="block text-sm" dir="ltr">{settings.contact_phone || settings.whatsapp_number}</span>
             </span>
           </a>
