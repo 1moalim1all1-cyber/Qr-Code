@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Store } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { ArrowLeft, Store } from 'lucide-react'
 import { listBusinessTypes, type BusinessTypeRecord } from '@/services/businessTypes'
 
 const INTERVAL_MS = 3200
@@ -34,10 +35,10 @@ export default function RestaurantCarousel() {
 
   if (items.length === 0) {
     return (
-      <div className="w-64 h-64 rounded-[2rem] bg-gradient-to-br from-saffron to-zaytoon shadow-2xl flex flex-col items-center justify-center gap-4 text-paper">
+      <Link to="/restaurants" className="w-64 h-64 rounded-[2rem] bg-gradient-to-br from-saffron to-zaytoon shadow-2xl flex flex-col items-center justify-center gap-4 text-paper">
         <Store size={44} />
         <span className="font-display text-xl font-semibold">كل الأنشطة</span>
-      </div>
+      </Link>
     )
   }
 
@@ -55,17 +56,20 @@ export default function RestaurantCarousel() {
             exit={{ rotateY: direction > 0 ? -90 : 90, opacity: 0 }}
             transition={{ duration: 0.55, ease: 'easeInOut' }}
             style={{ transformStyle: 'preserve-3d' }}
-            className="absolute inset-0 rounded-[2rem] shadow-2xl overflow-hidden bg-gradient-to-br from-[#23251f] via-[#3b3f31] to-[#b58e45] flex flex-col items-center justify-center gap-4 border border-white/10"
+            className="absolute inset-0 rounded-[2rem] shadow-2xl overflow-hidden bg-gradient-to-br from-[#23251f] via-[#3b3f31] to-[#b58e45] border border-white/10"
           >
-            {item.image_url ? <img src={item.image_url} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30" /> : null}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-white/5" />
-            <div className="relative w-20 h-20 rounded-[26px] bg-white/15 backdrop-blur border border-white/15 flex items-center justify-center text-5xl">
-              {item.icon || '🏪'}
-            </div>
-            <div className="relative text-center px-5">
-              <span className="font-display text-xl font-semibold text-paper">{item.name}</span>
-              {item.description ? <p className="text-xs text-white/55 mt-2 line-clamp-2">{item.description}</p> : null}
-            </div>
+            <Link to={`/restaurants?type=${encodeURIComponent(item.code)}`} className="absolute inset-0 flex flex-col items-center justify-center gap-4 group">
+              {item.image_url ? <img src={item.image_url} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:scale-105 transition-transform duration-500" /> : null}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-white/5" />
+              <div className="relative w-20 h-20 rounded-[26px] bg-white/15 backdrop-blur border border-white/15 flex items-center justify-center text-5xl">
+                {item.icon || '🏪'}
+              </div>
+              <div className="relative text-center px-5">
+                <span className="font-display text-xl font-semibold text-paper">{item.name}</span>
+                {item.description ? <p className="text-xs text-white/55 mt-2 line-clamp-2">{item.description}</p> : null}
+                <span className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-[#ead19a]">عرض المتاجر <ArrowLeft size={13} /></span>
+              </div>
+            </Link>
           </motion.div>
         </AnimatePresence>
       </div>
