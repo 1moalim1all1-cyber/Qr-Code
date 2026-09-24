@@ -13,6 +13,7 @@ const ContactPage = lazy(() => import('./pages/public/ContactPage'))
 const RestaurantsDirectoryPage = lazy(() => import('./pages/public/RestaurantsDirectoryPage'))
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'))
 const RegisterPage = lazy(() => import('./pages/auth/RegisterPage'))
+const RegisterSuccessPage = lazy(() => import('./pages/auth/RegisterSuccessPage'))
 const ActivationPendingPage = lazy(() => import('./pages/auth/ActivationPendingPage'))
 const DashboardPage = lazy(() => import('./pages/owner/DashboardPage'))
 const MenuPage = lazy(() => import('./pages/owner/MenuPage'))
@@ -49,6 +50,7 @@ function App() {
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/welcome" element={<ProtectedRoute allowedRoles={['owner']} requireActiveRestaurant={false}><RegisterSuccessPage /></ProtectedRoute>} />
         <Route path="/activation-pending" element={<ProtectedRoute allowedRoles={['owner']} requireActiveRestaurant={false}><ActivationPendingPage /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute allowedRoles={['owner', 'staff']}><DashboardPage /></ProtectedRoute>} />
         <Route path="/dashboard/menu" element={<ProtectedRoute allowedRoles={['owner', 'staff']}><MenuStudioPage /></ProtectedRoute>} />
