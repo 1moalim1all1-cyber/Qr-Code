@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowRight, Check, ExternalLink, Globe2, LoaderCircle, Save, Store } from 'lucide-react'
+import { ArrowRight, Check, Clock, ExternalLink, Globe2, LoaderCircle, Save, Store } from 'lucide-react'
 import { getRestaurantById, updateRestaurant } from '@/services/restaurants'
 import { listBusinessTypes, type BusinessTypeRecord } from '@/services/businessTypes'
+import { WEEK_DAYS, isRestaurantOpenNow } from '@/lib/businessHours'
 import type { Restaurant, RestaurantSocialLinks } from '@/types/database'
 import ImageUpload from '@/components/ui/ImageUpload'
 
@@ -19,9 +20,15 @@ type FormState = {
   google_maps_url: string
 }
 
+type WorkingHours = Record<string, { open: string; close: string; closed?: boolean }>
+
 const EMPTY_SOCIALS: RestaurantSocialLinks = {
   facebook: '', instagram: '', tiktok: '', youtube: '', x: '',
 }
+
+const DEFAULT_HOURS: WorkingHours = Object.fromEntries(
+  WEEK_DAYS.map((day) => [day.key, { open: '10:00', close: '23:00', closed: false }]),
+)
 
 export default function AdminStoreSettingsPage() {
   const { id } = useParams<{ id: string }>()
@@ -32,6 +39,7 @@ export default function AdminStoreSettingsPage() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null)
   const [coverUrl, setCoverUrl] = useState<string | null>(null)
   const [isOpen, setIsOpen] = useState(true)
+  const [workingHours, setWorkingHours] = useState<WorkingHours>(DEFAULT_HOURS)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -59,6 +67,9 @@ export default function AdminStoreSettingsPage() {
         setLogoUrl(r.logo_url || null)
         setCoverUrl(r.cover_url || null)
         setIsOpen(r.is_open !== false)
+        if (r.working_hours && Object.keys(r.working_hours).length > 0) {
+          setWorkingHours({ ...DEFAULT_HOURS, ...r.working_hours })
+        }
       })
       .catch((err) => setError(err instanceof Error ? err.message : 'تعذّر تحميل بيانات المتجر'))
       .finally(() => setLoading(false))
@@ -66,6 +77,7 @@ export default function AdminStoreSettingsPage() {
 
   const selectedType = useMemo(() => businessTypes.find((item) => item.code === form.business_type), [businessTypes, form.business_type])
   const previewUrl = restaurant ? `${import.meta.env.BASE_URL}m/${restaurant.slug}` : ''
+  const openNow = isRestaurantOpenNow({ is_open: isOpen, working_hours: workingHours })
 
   async function save() {
     if (!restaurant) return
@@ -94,8 +106,9 @@ export default function AdminStoreSettingsPage() {
         logo_url: logoUrl,
         cover_url: coverUrl,
         is_open: isOpen,
+        working_hours: workingHours,
       })
-      setRestaurant((current) => current ? { ...current, ...form, business_type_name: selectedType?.name || current.business_type_name, social_links: socialLinks, logo_url: logoUrl, cover_url: coverUrl, is_open: isOpen } : current)
+      setRestaurant((current) => current ? { ...current, ...form, business_type_name: selectedType?.name || current.business_type_name, social_links: socialLinks, logo_url: logoUrl, cover_url: coverUrl, is_open: isOpen, working_hours: workingHours } : current)
       setSaved(true)
       window.setTimeout(() => setSaved(false), 2200)
     } catch (err) {
@@ -157,6 +170,25 @@ export default function AdminStoreSettingsPage() {
             <Social label="TikTok" value={socialLinks.tiktok || ''} onChange={(v) => setSocialLinks({ ...socialLinks, tiktok: v })} />
             <Social label="YouTube" value={socialLinks.youtube || ''} onChange={(v) => setSocialLinks({ ...socialLinks, youtube: v })} />
             <Social label="X / Twitter" value={socialLinks.x || ''} onChange={(v) => setSocialLinks({ ...socialLinks, x: v })} />
+          </div>
+        </section>
+
+        <section className="rounded-[28px] bg-white border border-black/5 p-5 sm:p-6 shadow-sm">
+          <div className="flex items-center justify-between gap-4 mb-5">
+            <div><h2 className="font-display text-lg font-bold flex items-center gap-2"><Clock size={18} className="text-[#b99047]" /> مواعيد العمل</h2><p className="text-xs text-stone mt-1">الأدمن يقدر يظبط مواعيد كل يوم، والحالة الحالية بتتحسب تلقائيًا.</p></div>
+            <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${openNow ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>{openNow ? 'مفتوح الآن' : 'مغلق حاليًا'}</span>
+          </div>
+          <div className="space-y-2">
+            {WEEK_DAYS.map((day) => {
+              const hours = workingHours[day.key] || { open: '10:00', close: '23:00', closed: false }
+              return (
+                <div key={day.key} className="rounded-2xl bg-[#faf7f2] border border-black/5 p-3 flex items-center gap-3 flex-wrap sm:flex-nowrap">
+                  <span className="w-16 text-sm font-semibold shrink-0">{day.label}</span>
+                  <label className="flex items-center gap-1.5 text-xs text-stone shrink-0"><input type="checkbox" checked={!hours.closed} onChange={(e) => setWorkingHours({ ...workingHours, [day.key]: { ...hours, closed: !e.target.checked } })} /> مفتوح</label>
+                  {!hours.closed ? <><input type="time" value={hours.open} onChange={(e) => setWorkingHours({ ...workingHours, [day.key]: { ...hours, open: e.target.value } })} className="rounded-lg border border-black/10 bg-white px-2 py-1.5 text-xs" /><span className="text-xs text-stone">إلى</span><input type="time" value={hours.close} onChange={(e) => setWorkingHours({ ...workingHours, [day.key]: { ...hours, close: e.target.value } })} className="rounded-lg border border-black/10 bg-white px-2 py-1.5 text-xs" /></> : <span className="text-xs text-red-600">مغلق طول اليوم</span>}
+                </div>
+              )
+            })}
           </div>
         </section>
 
