@@ -8,6 +8,7 @@ import {
   ExternalLink,
   Gift,
   LogOut,
+  MapPin,
   MessageCircle,
   Pencil,
   Plus,
@@ -21,6 +22,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { signOut } from '@/services/auth'
+import { listBusinessTypes, type BusinessTypeRecord } from '@/services/businessTypes'
 import {
   approveClient,
   createMissingRestaurantForClient,
@@ -44,6 +46,17 @@ const STATUS_LABEL: Record<AccountStatus, string> = {
   suspended: 'موقوف',
 }
 
+type SubscriptionFilter = 'all' | 'trial' | 'active' | 'expiring' | 'expired' | 'no_date'
+
+const SUBSCRIPTION_LABEL: Record<SubscriptionFilter, string> = {
+  all: 'كل الاشتراكات',
+  trial: 'تجربة مجانية',
+  active: 'ساري',
+  expiring: 'ينتهي خلال 7 أيام',
+  expired: 'منتهي',
+  no_date: 'بدون تاريخ',
+}
+
 function whatsappNumber(phone: string) {
   const digits = phone.replace(/\D/g, '')
   if (digits.startsWith('20')) return digits
@@ -53,16 +66,20 @@ function whatsappNumber(phone: string) {
 
 function renewalMessage(client: AdminClientRecord) {
   const business = client.user.requested_business_name || client.restaurant?.name || 'النشاط'
-  const end = client.user.subscription_end
+  const end = client.user.subscription_end || client.restaurant?.subscription_end
   const endLabel = end ? new Date(end).toLocaleString('ar-EG') : ''
-  return encodeURIComponent(`أهلاً ${client.user.full_name}، بنفكرك إن اشتراك ${business}${endLabel ? ` هينتهي ${endLabel}` : ' محتاج تجديد'}. تواصل معانا لتجديد الخدمة واستمرار المنيو بدون توقف.`)
+  return encodeURIComponent(`أهلاً ${client.user.full_name}، بنفكرك إن اشتراك ${business}${endLabel ? ` هينتهي ${endLabel}` : ' محتاج تجديد'}. تواصل معانا لتجديد الخدمة واستمرار الكتالوج بدون توقف.`)
 }
 
 export default function AdminDashboardPage() {
   const { profile } = useAuth()
   const [clients, setClients] = useState<AdminClientRecord[]>([])
+  const [businessTypes, setBusinessTypes] = useState<BusinessTypeRecord[]>([])
   const [stats, setStats] = useState({ totalClients: 0, totalRestaurants: 0, active: 0, pending: 0, rejected: 0, suspended: 0, totalRevenue: 0, expiringSoon: 0, expired: 0, totalVisitsSample: 0 })
   const [filter, setFilter] = useState<'all' | AccountStatus>('all')
+  const [businessType, setBusinessType] = useState('all')
+  const [city, setCity] = useState('all')
+  const [subscriptionFilter, setSubscriptionFilter] = useState<SubscriptionFilter>('all')
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -73,9 +90,14 @@ export default function AdminDashboardPage() {
     setLoading(true)
     setError(null)
     try {
-      const [list, s] = await Promise.all([listAdminClients(), getPlatformStats()])
+      const [list, s, types] = await Promise.all([
+        listAdminClients(),
+        getPlatformStats(),
+        listBusinessTypes().catch(() => []),
+      ])
       setClients(list)
       setStats(s)
+      setBusinessTypes(types)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'تعذّر تحميل بيانات الإدارة')
     } finally {
@@ -87,16 +109,55 @@ export default function AdminDashboardPage() {
     load()
   }, [])
 
+  const cities = useMemo(() => Array.from(new Set(
+    clients.map((client) => client.restaurant?.city?.trim()).filter((value): value is string => Boolean(value)),
+  )).sort((a, b) => a.localeCompare(b, 'ar')), [clients])
+
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase()
     return clients.filter((c) => {
       const status = c.user.account_status || 'pending'
       if (filter !== 'all' && status !== filter) return false
+
+      const clientBusinessType = c.restaurant?.business_type || ''
+      if (businessType !== 'all' && clientBusinessType !== businessType) return false
+
+      const clientCity = c.restaurant?.city?.trim() || ''
+      if (city !== 'all' && clientCity !== city) return false
+
+      const subscriptionEnd = c.user.subscription_end || c.restaurant?.subscription_end || null
+      const daysLeft = getSubscriptionDaysLeft(subscriptionEnd)
+      const isTrial = Number(c.user.trial_days || c.restaurant?.trial_days || 0) > 0 && !c.user.last_renewed_at && !c.restaurant?.last_renewed_at
+      if (subscriptionFilter === 'trial' && !isTrial) return false
+      if (subscriptionFilter === 'active' && (daysLeft === null || daysLeft <= 7)) return false
+      if (subscriptionFilter === 'expiring' && (daysLeft === null || daysLeft < 0 || daysLeft > 7)) return false
+      if (subscriptionFilter === 'expired' && (daysLeft === null || daysLeft >= 0)) return false
+      if (subscriptionFilter === 'no_date' && daysLeft !== null) return false
+
       if (!q) return true
-      return [c.user.full_name, c.user.phone, c.user.requested_business_name, c.restaurant?.name, c.restaurant?.client_contact]
-        .some((v) => String(v || '').toLowerCase().includes(q))
+      const typeName = c.restaurant?.business_type_name || businessTypes.find((item) => item.code === clientBusinessType)?.name || ''
+      return [
+        c.user.full_name,
+        c.user.phone,
+        c.user.requested_business_name,
+        c.restaurant?.name,
+        c.restaurant?.client_contact,
+        c.restaurant?.city,
+        c.restaurant?.address,
+        typeName,
+      ].some((v) => String(v || '').toLowerCase().includes(q))
     })
-  }, [clients, filter, search])
+  }, [clients, filter, businessType, city, subscriptionFilter, search, businessTypes])
+
+  const filtersActive = filter !== 'all' || businessType !== 'all' || city !== 'all' || subscriptionFilter !== 'all' || Boolean(search.trim())
+
+  function clearFilters() {
+    setFilter('all')
+    setBusinessType('all')
+    setCity('all')
+    setSubscriptionFilter('all')
+    setSearch('')
+  }
 
   async function action(fn: () => Promise<void>) {
     setError(null)
@@ -113,7 +174,7 @@ export default function AdminDashboardPage() {
       <header className="bg-ink text-paper">
         <div className="max-w-7xl mx-auto px-5 py-4 flex items-center justify-between gap-4">
           <div>
-            <p className="text-sm text-stone-light">لوحة الإدارة الرئيسية</p>
+            <p className="text-sm text-stone-light">إدارة العملاء والمتاجر</p>
             <h1 className="font-display text-xl font-semibold">أهلاً، {profile?.full_name ?? 'الإدارة'}</h1>
           </div>
           <button onClick={() => signOut()} className="flex items-center gap-2 text-sm text-stone-light hover:text-paper"><LogOut size={16} /> تسجيل الخروج</button>
@@ -132,26 +193,54 @@ export default function AdminDashboardPage() {
           <Stat icon={Wallet} label="إجمالي المحصل" value={`${stats.totalRevenue} ج.م`} />
         </div>
 
-        <div className="grid lg:grid-cols-[1fr_auto] gap-3 mb-5">
-          <div className="relative">
-            <Search size={17} className="absolute right-3 top-1/2 -translate-y-1/2 text-stone" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="ابحث بالاسم أو رقم الهاتف أو اسم النشاط" className="w-full rounded-2xl border border-stone-light/30 bg-paper py-3 pr-10 pl-4 outline-none focus:border-saffron" />
+        <section className="rounded-3xl bg-paper border border-stone-light/30 p-4 sm:p-5 mb-5 shadow-sm">
+          <div className="grid lg:grid-cols-[1fr_auto] gap-3">
+            <div className="relative">
+              <Search size={17} className="absolute right-3 top-1/2 -translate-y-1/2 text-stone" />
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="ابحث بالعميل، المتجر، الهاتف، المدينة أو نوع النشاط" className="w-full rounded-2xl border border-stone-light/30 bg-paper-dim py-3 pr-10 pl-4 outline-none focus:border-saffron" />
+            </div>
+            <Link to="/admin/clients/new" className="rounded-2xl bg-saffron text-ink font-semibold px-5 py-3 flex items-center justify-center gap-2"><Plus size={18} /> إضافة متجر يدويًا</Link>
           </div>
-          <Link to="/admin/clients/new" className="rounded-2xl bg-saffron text-ink font-semibold px-5 py-3 flex items-center justify-center gap-2"><Plus size={18} /> إضافة عميل يدويًا</Link>
-        </div>
 
-        <div className="flex gap-2 flex-wrap mb-5">
-          {(['all', 'pending', 'active', 'rejected', 'suspended'] as const).map((f) => (
-            <button key={f} onClick={() => setFilter(f)} className={`rounded-full px-4 py-2 text-sm ${filter === f ? 'bg-ink text-paper' : 'bg-paper border border-stone-light/30'}`}>{f === 'all' ? 'الكل' : STATUS_LABEL[f]}</button>
-          ))}
-        </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-3">
+            <label className="text-xs text-stone">نوع النشاط
+              <select value={businessType} onChange={(e) => setBusinessType(e.target.value)} className="mt-1 w-full rounded-xl border border-stone-light/30 bg-paper-dim px-3 py-2.5 text-sm text-ink outline-none focus:border-saffron">
+                <option value="all">كل الأنشطة</option>
+                {businessTypes.map((item) => <option key={item.id} value={item.code}>{item.icon || '🏪'} {item.name}</option>)}
+              </select>
+            </label>
+            <label className="text-xs text-stone">المدينة
+              <select value={city} onChange={(e) => setCity(e.target.value)} className="mt-1 w-full rounded-xl border border-stone-light/30 bg-paper-dim px-3 py-2.5 text-sm text-ink outline-none focus:border-saffron">
+                <option value="all">كل المدن</option>
+                {cities.map((item) => <option key={item} value={item}>{item}</option>)}
+              </select>
+            </label>
+            <label className="text-xs text-stone">حالة الاشتراك
+              <select value={subscriptionFilter} onChange={(e) => setSubscriptionFilter(e.target.value as SubscriptionFilter)} className="mt-1 w-full rounded-xl border border-stone-light/30 bg-paper-dim px-3 py-2.5 text-sm text-ink outline-none focus:border-saffron">
+                {Object.entries(SUBSCRIPTION_LABEL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              </select>
+            </label>
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex gap-2 flex-wrap">
+              {(['all', 'pending', 'active', 'rejected', 'suspended'] as const).map((f) => (
+                <button key={f} onClick={() => setFilter(f)} className={`rounded-full px-4 py-2 text-sm ${filter === f ? 'bg-ink text-paper' : 'bg-paper-dim border border-stone-light/30'}`}>{f === 'all' ? 'كل الحالات' : STATUS_LABEL[f]}</button>
+              ))}
+            </div>
+            <div className="flex items-center gap-3 text-xs text-stone">
+              <span>{visible.length} نتيجة من {clients.length}</span>
+              {filtersActive && <button onClick={clearFilters} className="font-semibold text-saffron-dim">مسح الفلاتر</button>}
+            </div>
+          </div>
+        </section>
 
         {error && <div className="mb-5 rounded-2xl border border-sumac/30 bg-sumac/10 text-sumac p-4"><p className="font-semibold">في مشكلة في لوحة الإدارة</p><p className="text-sm mt-1">{error}</p><button onClick={load} className="mt-3 text-sm underline">إعادة المحاولة</button></div>}
 
         {loading ? (
           <div className="text-center py-12 text-stone">جارِ تحميل كل الحسابات...</div>
         ) : visible.length === 0 ? (
-          <div className="text-center py-12 text-stone rounded-2xl bg-paper border border-stone-light/30">مفيش نتائج في القسم ده.</div>
+          <div className="text-center py-12 text-stone rounded-2xl bg-paper border border-stone-light/30">مفيش نتائج مطابقة للفلاتر الحالية.</div>
         ) : (
           <div className="space-y-4">
             {visible.map((c) => {
@@ -161,10 +250,12 @@ export default function AdminDashboardPage() {
               const paid = c.user.payment_status === 'paid' || c.restaurant?.payment_status === 'paid'
               const amount = Number(c.user.amount_paid || c.restaurant?.amount_paid || 0)
               const wa = phone ? whatsappNumber(phone) : ''
-              const daysLeft = getSubscriptionDaysLeft(c.user.subscription_end)
+              const subscriptionEnd = c.user.subscription_end || c.restaurant?.subscription_end || null
+              const daysLeft = getSubscriptionDaysLeft(subscriptionEnd)
               const expiryLabel = daysLeft === null ? 'ميعاد التجديد غير محدد' : daysLeft < 0 ? `منتهي من ${Math.abs(daysLeft)} يوم` : daysLeft === 0 ? 'ينتهي اليوم' : `متبقي ${daysLeft} يوم`
               const expiryClass = daysLeft === null ? 'bg-paper-dim text-stone' : daysLeft < 0 ? 'bg-sumac/15 text-sumac' : daysLeft <= 7 ? 'bg-saffron/15 text-saffron-dim' : 'bg-zaytoon/15 text-zaytoon'
-              const isTrial = Number(c.user.trial_days || 0) > 0 && !c.user.last_renewed_at
+              const isTrial = Number(c.user.trial_days || c.restaurant?.trial_days || 0) > 0 && !c.user.last_renewed_at && !c.restaurant?.last_renewed_at
+              const typeName = c.restaurant?.business_type_name || businessTypes.find((item) => item.code === c.restaurant?.business_type)?.name || 'نوع النشاط غير محدد'
 
               return (
                 <section key={c.user.id} className="rounded-3xl bg-paper border border-stone-light/30 p-5 shadow-sm">
@@ -173,12 +264,14 @@ export default function AdminDashboardPage() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <h2 className="font-display text-xl font-semibold">{name}</h2>
                         <span className="text-xs rounded-full bg-paper-dim border border-stone-light/30 px-3 py-1">{STATUS_LABEL[status]}</span>
+                        {c.restaurant && <span className="text-xs rounded-full bg-[#eee8dc] text-stone px-3 py-1">{typeName}</span>}
                         {isTrial && <span className="text-xs rounded-full bg-saffron/15 text-saffron-dim px-3 py-1">تجربة مجانية 10 أيام</span>}
                         <span className={`text-xs rounded-full px-3 py-1 ${paid ? 'bg-zaytoon/15 text-zaytoon' : 'bg-sumac/15 text-sumac'}`}>{paid ? `مدفوع${amount ? ` ${amount} ج.م` : ''}` : 'غير مدفوع'}</span>
                         <span className={`text-xs rounded-full px-3 py-1 ${expiryClass}`}>{expiryLabel}</span>
                       </div>
                       <p className="mt-2 text-sm text-stone">{c.user.full_name} {phone ? `• ${phone}` : ''}</p>
-                      {c.user.subscription_end && <p className="mt-1 text-xs text-stone">ينتهي: {new Date(c.user.subscription_end).toLocaleString('ar-EG')}</p>}
+                      {c.restaurant?.city && <p className="mt-1 text-xs text-stone flex items-center gap-1"><MapPin size={12} /> {c.restaurant.city}{c.restaurant.address ? ` · ${c.restaurant.address}` : ''}</p>}
+                      {subscriptionEnd && <p className="mt-1 text-xs text-stone">ينتهي: {new Date(subscriptionEnd).toLocaleString('ar-EG')}</p>}
                       {!c.restaurant && <p className="mt-2 text-sm text-sumac">الحساب مسجل لكن النشاط لم يُنشأ في Firestore بعد.</p>}
                       {c.user.rejection_reason && <p className="mt-2 text-sm text-sumac">سبب الرفض: {c.user.rejection_reason}</p>}
                     </div>
@@ -188,7 +281,7 @@ export default function AdminDashboardPage() {
                       <button onClick={() => setRenewing(c)} className="flex items-center gap-1 rounded-full bg-saffron/15 text-saffron-dim px-3 py-2 text-xs hover:opacity-80"><CalendarClock size={14} /> تجديد بالأيام</button>
                       {wa && <a href={`https://wa.me/${wa}`} target="_blank" rel="noreferrer" className="flex items-center gap-1 rounded-full bg-paper-dim px-3 py-2 text-xs hover:bg-stone-light/30"><MessageCircle size={14} /> واتساب</a>}
                       {wa && daysLeft !== null && daysLeft <= 7 && <a href={`https://wa.me/${wa}?text=${renewalMessage(c)}`} target="_blank" rel="noreferrer" className="flex items-center gap-1 rounded-full bg-zaytoon text-paper px-3 py-2 text-xs"><MessageCircle size={14} /> رسالة تجديد جاهزة</a>}
-                      {c.restaurant && <a href={`${import.meta.env.BASE_URL}m/${c.restaurant.slug}`} target="_blank" rel="noreferrer" className="flex items-center gap-1 rounded-full bg-paper-dim px-3 py-2 text-xs hover:bg-stone-light/30"><ExternalLink size={14} /> عرض المنيو</a>}
+                      {c.restaurant && <a href={`${import.meta.env.BASE_URL}m/${c.restaurant.slug}`} target="_blank" rel="noreferrer" className="flex items-center gap-1 rounded-full bg-paper-dim px-3 py-2 text-xs hover:bg-stone-light/30"><ExternalLink size={14} /> عرض الكتالوج</a>}
                     </div>
                   </div>
 
@@ -217,7 +310,7 @@ export default function AdminDashboardPage() {
 
                   {c.restaurant && (
                     <div className="mt-4 pt-4 border-t border-stone-light/20 flex gap-2 flex-wrap">
-                      <Link to={`/admin/clients/${c.restaurant.id}/menu`} className="flex items-center gap-1 rounded-full bg-paper-dim px-3 py-2 text-xs hover:bg-stone-light/30"><UtensilsCrossed size={14} /> المنيو والأصناف</Link>
+                      <Link to={`/admin/clients/${c.restaurant.id}/menu`} className="flex items-center gap-1 rounded-full bg-paper-dim px-3 py-2 text-xs hover:bg-stone-light/30"><UtensilsCrossed size={14} /> الأقسام والمنتجات</Link>
                       <Link to={`/admin/clients/${c.restaurant.id}/qr`} className="flex items-center gap-1 rounded-full bg-paper-dim px-3 py-2 text-xs hover:bg-stone-light/30"><QrCode size={14} /> QR</Link>
                       <Link to={`/admin/clients/${c.restaurant.id}/orders`} className="flex items-center gap-1 rounded-full bg-paper-dim px-3 py-2 text-xs hover:bg-stone-light/30"><ClipboardList size={14} /> الطلبات</Link>
                       <Link to={`/admin/clients/${c.restaurant.id}/offers`} className="flex items-center gap-1 rounded-full bg-paper-dim px-3 py-2 text-xs hover:bg-stone-light/30"><Gift size={14} /> العروض</Link>
