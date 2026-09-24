@@ -5,7 +5,8 @@ export type AccountStatus = 'pending' | 'active' | 'rejected' | 'suspended'
 export type SubscriptionPlan = 'free' | 'basic' | 'pro' | 'business'
 export type SubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'canceled' | 'expired'
 export type RestaurantStatus = 'active' | 'suspended' | 'pending' | 'rejected'
-export type BusinessType = 'restaurant' | 'cafe' | 'supermarket' | 'cosmetics'
+// Dynamic business type code. Legacy values such as restaurant/cafe/supermarket/cosmetics remain valid.
+export type BusinessType = string
 export type MenuTemplate = 'three_d' | 'classic' | 'minimal' | 'dark_luxe'
 export type MenuShape = 'rounded' | 'square' | 'capsule' | 'cut_corner' | 'hex' | 'triangle' | 'diamond' | 'arch' | 'wave'
 
@@ -43,6 +44,7 @@ export interface Restaurant {
   slug: string
   name: string
   business_type?: BusinessType
+  business_type_name?: string | null
   menu_template?: MenuTemplate
   menu_shape?: MenuShape
   show_on_home?: boolean
