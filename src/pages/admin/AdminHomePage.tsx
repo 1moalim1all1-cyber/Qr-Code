@@ -2,12 +2,15 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Boxes, Eye, EyeOff, ImagePlus, LoaderCircle, PackagePlus, PhoneCall, Plus, Settings, ShieldCheck, Sparkles, Store, Tags } from 'lucide-react'
 import AdminDashboardPage from './AdminDashboardPage'
-import { changeMyLoginPhone, listAdminClients, setRestaurantHomepageVisibility, type AdminClientRecord } from '@/services/admin'
+import { changeMyLoginPhone, listAllRestaurants, setRestaurantHomepageVisibility } from '@/services/admin'
+import { listBusinessTypes, type BusinessTypeRecord } from '@/services/businessTypes'
 import { useAuth } from '@/contexts/AuthContext'
+import type { Restaurant } from '@/types/database'
 
 export default function AdminHomePage() {
   const { profile } = useAuth()
-  const [clients, setClients] = useState<AdminClientRecord[]>([])
+  const [restaurants, setRestaurants] = useState<Restaurant[]>([])
+  const [businessTypes, setBusinessTypes] = useState<BusinessTypeRecord[]>([])
   const [homeMenusLoading, setHomeMenusLoading] = useState(true)
   const [busyRestaurantId, setBusyRestaurantId] = useState<string | null>(null)
   const [homeMenusError, setHomeMenusError] = useState<string | null>(null)
@@ -17,7 +20,12 @@ export default function AdminHomePage() {
     setHomeMenusLoading(true)
     setHomeMenusError(null)
     try {
-      setClients(await listAdminClients())
+      const [allRestaurants, types] = await Promise.all([
+        listAllRestaurants(),
+        listBusinessTypes({ includeInactive: true }),
+      ])
+      setRestaurants(allRestaurants)
+      setBusinessTypes(types)
     } catch (err) {
       setHomeMenusError(err instanceof Error ? err.message : 'تعذّر تحميل المتاجر')
     } finally {
@@ -29,9 +37,9 @@ export default function AdminHomePage() {
     loadHomepageMenus()
   }, [])
 
-  const restaurants = useMemo(
-    () => clients.map((client) => client.restaurant).filter((restaurant): restaurant is NonNullable<AdminClientRecord['restaurant']> => Boolean(restaurant)),
-    [clients],
+  const businessTypeMap = useMemo(
+    () => new Map(businessTypes.map((item) => [item.code, item])),
+    [businessTypes],
   )
 
   const visibleOnHomeCount = restaurants.filter((restaurant) => restaurant.show_on_home !== false).length
@@ -41,9 +49,9 @@ export default function AdminHomePage() {
     setHomeMenusError(null)
     try {
       await setRestaurantHomepageVisibility(restaurantId, nextVisible)
-      setClients((current) => current.map((client) => client.restaurant?.id === restaurantId
-        ? { ...client, restaurant: { ...client.restaurant, show_on_home: nextVisible } }
-        : client))
+      setRestaurants((current) => current.map((restaurant) => restaurant.id === restaurantId
+        ? { ...restaurant, show_on_home: nextVisible }
+        : restaurant))
     } catch (err) {
       setHomeMenusError(err instanceof Error ? err.message : 'تعذّر تغيير ظهور المتجر في الرئيسية')
     } finally {
@@ -111,9 +119,9 @@ export default function AdminHomePage() {
           <div className="mt-7 rounded-3xl border border-white/10 bg-white/5 p-4 sm:p-5 backdrop-blur">
             <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
               <div>
-                <p className="text-xs text-white/45">المتاجر اللي بتظهر في الصفحة الرئيسية</p>
-                <h2 className="font-display text-lg font-bold mt-1">تحكم في ظهور المتاجر وإدارة بياناتها ومنتجاتها</h2>
-                <p className="text-xs text-white/45 mt-1 leading-5">إخفاء متجر من هنا بيوقف ظهوره في الرئيسية فقط، ورابط الكتالوج ودليل المتاجر يفضلوا شغالين. وتقدر تدخل على بيانات المتجر أو المنتجات الاحترافية مباشرة.</p>
+                <p className="text-xs text-white/45">كل المتاجر الموجودة بالفعل في قاعدة البيانات</p>
+                <h2 className="font-display text-lg font-bold mt-1">إدارة المتاجر ونوع النشاط وظهورها في الرئيسية</h2>
+                <p className="text-xs text-white/45 mt-1 leading-5">القائمة دي بتقرأ مجموعة المتاجر نفسها مباشرة، فبتظهر كل المتاجر القديمة والجديدة واليدوية حتى لو مفيش حساب مالك مرتبط بيها.</p>
               </div>
               <div className="rounded-2xl bg-white/7 border border-white/10 px-4 py-3 text-sm shrink-0">
                 ظاهر على الرئيسية: <strong className="text-[#ead19a]">{visibleOnHomeCount}</strong> / {restaurants.length}
@@ -127,10 +135,13 @@ export default function AdminHomePage() {
             ) : restaurants.length === 0 ? (
               <div className="py-8 text-center text-white/45 text-sm">مفيش متاجر لسه.</div>
             ) : (
-              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-3 max-h-[480px] overflow-auto pr-1">
+              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-3 max-h-[560px] overflow-auto pr-1">
                 {restaurants.map((restaurant) => {
                   const shown = restaurant.show_on_home !== false
                   const busy = busyRestaurantId === restaurant.id
+                  const type = businessTypeMap.get(restaurant.business_type || '')
+                  const typeName = restaurant.business_type_name || type?.name || restaurant.business_type || 'نوع النشاط غير محدد'
+                  const typeIcon = type?.icon || '🏪'
                   return (
                     <div key={restaurant.id} className="rounded-2xl border border-white/10 bg-[#171815] p-3">
                       <div className="flex items-center gap-3">
@@ -139,7 +150,8 @@ export default function AdminHomePage() {
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="font-semibold text-sm truncate">{restaurant.name}</p>
-                          <p className="text-[11px] text-white/40 mt-0.5 truncate">{restaurant.business_type_name || restaurant.city || 'متجر وكتالوج'}</p>
+                          <p className="text-[11px] text-[#ead19a] mt-0.5 truncate">{typeIcon} {typeName}</p>
+                          <p className="text-[11px] text-white/40 mt-0.5 truncate">{restaurant.city || restaurant.address || 'الموقع غير محدد'}</p>
                           <p className={`text-[11px] mt-1 ${shown ? 'text-[#aebc91]' : 'text-white/35'}`}>{shown ? 'ظاهر في الرئيسية' : 'مخفي من الرئيسية'}</p>
                         </div>
                         <button
@@ -173,7 +185,7 @@ export default function AdminHomePage() {
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur">
               <Sparkles className="text-saffron mb-2" size={20} />
               <p className="font-semibold">واجهات احترافية</p>
-              <p className="mt-1 text-xs text-white/50">عرض مناسب للمطاعم والموبايلات والملابس وباقي الأنشطة.</p>
+              <p className="mt-1 text-xs text-white/50">عرض مناسب للموبايلات والملابس والإلكترونيات وباقي الأنشطة.</p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur">
               <ShieldCheck className="text-saffron mb-2" size={20} />
