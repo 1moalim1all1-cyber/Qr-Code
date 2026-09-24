@@ -112,8 +112,8 @@ export default function AdminHomePage() {
             <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
               <div>
                 <p className="text-xs text-white/45">المتاجر اللي بتظهر في الصفحة الرئيسية</p>
-                <h2 className="font-display text-lg font-bold mt-1">تحكم في ظهور المتاجر وإدارة منتجاتها مباشرة</h2>
-                <p className="text-xs text-white/45 mt-1 leading-5">إخفاء متجر من هنا بيوقف ظهوره في الرئيسية فقط، ورابط الكتالوج ودليل المتاجر يفضلوا شغالين. وتقدر تدخل على المنتجات الاحترافية لأي متجر من نفس الكارت.</p>
+                <h2 className="font-display text-lg font-bold mt-1">تحكم في ظهور المتاجر وإدارة بياناتها ومنتجاتها</h2>
+                <p className="text-xs text-white/45 mt-1 leading-5">إخفاء متجر من هنا بيوقف ظهوره في الرئيسية فقط، ورابط الكتالوج ودليل المتاجر يفضلوا شغالين. وتقدر تدخل على بيانات المتجر أو المنتجات الاحترافية مباشرة.</p>
               </div>
               <div className="rounded-2xl bg-white/7 border border-white/10 px-4 py-3 text-sm shrink-0">
                 ظاهر على الرئيسية: <strong className="text-[#ead19a]">{visibleOnHomeCount}</strong> / {restaurants.length}
@@ -152,9 +152,10 @@ export default function AdminHomePage() {
                           {shown ? 'إخفاء' : 'إظهار'}
                         </button>
                       </div>
-                      <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-white/8">
-                        <Link to={`/admin/clients/${restaurant.id}/products`} className="rounded-xl bg-[#d7b66f] text-[#171714] px-3 py-2 text-xs font-bold flex items-center justify-center gap-1.5"><PackagePlus size={14} /> إدارة المنتجات</Link>
-                        <a href={`${import.meta.env.BASE_URL}m/${restaurant.slug}`} target="_blank" rel="noreferrer" className="rounded-xl bg-white/7 border border-white/10 px-3 py-2 text-xs font-semibold flex items-center justify-center">عرض الكتالوج</a>
+                      <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-white/8">
+                        <Link to={`/admin/clients/${restaurant.id}/products`} className="rounded-xl bg-[#d7b66f] text-[#171714] px-2 py-2 text-[11px] font-bold flex items-center justify-center gap-1"><PackagePlus size={13} /> المنتجات</Link>
+                        <Link to={`/admin/clients/${restaurant.id}/settings`} className="rounded-xl bg-white/10 border border-white/10 px-2 py-2 text-[11px] font-semibold flex items-center justify-center gap-1"><Settings size={13} /> بيانات المتجر</Link>
+                        <a href={`${import.meta.env.BASE_URL}m/${restaurant.slug}`} target="_blank" rel="noreferrer" className="rounded-xl bg-white/7 border border-white/10 px-2 py-2 text-[11px] font-semibold flex items-center justify-center">عرض الكتالوج</a>
                       </div>
                     </div>
                   )
