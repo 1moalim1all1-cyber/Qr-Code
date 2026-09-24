@@ -154,7 +154,7 @@ export default function DashboardPage() {
         {countdown && (
           <div className={`mb-6 rounded-3xl border p-5 ${countdown.expired ? 'bg-sumac/10 border-sumac/30' : isTrial ? 'bg-[#d7b66f]/10 border-[#d7b66f]/30' : 'bg-zaytoon/10 border-zaytoon/20'}`}>
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-              <div><p className="font-semibold flex items-center gap-2"><CalendarClock size={18} /> {isTrial ? 'الفترة التجريبية المجانية — 10 أيام' : 'مدة الاشتراك'}</p><p className="text-sm text-stone mt-1">{countdown.expired ? 'انتهت المدة الحالية — جدّد الاشتراك لاستمرار الخدمة.' : `ينتهي في ${new Date(subscriptionEnd!).toLocaleString('ar-EG')}`}</p></div>
+              <div><p className="font-semibold flex items-center gap-2"><CalendarClock size={18} /> {isTrial ? 'الفترة التجريبية المجانية — 72 ساعة' : 'مدة الاشتراك'}</p><p className="text-sm text-stone mt-1">{countdown.expired ? 'انتهت المدة الحالية — جدّد الاشتراك لاستمرار الخدمة.' : `ينتهي في ${new Date(subscriptionEnd!).toLocaleString('ar-EG')}`}</p></div>
               {!countdown.expired && <div className="grid grid-cols-4 gap-2 min-w-[280px]" dir="ltr"><CountdownBox value={countdown.days} label="يوم" /><CountdownBox value={countdown.hours} label="ساعة" /><CountdownBox value={countdown.minutes} label="دقيقة" /><CountdownBox value={countdown.seconds} label="ثانية" /></div>}
               {(countdown.expired || countdown.days <= 7) && <a href={renewalUrl} target="_blank" rel="noreferrer" className="rounded-full bg-zaytoon text-paper px-5 py-2.5 text-sm font-semibold flex items-center justify-center gap-2"><MessageCircle size={17} /> اطلب التجديد</a>}
             </div>
