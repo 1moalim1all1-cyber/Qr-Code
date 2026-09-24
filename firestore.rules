@@ -146,6 +146,11 @@ service cloud.firestore {
       }
     }
 
+    match /business_types/{docId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
     match /catalog_products/{docId} {
       allow read: if true;
       allow write: if isSuperAdmin();
