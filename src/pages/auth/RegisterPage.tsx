@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { QrCode } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CheckCircle2, MessageCircle, QrCode, ShieldCheck, Sparkles } from 'lucide-react'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import { phoneRegisterSchema, type PhoneRegisterForm } from '@/lib/validation'
@@ -10,20 +10,32 @@ import { signUpWithPhone } from '@/services/auth'
 import { createRestaurant } from '@/services/restaurants'
 import { listBusinessTypes, type BusinessTypeRecord } from '@/services/businessTypes'
 
+const SUPPORT_WHATSAPP = '201039177959'
+
+const steps = [
+  { number: 1, title: 'بيانات النشاط', text: 'اختار النشاط واكتب اسم المتجر' },
+  { number: 2, title: 'بيانات الدخول', text: 'اسمك ورقمك وكلمة المرور' },
+  { number: 3, title: 'ابدأ التجربة', text: 'راجع البيانات وأنشئ متجرك' },
+]
+
 export default function RegisterPage() {
   const navigate = useNavigate()
   const [serverError, setServerError] = useState<string | null>(null)
   const [businessTypes, setBusinessTypes] = useState<BusinessTypeRecord[]>([])
+  const [step, setStep] = useState(1)
 
   const {
     register,
     handleSubmit,
     setValue,
     watch,
+    trigger,
     formState: { errors, isSubmitting },
   } = useForm<PhoneRegisterForm>({ resolver: zodResolver(phoneRegisterSchema), defaultValues: { businessType: 'restaurant' } })
 
+  const values = watch()
   const selectedBusinessType = watch('businessType')
+  const selectedType = businessTypes.find((item) => item.code === selectedBusinessType)
 
   useEffect(() => {
     listBusinessTypes()
@@ -36,17 +48,30 @@ export default function RegisterPage() {
       .catch(() => setServerError('تعذّر تحميل أنواع الأنشطة'))
   }, [])
 
-  async function onSubmit(values: PhoneRegisterForm) {
+  async function nextStep() {
+    setServerError(null)
+    if (step === 1) {
+      const valid = await trigger(['businessType', 'restaurantName'])
+      if (valid) setStep(2)
+      return
+    }
+    if (step === 2) {
+      const valid = await trigger(['fullName', 'phone', 'password', 'confirmPassword'])
+      if (valid) setStep(3)
+    }
+  }
+
+  async function onSubmit(formValues: PhoneRegisterForm) {
     setServerError(null)
     try {
-      const selectedType = businessTypes.find((item) => item.code === values.businessType)
-      const user = await signUpWithPhone(values.phone, values.password, values.fullName, values.restaurantName, values.businessType)
+      const type = businessTypes.find((item) => item.code === formValues.businessType)
+      const user = await signUpWithPhone(formValues.phone, formValues.password, formValues.fullName, formValues.restaurantName, formValues.businessType)
       try {
-        await createRestaurant(user.uid, values.restaurantName, {
-          clientName: values.fullName,
-          clientContact: values.phone,
-          businessType: values.businessType,
-          businessTypeName: selectedType?.name,
+        await createRestaurant(user.uid, formValues.restaurantName, {
+          clientName: formValues.fullName,
+          clientContact: formValues.phone,
+          businessType: formValues.businessType,
+          businessTypeName: type?.name,
         })
       } catch (restaurantError) {
         console.error('[RegisterPage] restaurant creation failed:', restaurantError)
@@ -57,36 +82,115 @@ export default function RegisterPage() {
     }
   }
 
+  const whatsappHelp = `https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent('السلام عليكم، عايز أعمل متجر على Egy Menu ومحتاج مساعدة في التسجيل')}`
+
   return (
-    <div className="min-h-screen bg-paper flex items-center justify-center px-6 py-12" dir="rtl">
-      <div className="w-full max-w-sm">
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 rounded-2xl bg-ink flex items-center justify-center mb-3"><QrCode className="text-saffron" size={22} /></div>
-          <h1 className="font-display text-2xl font-semibold">أنشئ حساب نشاطك</h1>
-          <p className="text-stone text-sm mt-1 text-center">أي نشاط تجاري يقدر يعمل كتالوج رقمي وQR — 10 أيام تجربة مجانية</p>
-        </div>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-          <Input label="اسمك بالكامل" error={errors.fullName?.message} {...register('fullName')} />
-          <div>
-            <label className="block text-sm font-medium mb-1.5">نوع النشاط</label>
-            <select {...register('businessType')} className="w-full rounded-xl border border-stone-light/50 bg-paper px-3 py-3 outline-none focus:border-saffron">
-              {businessTypes.map((item) => <option key={item.id} value={item.code}>{item.icon || '🏪'} {item.name}</option>)}
-            </select>
-            {errors.businessType?.message && <p className="text-xs text-sumac mt-1">{errors.businessType.message}</p>}
+    <div className="min-h-screen bg-[#f3eee6] px-4 py-8 sm:px-6 sm:py-12" dir="rtl">
+      <div className="mx-auto grid w-full max-w-5xl gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+        <aside className="rounded-[30px] bg-[#11120f] p-6 text-white shadow-[0_30px_80px_rgba(0,0,0,.16)] sm:p-8">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#d7b66f]"><QrCode className="text-[#171714]" size={22} /></div>
+            <div><p className="font-display text-xl font-bold">Egy Menu</p><p className="text-xs text-white/40">متجرك يبدأ في دقائق</p></div>
           </div>
-          <Input label="اسم النشاط" error={errors.restaurantName?.message} {...register('restaurantName')} />
-          <Input label="رقم الهاتف" type="tel" dir="ltr" placeholder="01xxxxxxxxx" autoComplete="tel" error={errors.phone?.message} {...register('phone')} />
-          <Input label="كلمة المرور" type="password" autoComplete="new-password" error={errors.password?.message} {...register('password')} />
-          <Input label="تأكيد كلمة المرور" type="password" autoComplete="new-password" error={errors.confirmPassword?.message} {...register('confirmPassword')} />
-          {serverError && <p className="text-sm text-sumac">{serverError}</p>}
-          <Button type="submit" loading={isSubmitting} className="w-full mt-2">ابدأ التجربة المجانية 10 أيام</Button>
-        </form>
 
-        <p className="text-center text-sm text-stone mt-6">عندك حساب بالفعل؟ <Link to="/login" className="text-saffron-dim font-medium hover:underline">سجّل دخولك</Link></p>
+          <h1 className="mt-8 font-display text-3xl font-bold leading-tight">اعمل متجرك في 3 خطوات وخد الرابط فورًا</h1>
+          <p className="mt-3 text-sm leading-7 text-white/55">10 أيام تجربة مجانية. مفيش دفع أثناء التسجيل، ومش محتاج بطاقة بنكية.</p>
+
+          <div className="mt-7 space-y-3">
+            {steps.map((item) => {
+              const active = step === item.number
+              const done = step > item.number
+              return (
+                <div key={item.number} className={`flex items-center gap-3 rounded-2xl border p-3 transition-colors ${active ? 'border-[#d7b66f]/50 bg-[#d7b66f]/10' : done ? 'border-[#758060]/30 bg-[#758060]/10' : 'border-white/8 bg-white/[0.03]'}`}>
+                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-bold ${active ? 'bg-[#d7b66f] text-[#171714]' : done ? 'bg-[#758060] text-white' : 'bg-white/8 text-white/45'}`}>{done ? <CheckCircle2 size={17} /> : item.number}</div>
+                  <div><p className="text-sm font-semibold">{item.title}</p><p className="mt-0.5 text-xs text-white/40">{item.text}</p></div>
+                </div>
+              )
+            })}
+          </div>
+
+          <div className="mt-7 rounded-2xl border border-white/8 bg-white/[0.035] p-4 text-xs leading-6 text-white/55">
+            <div className="flex items-center gap-2 font-semibold text-white/80"><ShieldCheck size={16} className="text-[#d7b66f]" /> بداية بدون مخاطرة</div>
+            <p className="mt-2">جرّب المنصة الأول، ضيف منتجاتك وشوف شكل المتجر، وبعدها قرر تكمل.</p>
+          </div>
+        </aside>
+
+        <div className="rounded-[30px] border border-black/5 bg-white p-5 shadow-[0_25px_70px_rgba(0,0,0,.08)] sm:p-8">
+          <div className="mb-6 flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold text-[#8d7444]">الخطوة {step} من 3</p>
+              <h2 className="mt-1 font-display text-2xl font-bold">{steps[step - 1].title}</h2>
+              <p className="mt-1 text-sm text-stone">{steps[step - 1].text}</p>
+            </div>
+            <div className="rounded-full bg-[#f4eee3] px-3 py-1.5 text-xs font-semibold text-[#7b6845]">أقل من دقيقتين</div>
+          </div>
+
+          <div className="mb-7 h-2 overflow-hidden rounded-full bg-[#eee8df]"><div className="h-full rounded-full bg-[#d7b66f] transition-all duration-300" style={{ width: `${step * 33.333}%` }} /></div>
+
+          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+            {step === 1 && (
+              <>
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium">نوع النشاط</label>
+                  <select {...register('businessType')} className="w-full rounded-xl border border-stone-light/50 bg-paper px-3 py-3 outline-none focus:border-saffron">
+                    {businessTypes.map((item) => <option key={item.id} value={item.code}>{item.icon || '🏪'} {item.name}</option>)}
+                  </select>
+                  {errors.businessType?.message && <p className="mt-1 text-xs text-sumac">{errors.businessType.message}</p>}
+                </div>
+                <Input label="اسم النشاط أو المتجر" placeholder="مثال: Smart Mobile" error={errors.restaurantName?.message} {...register('restaurantName')} />
+                <div className="rounded-2xl bg-[#f7f3ec] p-4 text-sm text-[#776f63]"><Sparkles size={16} className="mb-2 text-[#9a7a40]" />اختيار نوع النشاط بيساعدنا نجهز شكل مناسب للمنتجات والاختيارات اللي هتضيفها.</div>
+              </>
+            )}
+
+            {step === 2 && (
+              <>
+                <Input label="اسمك بالكامل" error={errors.fullName?.message} {...register('fullName')} />
+                <Input label="رقم الهاتف" type="tel" dir="ltr" placeholder="01xxxxxxxxx" autoComplete="tel" error={errors.phone?.message} {...register('phone')} />
+                <Input label="كلمة المرور" type="password" autoComplete="new-password" error={errors.password?.message} {...register('password')} />
+                <Input label="تأكيد كلمة المرور" type="password" autoComplete="new-password" error={errors.confirmPassword?.message} {...register('confirmPassword')} />
+                <p className="text-xs leading-5 text-stone">رقم الهاتف هو اللي هتستخدمه بعد كده لتسجيل الدخول وإدارة متجرك.</p>
+              </>
+            )}
+
+            {step === 3 && (
+              <div className="space-y-4">
+                <div className="rounded-[24px] border border-[#d7b66f]/25 bg-[#fbf7ef] p-5">
+                  <div className="flex items-center gap-2 text-[#8d7444]"><CheckCircle2 size={18} /><span className="font-bold">متجرك جاهز للإنشاء</span></div>
+                  <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+                    <ReviewItem label="اسم المتجر" value={values.restaurantName || '—'} />
+                    <ReviewItem label="نوع النشاط" value={`${selectedType?.icon || '🏪'} ${selectedType?.name || values.businessType || '—'}`} />
+                    <ReviewItem label="صاحب النشاط" value={values.fullName || '—'} />
+                    <ReviewItem label="رقم الدخول" value={values.phone || '—'} />
+                  </div>
+                </div>
+                <div className="rounded-2xl bg-[#eef2e8] p-4 text-sm leading-6 text-[#59624a]">بعد التسجيل هتدخل مباشرة لوحة التحكم، وتلاقي خطوات واضحة لإضافة اللوجو وأول قسم وأول منتج ومشاركة الرابط.</div>
+              </div>
+            )}
+
+            {serverError && <p className="rounded-xl bg-sumac/8 px-3 py-2 text-sm text-sumac">{serverError}</p>}
+
+            <div className="mt-2 flex items-center gap-2">
+              {step > 1 && <button type="button" onClick={() => setStep((current) => Math.max(1, current - 1))} className="flex items-center gap-1 rounded-xl border border-black/10 px-4 py-3 text-sm font-semibold"><ArrowRight size={16} /> رجوع</button>}
+              {step < 3 ? (
+                <button type="button" onClick={nextStep} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#171714] px-4 py-3 text-sm font-bold text-white">التالي <ArrowLeft size={16} /></button>
+              ) : (
+                <Button type="submit" loading={isSubmitting} className="w-full flex-1">ابدأ التجربة المجانية 10 أيام</Button>
+              )}
+            </div>
+          </form>
+
+          <div className="mt-6 grid gap-2 sm:grid-cols-2">
+            <Link to="/login" className="rounded-xl border border-black/8 px-4 py-3 text-center text-sm text-stone hover:bg-[#faf7f2]">عندك حساب؟ سجّل دخولك</Link>
+            <a href={whatsappHelp} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 rounded-xl bg-[#edf6ed] px-4 py-3 text-sm font-semibold text-[#45634a]"><MessageCircle size={16} /> خلّينا نساعدك على واتساب</a>
+          </div>
+        </div>
       </div>
     </div>
   )
+}
+
+function ReviewItem({ label, value }: { label: string; value: string }) {
+  return <div className="rounded-xl bg-white p-3"><div className="text-[11px] text-stone">{label}</div><div className="mt-1 font-semibold">{value}</div></div>
 }
 
 function translateAuthError(message: string) {
