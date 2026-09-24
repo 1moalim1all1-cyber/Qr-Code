@@ -1,11 +1,23 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Boxes, Eye, EyeOff, ImagePlus, LoaderCircle, PackagePlus, PhoneCall, Plus, Settings, ShieldCheck, Sparkles, Store, Tags } from 'lucide-react'
+import { BarChart3, Boxes, Eye, EyeOff, ImagePlus, LoaderCircle, PackagePlus, PhoneCall, Plus, Settings, ShieldCheck, Sparkles, Store, Tags } from 'lucide-react'
 import AdminDashboardPage from './AdminDashboardPage'
 import { changeMyLoginPhone, listAllRestaurants, setRestaurantHomepageVisibility } from '@/services/admin'
 import { listBusinessTypes, type BusinessTypeRecord } from '@/services/businessTypes'
 import { useAuth } from '@/contexts/AuthContext'
 import type { Restaurant } from '@/types/database'
+
+type RestaurantWithSource = Restaurant & { registration_source?: string | null; managed_by_admin?: boolean | null }
+
+const SOURCE_LABELS: Record<string, string> = {
+  self_service: 'تسجيل مباشر',
+  'business-type': 'من كارت نوع النشاط',
+  homepage: 'من الرئيسية',
+  hero: 'من الهيرو',
+  'footer-cta': 'من زر آخر الصفحة',
+  whatsapp: 'واتساب',
+  admin_manual: 'إضافة الإدارة',
+}
 
 export default function AdminHomePage() {
   const { profile } = useAuth()
@@ -43,6 +55,32 @@ export default function AdminHomePage() {
   )
 
   const visibleOnHomeCount = restaurants.filter((restaurant) => restaurant.show_on_home !== false).length
+
+  const registrationStats = useMemo(() => {
+    const counts = new Map<string, number>()
+    let selfServiceTotal = 0
+    let adminManualTotal = 0
+
+    restaurants.forEach((restaurant) => {
+      const row = restaurant as RestaurantWithSource
+      const source = row.registration_source || (row.managed_by_admin ? 'admin_manual' : 'self_service')
+      counts.set(source, (counts.get(source) || 0) + 1)
+      if (source === 'admin_manual' || row.managed_by_admin) adminManualTotal += 1
+      else selfServiceTotal += 1
+    })
+
+    const sources = Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([source, count]) => ({ source, count, label: SOURCE_LABELS[source] || source }))
+
+    return {
+      total: restaurants.length,
+      selfServiceTotal,
+      adminManualTotal,
+      businessTypeTotal: counts.get('business-type') || 0,
+      sources,
+    }
+  }, [restaurants])
 
   async function toggleHomepageVisibility(restaurantId: string, nextVisible: boolean) {
     setBusyRestaurantId(restaurantId)
@@ -117,6 +155,33 @@ export default function AdminHomePage() {
           </div>
 
           <div className="mt-7 rounded-3xl border border-white/10 bg-white/5 p-4 sm:p-5 backdrop-blur">
+            <div className="flex items-center gap-2 mb-4">
+              <BarChart3 size={19} className="text-[#d7b66f]" />
+              <div>
+                <p className="font-display font-bold">مصادر التسجيل</p>
+                <p className="text-xs text-white/45 mt-0.5">الأرقام دي جاية من المتاجر اللي اتعملت فعليًا، مش مجرد ضغطات على الأزرار.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <SourceMetric label="إجمالي المتاجر" value={registrationStats.total} />
+              <SourceMetric label="سجلوا بنفسهم" value={registrationStats.selfServiceTotal} highlight />
+              <SourceMetric label="من نوع النشاط" value={registrationStats.businessTypeTotal} />
+              <SourceMetric label="إضافة الإدارة" value={registrationStats.adminManualTotal} />
+            </div>
+
+            {registrationStats.sources.length > 0 && (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {registrationStats.sources.map((item) => (
+                  <div key={item.source} className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-white/65">
+                    {item.label}: <strong className="text-white">{item.count}</strong>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="mt-4 rounded-3xl border border-white/10 bg-white/5 p-4 sm:p-5 backdrop-blur">
             <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
               <div>
                 <p className="text-xs text-white/45">كل المتاجر الموجودة بالفعل في قاعدة البيانات</p>
@@ -142,6 +207,9 @@ export default function AdminHomePage() {
                   const type = businessTypeMap.get(restaurant.business_type || '')
                   const typeName = restaurant.business_type_name || type?.name || restaurant.business_type || 'نوع النشاط غير محدد'
                   const typeIcon = type?.icon || '🏪'
+                  const sourceRow = restaurant as RestaurantWithSource
+                  const source = sourceRow.registration_source || (sourceRow.managed_by_admin ? 'admin_manual' : 'self_service')
+                  const sourceLabel = SOURCE_LABELS[source] || source
                   return (
                     <div key={restaurant.id} className="rounded-2xl border border-white/10 bg-[#171815] p-3">
                       <div className="flex items-center gap-3">
@@ -152,7 +220,10 @@ export default function AdminHomePage() {
                           <p className="font-semibold text-sm truncate">{restaurant.name}</p>
                           <p className="text-[11px] text-[#ead19a] mt-0.5 truncate">{typeIcon} {typeName}</p>
                           <p className="text-[11px] text-white/40 mt-0.5 truncate">{restaurant.city || restaurant.address || 'الموقع غير محدد'}</p>
-                          <p className={`text-[11px] mt-1 ${shown ? 'text-[#aebc91]' : 'text-white/35'}`}>{shown ? 'ظاهر في الرئيسية' : 'مخفي من الرئيسية'}</p>
+                          <div className="mt-1 flex flex-wrap gap-1.5">
+                            <span className={`text-[10px] rounded-full px-2 py-1 ${shown ? 'bg-[#71805c]/20 text-[#b8c99c]' : 'bg-white/5 text-white/35'}`}>{shown ? 'ظاهر في الرئيسية' : 'مخفي من الرئيسية'}</span>
+                            <span className="text-[10px] rounded-full bg-[#d7b66f]/10 text-[#ead19a] px-2 py-1">{sourceLabel}</span>
+                          </div>
                         </div>
                         <button
                           type="button"
@@ -199,6 +270,15 @@ export default function AdminHomePage() {
       <div className="[&>div>header]:hidden [&>div>main]:pt-6">
         <AdminDashboardPage />
       </div>
+    </div>
+  )
+}
+
+function SourceMetric({ label, value, highlight = false }: { label: string; value: number; highlight?: boolean }) {
+  return (
+    <div className={`rounded-2xl border p-4 ${highlight ? 'border-[#d7b66f]/35 bg-[#d7b66f]/10' : 'border-white/10 bg-white/[0.04]'}`}>
+      <div className={`text-3xl font-black ${highlight ? 'text-[#ead19a]' : 'text-white'}`}>{value}</div>
+      <div className="text-xs text-white/45 mt-1">{label}</div>
     </div>
   )
 }
