@@ -2,19 +2,18 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, ImagePlus, PackagePlus, Search } from 'lucide-react'
 import ImageUpload from '@/components/ui/ImageUpload'
-import { PRODUCT_CATALOG } from '@/data/productCatalog'
+import { PRODUCT_CATALOG, type CatalogBusinessType } from '@/data/productCatalog'
 import {
   createCatalogProduct,
   listCatalogAdminRecords,
   saveCatalogAdminRecord,
   type CatalogAdminRecord,
 } from '@/services/catalogAdmin'
-import type { BusinessType } from '@/types/database'
 
 export default function AdminCatalogPage() {
   const [records, setRecords] = useState<CatalogAdminRecord[]>([])
   const [search, setSearch] = useState('')
-  const [businessType, setBusinessType] = useState<Extract<BusinessType, 'supermarket' | 'cosmetics'>>('supermarket')
+  const [businessType, setBusinessType] = useState<CatalogBusinessType>('supermarket')
   const [message, setMessage] = useState<string | null>(null)
   const [custom, setCustom] = useState({ name: '', category: '', brand: '', unit: '', barcode: '', description: '', imageUrl: '' })
 
