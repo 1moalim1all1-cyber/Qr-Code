@@ -3,7 +3,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { withFirestoreError } from '@/lib/firestoreError'
-import type { Product } from '@/types/database'
+import type { Product, ProductSpecification, ProductVariant, ProductVariantOption } from '@/types/database'
 
 const productsRef = (restaurantId: string) => collection(db, 'restaurants', restaurantId, 'products')
 
@@ -26,16 +26,25 @@ export interface ProductInput {
   description?: { ar: string; en?: string }
   price: number
   discount_price?: number | null
+  compare_at_price?: number | null
+  discount_percent?: number | null
   is_available: boolean
   is_best_seller: boolean
   is_new: boolean
   is_spicy: boolean
   is_vegetarian: boolean
+  is_featured?: boolean
   images?: { id: string; url: string; sort_order: number }[]
   ingredients?: string[]
   allergens?: string[]
   extras?: { name: string; price: number }[]
   sizes?: { name: string; price: number; stock?: number | null }[]
+  variant_options?: ProductVariantOption[]
+  variants?: ProductVariant[]
+  specifications?: ProductSpecification[]
+  colors?: string[]
+  badges?: string[]
+  views_count?: number
 }
 
 export async function createProduct(restaurantId: string, ownerId: string | null, input: ProductInput) {
@@ -44,11 +53,20 @@ export async function createProduct(restaurantId: string, ownerId: string | null
       owner_id: ownerId,
       ...input,
       category_id: input.category_id ?? null,
+      compare_at_price: input.compare_at_price ?? null,
+      discount_percent: input.discount_percent ?? null,
       calories: null,
       ingredients: input.ingredients ?? [],
       allergens: input.allergens ?? [],
       extras: input.extras ?? [],
       sizes: input.sizes ?? [],
+      variant_options: input.variant_options ?? [],
+      variants: input.variants ?? [],
+      specifications: input.specifications ?? [],
+      colors: input.colors ?? [],
+      badges: input.badges ?? [],
+      is_featured: input.is_featured ?? false,
+      views_count: input.views_count ?? 0,
       video_url: null,
       sort_order: Date.now(),
       images: input.images ?? [],
