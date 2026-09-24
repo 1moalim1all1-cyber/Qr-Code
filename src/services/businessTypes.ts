@@ -33,7 +33,6 @@ export const DEFAULT_BUSINESS_TYPES: Omit<BusinessTypeRecord, 'id'>[] = [
   { code: 'clothing', name: 'ملابس', icon: '👕', image_url: null, description: null, sort_order: 70, is_active: true },
   { code: 'shoes_bags', name: 'أحذية وشنط', icon: '👟', image_url: null, description: null, sort_order: 80, is_active: true },
   { code: 'perfumes', name: 'عطور', icon: '🧴', image_url: null, description: null, sort_order: 90, is_active: true },
-  { code: 'pharmacy', name: 'صيدليات', icon: '💊', image_url: null, description: null, sort_order: 100, is_active: true },
   { code: 'homeware', name: 'أدوات منزلية', icon: '🏠', image_url: null, description: null, sort_order: 110, is_active: true },
   { code: 'bookstores', name: 'مكتبات', icon: '📚', image_url: null, description: null, sort_order: 120, is_active: true },
   { code: 'sweets_bakery', name: 'حلويات ومخبوزات', icon: '🧁', image_url: null, description: null, sort_order: 130, is_active: true },
@@ -54,7 +53,7 @@ export async function listBusinessTypes(options?: { includeInactive?: boolean })
   const rows = snap.docs.map((item) => ({ id: item.id, ...item.data() }) as BusinessTypeRecord)
   const source = rows.length > 0 ? rows : defaultsAsRecords()
   return source
-    .filter((item) => options?.includeInactive || item.is_active !== false)
+    .filter((item) => options?.includeInactive || (item.is_active !== false && item.code !== 'pharmacy'))
     .sort((a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999) || a.name.localeCompare(b.name, 'ar'))
 }
 
