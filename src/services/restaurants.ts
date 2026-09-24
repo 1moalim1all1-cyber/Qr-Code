@@ -7,12 +7,11 @@ import { normalizePhone } from '@/lib/phone'
 import type { BusinessType, Restaurant } from '@/types/database'
 
 const restaurantsRef = collection(db, 'restaurants')
-const FREE_TRIAL_DAYS = 10
+const FREE_TRIAL_HOURS = 72
+const FREE_TRIAL_DAYS = FREE_TRIAL_HOURS / 24
 
-function addDays(date: Date, days: number) {
-  const result = new Date(date)
-  result.setDate(result.getDate() + days)
-  return result
+function addHours(date: Date, hours: number) {
+  return new Date(date.getTime() + hours * 60 * 60 * 1000)
 }
 
 function clearPublicMenuShape() {
@@ -41,7 +40,7 @@ export async function createRestaurant(
 
   const slug = generateSlug(name)
   const trialStart = new Date()
-  const trialEnd = addDays(trialStart, FREE_TRIAL_DAYS)
+  const trialEnd = addHours(trialStart, FREE_TRIAL_HOURS)
   const businessType = registration?.businessType ?? 'restaurant'
 
   let docRef
@@ -78,12 +77,13 @@ export async function createRestaurant(
       client_contact: registration?.clientContact ? normalizePhone(registration.clientContact) : null,
       payment_status: 'unpaid',
       amount_paid: 0,
-      payment_note: 'فترة تجريبية مجانية 10 أيام',
+      payment_note: 'فترة تجريبية مجانية 72 ساعة',
       registration_source: registration?.registrationSource || 'self_service',
       subscription_start: trialStart.toISOString(),
       subscription_end: trialEnd.toISOString(),
       subscription_days: FREE_TRIAL_DAYS,
       trial_days: FREE_TRIAL_DAYS,
+      trial_hours: FREE_TRIAL_HOURS,
       last_renewed_at: null,
       created_at: serverTimestamp(),
     })
@@ -95,7 +95,8 @@ export async function createRestaurant(
   try {
     await addDoc(collection(db, 'restaurants', docRef.id, 'subscriptions'), {
       owner_id: ownerId, plan: 'free', status: 'trialing', price: 0,
-      starts_at: trialStart.toISOString(), ends_at: trialEnd.toISOString(), duration_days: FREE_TRIAL_DAYS,
+      starts_at: trialStart.toISOString(), ends_at: trialEnd.toISOString(),
+      duration_days: FREE_TRIAL_DAYS, duration_hours: FREE_TRIAL_HOURS,
     })
   } catch (err) {
     console.error('[createRestaurant] failed writing subscriptions:', err)
