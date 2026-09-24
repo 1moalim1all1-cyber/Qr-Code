@@ -24,7 +24,7 @@ function clearPublicMenuShape() {
 export async function createRestaurant(
   ownerId: string,
   name: string,
-  registration?: { clientName?: string; clientContact?: string; businessType?: BusinessType }
+  registration?: { clientName?: string; clientContact?: string; businessType?: BusinessType; businessTypeName?: string }
 ) {
   const existing = await getRestaurantByOwner(ownerId)
   if (existing) return existing
@@ -41,6 +41,7 @@ export async function createRestaurant(
       slug,
       name,
       business_type: businessType,
+      business_type_name: registration?.businessTypeName ?? null,
       menu_template: 'three_d',
       menu_shape: 'rounded',
       show_on_home: true,
@@ -120,23 +121,26 @@ export async function createRestaurantByAdmin(input: {
   amountPaid: number
   paymentNote?: string
   businessType?: BusinessType
+  businessTypeName?: string
 }) {
   const slug = generateSlug(input.name)
+  const normalizedContact = input.clientContact ? normalizePhone(input.clientContact) : null
   const docRef = await addDoc(restaurantsRef, {
     owner_id: null, slug, name: input.name,
     business_type: input.businessType ?? 'restaurant',
+    business_type_name: input.businessTypeName ?? null,
     menu_template: 'three_d',
     menu_shape: 'rounded',
     show_on_home: true,
     description: null, logo_url: null, cover_url: null,
-    phone: input.clientContact || null, whatsapp: input.clientContact || null,
+    phone: normalizedContact, whatsapp: normalizedContact,
     email: null, website: null, address: null, google_maps_url: null,
     working_hours: {}, status: 'active', is_open: true,
     theme: { primaryColor: '#E8A33D', font: 'Tajawal', mode: 'light' },
     default_language: 'ar', supported_languages: ['ar', 'en'], rating: 0,
-    managed_by_admin: true, client_name: input.clientName, client_contact: input.clientContact,
+    managed_by_admin: true, client_name: input.clientName || null, client_contact: normalizedContact,
     payment_status: input.amountPaid > 0 ? 'paid' : 'unpaid', amount_paid: input.amountPaid,
-    payment_note: input.paymentNote ?? '', created_at: serverTimestamp(),
+    payment_note: input.paymentNote ?? '', registration_source: 'admin_manual', created_at: serverTimestamp(),
   })
   const snap = await getDoc(docRef)
   return { id: snap.id, ...snap.data() } as unknown as Restaurant
