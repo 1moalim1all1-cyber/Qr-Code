@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ArrowRight, MapPin, Search, Store } from 'lucide-react'
-import { listFeaturedRestaurants } from '@/services/restaurants'
+import { listActiveRestaurants } from '@/services/restaurants'
 import { listBusinessTypes, type BusinessTypeRecord } from '@/services/businessTypes'
 import type { Restaurant } from '@/types/database'
 
@@ -15,7 +15,7 @@ export default function RestaurantsDirectoryPage() {
   const selectedType = searchParams.get('type') || 'all'
 
   useEffect(() => {
-    Promise.all([listFeaturedRestaurants(200), listBusinessTypes()])
+    Promise.all([listActiveRestaurants(250), listBusinessTypes()])
       .then(([stores, types]) => {
         setRestaurants(stores)
         setBusinessTypes(types)
@@ -72,7 +72,7 @@ export default function RestaurantsDirectoryPage() {
           <div className="relative max-w-3xl">
             <span className="inline-flex rounded-full bg-white/7 border border-white/10 px-3 py-1.5 text-xs text-white/60">Catalog Marketplace</span>
             <h1 className="font-display text-3xl sm:text-4xl font-bold mt-4">اكتشف المتاجر والكتالوجات</h1>
-            <p className="text-white/50 text-sm sm:text-base mt-3 leading-7">اختار نوع النشاط، المدينة، أو ابحث باسم المتجر والمنتج اللي بتدور عليه.</p>
+            <p className="text-white/50 text-sm sm:text-base mt-3 leading-7">اختار نوع النشاط أو المدينة، أو ابحث باسم المتجر والعنوان.</p>
           </div>
         </section>
 
