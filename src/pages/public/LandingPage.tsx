@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   ChevronDown,
   MessageCircle,
-  Palette,
   QrCode,
   ShoppingBag,
   Sparkles,
