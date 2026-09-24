@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Boxes, Eye, EyeOff, ImagePlus, LoaderCircle, PhoneCall, Plus, Settings, ShieldCheck, Sparkles, Store, Tags } from 'lucide-react'
+import { Boxes, Eye, EyeOff, ImagePlus, LoaderCircle, PackagePlus, PhoneCall, Plus, Settings, ShieldCheck, Sparkles, Store, Tags } from 'lucide-react'
 import AdminDashboardPage from './AdminDashboardPage'
 import { changeMyLoginPhone, listAdminClients, setRestaurantHomepageVisibility, type AdminClientRecord } from '@/services/admin'
 import { useAuth } from '@/contexts/AuthContext'
@@ -19,7 +19,7 @@ export default function AdminHomePage() {
     try {
       setClients(await listAdminClients())
     } catch (err) {
-      setHomeMenusError(err instanceof Error ? err.message : 'تعذّر تحميل المنيوهات')
+      setHomeMenusError(err instanceof Error ? err.message : 'تعذّر تحميل المتاجر')
     } finally {
       setHomeMenusLoading(false)
     }
@@ -45,7 +45,7 @@ export default function AdminHomePage() {
         ? { ...client, restaurant: { ...client.restaurant, show_on_home: nextVisible } }
         : client))
     } catch (err) {
-      setHomeMenusError(err instanceof Error ? err.message : 'تعذّر تغيير ظهور المنيو في الرئيسية')
+      setHomeMenusError(err instanceof Error ? err.message : 'تعذّر تغيير ظهور المتجر في الرئيسية')
     } finally {
       setBusyRestaurantId(null)
     }
@@ -53,7 +53,7 @@ export default function AdminHomePage() {
 
   async function handleChangeLoginPhone() {
     const nextPhone = window.prompt(
-      'اكتب رقم تسجيل الدخول الجديد للإدارة. الرقم ده هيحل محل رقم الدخول الحالي مع الحفاظ على نفس الحساب وكل المنيوهات المرتبطة به.',
+      'اكتب رقم تسجيل الدخول الجديد للإدارة. الرقم ده هيحل محل رقم الدخول الحالي مع الحفاظ على نفس الحساب وكل المتاجر المرتبطة به.',
       profile?.phone || '',
     )
     if (nextPhone === null) return
@@ -87,14 +87,14 @@ export default function AdminHomePage() {
                 <ShieldCheck size={14} /> مركز تحكم Egy Menu
               </span>
               <h1 className="mt-4 font-display text-3xl md:text-4xl font-bold">لوحة الإدارة</h1>
-              <p className="mt-2 max-w-2xl text-sm md:text-base text-white/60">العملاء والاشتراكات والكتالوج والصور وإعدادات الموقع من مكان واحد.</p>
+              <p className="mt-2 max-w-2xl text-sm md:text-base text-white/60">العملاء والاشتراكات والمتاجر والكتالوجات والصور وإعدادات الموقع من مكان واحد.</p>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 w-full lg:w-auto">
-              <QuickAction to="/admin/catalog" icon={ImagePlus} title="إدارة المنتجات والصور" subtitle="الكتالوج المعتمد" featured />
-              <QuickAction to="/admin/business-types" icon={Tags} title="أنواع الأنشطة" subtitle="إضافة وتعديل وحذف" />
+              <QuickAction to="/admin/catalog" icon={ImagePlus} title="الكتالوج المركزي" subtitle="المنتجات والصور المعتمدة" featured />
+              <QuickAction to="/admin/business-types" icon={Tags} title="أنواع الأنشطة" subtitle="إضافة وتعديل وإخفاء" />
               <QuickAction to="/admin/site-settings" icon={Settings} title="بيانات الموقع" subtitle="التواصل والمكان والخصوصية" />
-              <QuickAction to="/admin/clients/new" icon={Plus} title="إضافة محل يدويًا" subtitle="بدون حساب" />
-              <QuickAction to="/restaurants" icon={Store} title="عرض المنيوهات" subtitle="المتاجر المنشورة" />
+              <QuickAction to="/admin/clients/new" icon={Plus} title="إضافة متجر يدويًا" subtitle="بدون حساب" />
+              <QuickAction to="/restaurants" icon={Store} title="دليل المتاجر" subtitle="المتاجر المنشورة" />
               <button
                 type="button"
                 onClick={handleChangeLoginPhone}
@@ -111,9 +111,9 @@ export default function AdminHomePage() {
           <div className="mt-7 rounded-3xl border border-white/10 bg-white/5 p-4 sm:p-5 backdrop-blur">
             <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
               <div>
-                <p className="text-xs text-white/45">المنيوهات اللي بتظهر في الصفحة الرئيسية</p>
-                <h2 className="font-display text-lg font-bold mt-1">تحكم في ظهور كل منيو على الرئيسية فقط</h2>
-                <p className="text-xs text-white/45 mt-1 leading-5">لو أخفيت منيو من هنا، رابط المنيو نفسه يفضل شغال عادي. اللي بيتغير بس هو ظهوره في قسم المنيوهات الحقيقية في الصفحة الرئيسية.</p>
+                <p className="text-xs text-white/45">المتاجر اللي بتظهر في الصفحة الرئيسية</p>
+                <h2 className="font-display text-lg font-bold mt-1">تحكم في ظهور المتاجر وإدارة منتجاتها مباشرة</h2>
+                <p className="text-xs text-white/45 mt-1 leading-5">إخفاء متجر من هنا بيوقف ظهوره في الرئيسية فقط، ورابط الكتالوج ودليل المتاجر يفضلوا شغالين. وتقدر تدخل على المنتجات الاحترافية لأي متجر من نفس الكارت.</p>
               </div>
               <div className="rounded-2xl bg-white/7 border border-white/10 px-4 py-3 text-sm shrink-0">
                 ظاهر على الرئيسية: <strong className="text-[#ead19a]">{visibleOnHomeCount}</strong> / {restaurants.length}
@@ -123,32 +123,39 @@ export default function AdminHomePage() {
             {homeMenusError && <p className="mb-3 rounded-xl bg-sumac/10 border border-sumac/20 px-3 py-2 text-xs text-red-200">{homeMenusError}</p>}
 
             {homeMenusLoading ? (
-              <div className="py-8 flex items-center justify-center gap-2 text-white/45 text-sm"><LoaderCircle size={18} className="animate-spin" /> جارِ تحميل المنيوهات...</div>
+              <div className="py-8 flex items-center justify-center gap-2 text-white/45 text-sm"><LoaderCircle size={18} className="animate-spin" /> جارِ تحميل المتاجر...</div>
             ) : restaurants.length === 0 ? (
-              <div className="py-8 text-center text-white/45 text-sm">مفيش منيوهات لسه.</div>
+              <div className="py-8 text-center text-white/45 text-sm">مفيش متاجر لسه.</div>
             ) : (
-              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-3 max-h-[430px] overflow-auto pr-1">
+              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-3 max-h-[480px] overflow-auto pr-1">
                 {restaurants.map((restaurant) => {
                   const shown = restaurant.show_on_home !== false
                   const busy = busyRestaurantId === restaurant.id
                   return (
-                    <div key={restaurant.id} className="rounded-2xl border border-white/10 bg-[#171815] p-3 flex items-center gap-3">
-                      <div className="w-11 h-11 rounded-xl bg-white/8 overflow-hidden flex items-center justify-center shrink-0">
-                        {restaurant.logo_url ? <img src={restaurant.logo_url} alt="" className="w-full h-full object-contain bg-white" /> : <Store size={18} className="text-[#d7b66f]" />}
+                    <div key={restaurant.id} className="rounded-2xl border border-white/10 bg-[#171815] p-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 rounded-xl bg-white/8 overflow-hidden flex items-center justify-center shrink-0">
+                          {restaurant.logo_url ? <img src={restaurant.logo_url} alt="" className="w-full h-full object-contain bg-white" /> : <Store size={18} className="text-[#d7b66f]" />}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-sm truncate">{restaurant.name}</p>
+                          <p className="text-[11px] text-white/40 mt-0.5 truncate">{restaurant.business_type_name || restaurant.city || 'متجر وكتالوج'}</p>
+                          <p className={`text-[11px] mt-1 ${shown ? 'text-[#aebc91]' : 'text-white/35'}`}>{shown ? 'ظاهر في الرئيسية' : 'مخفي من الرئيسية'}</p>
+                        </div>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => toggleHomepageVisibility(restaurant.id, !shown)}
+                          className={`rounded-xl px-3 py-2 text-xs font-semibold flex items-center gap-1.5 disabled:opacity-40 ${shown ? 'bg-sumac/15 text-red-200' : 'bg-zaytoon/20 text-[#c9d9ad]'}`}
+                        >
+                          {busy ? <LoaderCircle size={14} className="animate-spin" /> : shown ? <EyeOff size={14} /> : <Eye size={14} />}
+                          {shown ? 'إخفاء' : 'إظهار'}
+                        </button>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-sm truncate">{restaurant.name}</p>
-                        <p className={`text-[11px] mt-1 ${shown ? 'text-[#aebc91]' : 'text-white/35'}`}>{shown ? 'ظاهر في الرئيسية' : 'مخفي من الرئيسية'}</p>
+                      <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-white/8">
+                        <Link to={`/admin/clients/${restaurant.id}/products`} className="rounded-xl bg-[#d7b66f] text-[#171714] px-3 py-2 text-xs font-bold flex items-center justify-center gap-1.5"><PackagePlus size={14} /> إدارة المنتجات</Link>
+                        <a href={`${import.meta.env.BASE_URL}m/${restaurant.slug}`} target="_blank" rel="noreferrer" className="rounded-xl bg-white/7 border border-white/10 px-3 py-2 text-xs font-semibold flex items-center justify-center">عرض الكتالوج</a>
                       </div>
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => toggleHomepageVisibility(restaurant.id, !shown)}
-                        className={`rounded-xl px-3 py-2 text-xs font-semibold flex items-center gap-1.5 disabled:opacity-40 ${shown ? 'bg-sumac/15 text-red-200' : 'bg-zaytoon/20 text-[#c9d9ad]'}`}
-                      >
-                        {busy ? <LoaderCircle size={14} className="animate-spin" /> : shown ? <EyeOff size={14} /> : <Eye size={14} />}
-                        {shown ? 'إخفاء' : 'إظهار'}
-                      </button>
                     </div>
                   )
                 })}
@@ -160,17 +167,17 @@ export default function AdminHomePage() {
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur">
               <Boxes className="text-saffron mb-2" size={20} />
               <p className="font-semibold">كتالوج مركزي</p>
-              <p className="mt-1 text-xs text-white/50">ارفع صورة المنتج مرة واحدة وتظهر للعميل جاهزة للاختيار.</p>
+              <p className="mt-1 text-xs text-white/50">ارفع صورة المنتج مرة واحدة وتكون جاهزة للاختيار والاستخدام.</p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur">
               <Sparkles className="text-saffron mb-2" size={20} />
-              <p className="font-semibold">أفضل عرض للمنيو</p>
-              <p className="mt-1 text-xs text-white/50">القالب 3D الفاخر هو الاختيار المميز للعرض البصري.</p>
+              <p className="font-semibold">واجهات احترافية</p>
+              <p className="mt-1 text-xs text-white/50">عرض مناسب للمطاعم والموبايلات والملابس وباقي الأنشطة.</p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur">
               <ShieldCheck className="text-saffron mb-2" size={20} />
               <p className="font-semibold">تحكم كامل</p>
-              <p className="mt-1 text-xs text-white/50">إدارة التفعيل والتجديد والأصناف والـQR من نفس الشاشة.</p>
+              <p className="mt-1 text-xs text-white/50">إدارة التفعيل والتجديد والمنتجات والـQR من نفس الشاشة.</p>
             </div>
           </div>
         </div>
