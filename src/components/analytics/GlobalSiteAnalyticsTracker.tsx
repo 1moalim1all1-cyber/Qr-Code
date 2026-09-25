@@ -9,6 +9,13 @@ function oncePerSession(key: string, run: () => void) {
   run()
 }
 
+const REGISTER_KEYS = [
+  'egy-menu:analytics:register-started',
+  'egy-menu:analytics:register-step-2',
+  'egy-menu:analytics:register-step-3',
+  'egy-menu:analytics:register-failed',
+]
+
 export default function GlobalSiteAnalyticsTracker() {
   const location = useLocation()
 
@@ -27,6 +34,7 @@ export default function GlobalSiteAnalyticsTracker() {
           restaurantId: new URLSearchParams(location.search).get('restaurant'),
         })
       })
+      REGISTER_KEYS.forEach((key) => sessionStorage.removeItem(key))
     }
   }, [location.pathname, location.search])
 
@@ -43,6 +51,20 @@ export default function GlobalSiteAnalyticsTracker() {
       if (text.includes('الخطوة 3 من 3')) {
         oncePerSession('egy-menu:analytics:register-step-3', () => {
           logSiteAnalytics('register_step_3')
+        })
+      }
+
+      const hasRegistrationError = [
+        'رقم الهاتف ده مسجّل بحساب بالفعل',
+        'كلمة المرور ضعيفة',
+        'حصل خطأ، حاول تاني',
+        'تعذّر حفظ بروفايل المستخدم',
+        'تعذّر إنشاء النشاط',
+      ].some((message) => text.includes(message))
+
+      if (hasRegistrationError) {
+        oncePerSession('egy-menu:analytics:register-failed', () => {
+          logSiteAnalytics('register_failed')
         })
       }
     }
