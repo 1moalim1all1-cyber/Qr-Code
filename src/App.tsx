@@ -3,6 +3,8 @@ import { Routes, Route } from 'react-router-dom'
 import ProtectedRoute from './components/layout/ProtectedRoute'
 import FloatingContact from './components/public/FloatingContact'
 import SiteFooterLinks from './components/public/SiteFooterLinks'
+import GlobalSiteAnalyticsTracker from './components/analytics/GlobalSiteAnalyticsTracker'
+import AdminAnalyticsShortcut from './components/admin/AdminAnalyticsShortcut'
 
 const LandingPage = lazy(() => import('./pages/public/LandingPage'))
 const PublicMenuPage = lazy(() => import('./pages/public/ThemedMenuPage'))
@@ -32,6 +34,7 @@ const AdminCatalogPage = lazy(() => import('./pages/admin/AdminCatalogPage'))
 const AdminSiteSettingsPage = lazy(() => import('./pages/admin/AdminSiteSettingsPage'))
 const AdminBusinessTypesPage = lazy(() => import('./pages/admin/AdminBusinessTypesPage'))
 const AdminStoreSettingsPage = lazy(() => import('./pages/admin/AdminStoreSettingsPage'))
+const AdminAnalyticsPage = lazy(() => import('./pages/admin/AdminAnalyticsPage'))
 
 function RouteLoading() {
   return <div className="min-h-screen flex items-center justify-center bg-paper"><div className="w-8 h-8 rounded-full border-2 border-saffron border-t-transparent animate-spin" /></div>
@@ -40,6 +43,7 @@ function RouteLoading() {
 function App() {
   return (
     <Suspense fallback={<RouteLoading />}>
+      <GlobalSiteAnalyticsTracker />
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/m/:slug" element={<PublicMenuPage />} />
@@ -63,6 +67,7 @@ function App() {
         <Route path="/dashboard/offers" element={<ProtectedRoute allowedRoles={['owner', 'staff']}><OffersPage /></ProtectedRoute>} />
         <Route path="/dashboard/data" element={<ProtectedRoute allowedRoles={['owner', 'staff']}><DataToolsPage /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute allowedRoles={['super_admin']}><AdminHomePage /></ProtectedRoute>} />
+        <Route path="/admin/analytics" element={<ProtectedRoute allowedRoles={['super_admin']}><AdminAnalyticsPage /></ProtectedRoute>} />
         <Route path="/admin/catalog" element={<ProtectedRoute allowedRoles={['super_admin']}><AdminCatalogPage /></ProtectedRoute>} />
         <Route path="/admin/site-settings" element={<ProtectedRoute allowedRoles={['super_admin']}><AdminSiteSettingsPage /></ProtectedRoute>} />
         <Route path="/admin/business-types" element={<ProtectedRoute allowedRoles={['super_admin']}><AdminBusinessTypesPage /></ProtectedRoute>} />
@@ -76,6 +81,7 @@ function App() {
       </Routes>
       <SiteFooterLinks />
       <FloatingContact />
+      <AdminAnalyticsShortcut />
     </Suspense>
   )
 }
