@@ -181,6 +181,12 @@ service cloud.firestore {
       allow write: if isSuperAdmin();
     }
 
+    match /site_analytics/{docId} {
+      allow create: if true;
+      allow read: if isSuperAdmin();
+      allow update, delete: if false;
+    }
+
     match /activity_logs/{docId} {
       allow read: if isSuperAdmin() ||
         (isSignedIn() && ownsRestaurant(resource.data.restaurant_id));
