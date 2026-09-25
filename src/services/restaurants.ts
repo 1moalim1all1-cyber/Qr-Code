@@ -82,6 +82,7 @@ export async function createRestaurant(
       subscription_start: trialStart.toISOString(),
       subscription_end: trialEnd.toISOString(),
       subscription_days: FREE_TRIAL_DAYS,
+      subscription_hours: FREE_TRIAL_HOURS,
       trial_days: FREE_TRIAL_DAYS,
       trial_hours: FREE_TRIAL_HOURS,
       last_renewed_at: null,
