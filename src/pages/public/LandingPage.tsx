@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, CheckCircle2, Gift, LayoutGrid, ListChecks, QrCode, Sparkles, Store, Tags, WandSparkles } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Gift, Headphones, LayoutGrid, ListChecks, Package, QrCode, Shirt, ShoppingBag, Smartphone, Sparkles, Store, Tags, WandSparkles } from 'lucide-react'
 import FeaturedMenus from '@/components/landing/FeaturedMenus'
 
 const NAV_LINKS = [
@@ -28,50 +28,93 @@ function BrandLogo() {
   )
 }
 
+const catalogProducts = [
+  { icon: Smartphone, name: 'هاتف Pro', meta: '256GB · أسود', price: '32,900 ج' },
+  { icon: Shirt, name: 'تيشيرت Premium', meta: 'ألوان ومقاسات', price: '590 ج' },
+  { icon: Headphones, name: 'سماعة لاسلكي', meta: 'ضمان سنة', price: '1,850 ج' },
+  { icon: Package, name: 'منتج مميز', meta: 'متاح الآن', price: '950 ج' },
+]
+
 function Catalog3DShowcase() {
   return (
-    <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="relative h-[330px] sm:h-[410px] lg:h-[470px]">
-      <div className="absolute inset-8 rounded-full bg-[#d7b66f]/10 blur-3xl" />
-      <div className="absolute left-8 top-14 h-[72%] w-[66%] -rotate-[9deg] rounded-[34px] border border-[#d7b66f]/15 bg-[#1a1b16] shadow-[0_30px_70px_rgba(0,0,0,.4)]" />
-      <div className="absolute left-16 top-20 h-[70%] w-[66%] -rotate-[4deg] rounded-[34px] border border-white/10 bg-[#12130f] shadow-[0_30px_70px_rgba(0,0,0,.35)]" />
+    <motion.div
+      initial={{ opacity: 0, y: 18, scale: .98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: .55, delay: .08 }}
+      className="relative h-[370px] sm:h-[455px] lg:h-[520px]"
+    >
+      <div className="absolute inset-10 rounded-full bg-[#d7b66f]/12 blur-[70px]" />
+      <div className="absolute left-2 top-20 h-[68%] w-[56%] -rotate-[12deg] rounded-[34px] border border-[#d7b66f]/18 bg-gradient-to-br from-[#1d1e18] to-[#10110e] shadow-[0_35px_80px_rgba(0,0,0,.45)]" />
+      <div className="absolute left-14 top-12 h-[76%] w-[60%] -rotate-[5deg] rounded-[38px] border border-white/10 bg-[#11120f] shadow-[0_35px_90px_rgba(0,0,0,.45)]" />
 
-      <div className="absolute right-3 top-3 h-[92%] w-[74%] max-w-[350px] overflow-hidden rounded-[38px] border border-white/10 bg-[#11120f] shadow-[0_40px_90px_rgba(0,0,0,.5)] sm:right-8">
-        <div className="relative h-full p-3 sm:p-4">
-          <div className="h-full overflow-hidden rounded-[27px] border border-white/10 bg-[#191a16]">
-            <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=900&q=85" alt="منيو وكتالوج إلكتروني" className="h-32 w-full object-cover sm:h-40" />
-            <div className="space-y-3 p-3 sm:p-4">
-              <div className="flex items-center justify-between gap-3">
+      <div className="absolute left-0 bottom-12 z-20 w-[148px] -rotate-[4deg] rounded-[24px] border border-[#d7b66f]/25 bg-[#171714]/95 p-3 shadow-[0_24px_60px_rgba(0,0,0,.5)] backdrop-blur sm:w-[175px] sm:p-4">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-[#d7b66f]/25 bg-[#f0d7a0] text-[#171714] shadow-inner sm:h-20 sm:w-20"><QrCode size={42} /></div>
+        <p className="mt-3 text-center text-[11px] font-black text-white sm:text-xs">امسح QR وافتح الكتالوج</p>
+        <p className="mt-1 text-center text-[9px] text-white/40">بدون تطبيق</p>
+      </div>
+
+      <div className="absolute right-2 top-0 z-10 h-[96%] w-[75%] max-w-[365px] overflow-hidden rounded-[42px] border border-[#d7b66f]/22 bg-[#0f100d] p-2 shadow-[0_45px_110px_rgba(0,0,0,.58)] sm:right-8 sm:p-2.5">
+        <div className="relative h-full overflow-hidden rounded-[34px] border border-white/10 bg-[#151612]">
+          <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[#d7b66f]/14 to-transparent" />
+          <div className="relative p-3 sm:p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#d7b66f] text-[#171714]"><ShoppingBag size={17} /></div>
+                <div><p className="font-display text-sm font-black text-white sm:text-base">Egy Menu</p><p className="text-[9px] text-white/35">كتالوج منتجات احترافي</p></div>
+              </div>
+              <div className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[9px] text-[#d7b66f]">متجر مباشر</div>
+            </div>
+
+            <div className="mt-4 rounded-[24px] border border-[#d7b66f]/18 bg-gradient-to-br from-[#2b261b] via-[#1b1c17] to-[#11120f] p-4 shadow-inner">
+              <div className="flex items-end justify-between gap-3">
                 <div>
-                  <p className="text-[10px] text-[#d7b66f]">Egy Menu</p>
-                  <h3 className="font-display text-sm font-black text-white sm:text-base">كتالوجك بشكل احترافي</h3>
-                  <p className="mt-1 text-[10px] text-white/40">صور + أسعار + أقسام + QR</p>
+                  <p className="text-[10px] font-bold text-[#d7b66f]">كتالوجك على الموبايل</p>
+                  <h3 className="mt-1 font-display text-lg font-black text-white sm:text-xl">كل منتجاتك في مكان واحد</h3>
+                  <p className="mt-1 text-[10px] leading-5 text-white/40">صور، أسعار، مواصفات، أصناف وطلب مباشر</p>
                 </div>
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#d7b66f] text-[#171714]"><QrCode size={19} /></div>
+                <div className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-black/20 text-[#d7b66f] sm:flex"><Sparkles size={19} /></div>
               </div>
+            </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                {[['موبايلات','📱'],['ملابس','👕'],['عطور','✨'],['إلكترونيات','🎧']].map(([title, icon]) => (
-                  <div key={title} className="rounded-2xl border border-white/8 bg-white/[0.04] p-2.5">
-                    <div className="text-base">{icon}</div>
-                    <div className="mt-1 text-[10px] font-bold text-white sm:text-xs">{title}</div>
+            <div className="mt-3 flex gap-2 overflow-hidden text-[9px] text-white/55">
+              {['الكل', 'موبايلات', 'ملابس', 'إلكترونيات'].map((item, index) => <span key={item} className={`shrink-0 rounded-full border px-2.5 py-1.5 ${index === 0 ? 'border-[#d7b66f]/35 bg-[#d7b66f]/15 text-[#efd59d]' : 'border-white/8 bg-white/[0.035]'}`}>{item}</span>)}
+            </div>
+
+            <div className="mt-3 grid grid-cols-2 gap-2 sm:gap-2.5">
+              {catalogProducts.map((item) => {
+                const Icon = item.icon
+                return (
+                  <div key={item.name} className="rounded-[20px] border border-white/8 bg-white/[0.035] p-2.5 shadow-[0_10px_24px_rgba(0,0,0,.12)] sm:p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#d7b66f]/18 bg-[#d7b66f]/10 text-[#efd59d]"><Icon size={16} /></div>
+                      <span className="rounded-full bg-[#758060]/15 px-2 py-1 text-[8px] font-bold text-[#bac6a0]">متاح</span>
+                    </div>
+                    <p className="mt-2 truncate text-[10px] font-black text-white sm:text-xs">{item.name}</p>
+                    <p className="mt-1 truncate text-[8px] text-white/35 sm:text-[9px]">{item.meta}</p>
+                    <div className="mt-2 flex items-center justify-between gap-2"><span className="text-[10px] font-black text-[#d7b66f] sm:text-xs">{item.price}</span><ShoppingBag size={12} className="text-white/30" /></div>
                   </div>
-                ))}
-              </div>
+                )
+              })}
+            </div>
 
-              <div className="rounded-2xl border border-[#d7b66f]/20 bg-[#d7b66f]/10 p-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div><p className="text-xs font-bold text-white">اطلب من واتساب</p><p className="mt-1 text-[10px] text-white/40">العميل يفتح ويختار بنفسه</p></div>
-                  <span className="rounded-full bg-[#d7b66f] px-3 py-1.5 text-[10px] font-black text-[#171714]">QR + رابط</span>
-                </div>
+            <div className="mt-3 rounded-[20px] border border-[#d7b66f]/20 bg-[#d7b66f]/10 p-3">
+              <div className="flex items-center justify-between gap-3">
+                <div><p className="text-xs font-black text-white">اطلب مباشرة من الكتالوج</p><p className="mt-1 text-[9px] text-white/40">اختيار المنتج ثم التواصل على واتساب</p></div>
+                <span className="rounded-xl bg-[#d7b66f] px-3 py-2 text-[9px] font-black text-[#171714]">اطلب الآن</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="absolute left-0 bottom-7 max-w-[185px] rounded-[22px] border border-[#d7b66f]/20 bg-[#171714]/95 px-4 py-3 shadow-[0_18px_45px_rgba(0,0,0,.38)] backdrop-blur">
-        <p className="text-xs font-bold text-[#d7b66f]">منيو 3D يخلي نشاطك أوضح</p>
-        <p className="mt-1 text-[10px] leading-5 text-white/50">شكل بصري يوضح للعميل النتيجة قبل ما يسجل.</p>
+      <div className="absolute right-0 top-9 z-30 rounded-[22px] border border-white/10 bg-[#171714]/95 px-3.5 py-2.5 shadow-[0_18px_50px_rgba(0,0,0,.4)] backdrop-blur sm:right-2">
+        <p className="text-[9px] text-white/35">معاينة حقيقية</p>
+        <p className="mt-0.5 text-[11px] font-black text-[#efd59d] sm:text-xs">3D Product Catalog</p>
+      </div>
+
+      <div className="absolute left-2 top-5 z-20 hidden rounded-[22px] border border-[#d7b66f]/20 bg-[#181913]/95 px-4 py-3 shadow-[0_18px_50px_rgba(0,0,0,.4)] backdrop-blur sm:block">
+        <p className="text-[10px] font-black text-white">شكل أفخم للمنيو</p>
+        <p className="mt-1 text-[9px] text-white/40">واجهة منتجات حقيقية بدون صور أشخاص</p>
       </div>
     </motion.div>
   )
