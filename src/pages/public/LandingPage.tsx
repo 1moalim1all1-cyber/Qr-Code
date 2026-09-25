@@ -28,6 +28,55 @@ function BrandLogo() {
   )
 }
 
+function Catalog3DShowcase() {
+  return (
+    <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="relative h-[330px] sm:h-[410px] lg:h-[470px]">
+      <div className="absolute inset-8 rounded-full bg-[#d7b66f]/10 blur-3xl" />
+      <div className="absolute left-8 top-14 h-[72%] w-[66%] -rotate-[9deg] rounded-[34px] border border-[#d7b66f]/15 bg-[#1a1b16] shadow-[0_30px_70px_rgba(0,0,0,.4)]" />
+      <div className="absolute left-16 top-20 h-[70%] w-[66%] -rotate-[4deg] rounded-[34px] border border-white/10 bg-[#12130f] shadow-[0_30px_70px_rgba(0,0,0,.35)]" />
+
+      <div className="absolute right-3 top-3 h-[92%] w-[74%] max-w-[350px] overflow-hidden rounded-[38px] border border-white/10 bg-[#11120f] shadow-[0_40px_90px_rgba(0,0,0,.5)] sm:right-8">
+        <div className="relative h-full p-3 sm:p-4">
+          <div className="h-full overflow-hidden rounded-[27px] border border-white/10 bg-[#191a16]">
+            <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=900&q=85" alt="منيو وكتالوج إلكتروني" className="h-32 w-full object-cover sm:h-40" />
+            <div className="space-y-3 p-3 sm:p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[10px] text-[#d7b66f]">Egy Menu</p>
+                  <h3 className="font-display text-sm font-black text-white sm:text-base">كتالوجك بشكل احترافي</h3>
+                  <p className="mt-1 text-[10px] text-white/40">صور + أسعار + أقسام + QR</p>
+                </div>
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#d7b66f] text-[#171714]"><QrCode size={19} /></div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                {[['موبايلات','📱'],['ملابس','👕'],['عطور','✨'],['إلكترونيات','🎧']].map(([title, icon]) => (
+                  <div key={title} className="rounded-2xl border border-white/8 bg-white/[0.04] p-2.5">
+                    <div className="text-base">{icon}</div>
+                    <div className="mt-1 text-[10px] font-bold text-white sm:text-xs">{title}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="rounded-2xl border border-[#d7b66f]/20 bg-[#d7b66f]/10 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div><p className="text-xs font-bold text-white">اطلب من واتساب</p><p className="mt-1 text-[10px] text-white/40">العميل يفتح ويختار بنفسه</p></div>
+                  <span className="rounded-full bg-[#d7b66f] px-3 py-1.5 text-[10px] font-black text-[#171714]">QR + رابط</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="absolute left-0 bottom-7 max-w-[185px] rounded-[22px] border border-[#d7b66f]/20 bg-[#171714]/95 px-4 py-3 shadow-[0_18px_45px_rgba(0,0,0,.38)] backdrop-blur">
+        <p className="text-xs font-bold text-[#d7b66f]">منيو 3D يخلي نشاطك أوضح</p>
+        <p className="mt-1 text-[10px] leading-5 text-white/50">شكل بصري يوضح للعميل النتيجة قبل ما يسجل.</p>
+      </div>
+    </motion.div>
+  )
+}
+
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[#0d0f0c] text-white" dir="rtl">
@@ -52,9 +101,7 @@ export default function LandingPage() {
               <div className="flex flex-wrap gap-3 mt-7"><Link to="/register?src=hero" className="rounded-2xl bg-[#d7b66f] text-[#171714] px-6 py-3.5 font-black flex items-center gap-2">ابدأ 72 ساعة مجانًا <ArrowLeft size={17} /></Link><Link to="/restaurants" className="rounded-2xl border border-white/15 bg-white/5 px-6 py-3.5 font-semibold">شوف المتاجر</Link></div>
             </motion.div>
 
-            <div className="grid grid-cols-2 gap-3">
-              {[['موبايلات','📱'],['ملابس','👕'],['عطور','✨'],['إلكترونيات','🎧']].map(([title, icon]) => <Link key={title} to="/activities" className="min-h-28 sm:min-h-36 rounded-[24px] border border-white/10 bg-white/[0.045] p-4 flex flex-col justify-between hover:border-[#d7b66f]/35 transition-colors"><span className="text-3xl">{icon}</span><span className="font-display font-bold text-lg">{title}</span></Link>)}
-            </div>
+            <Catalog3DShowcase />
           </div>
         </section>
 
@@ -64,15 +111,10 @@ export default function LandingPage() {
               <div className="flex items-start gap-4">
                 <div className="hidden sm:flex w-14 h-14 shrink-0 rounded-2xl bg-[#d7b66f] text-[#171714] items-center justify-center shadow-lg"><Gift size={25} /></div>
                 <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-[#d7b66f]/15 px-3 py-1 text-[11px] font-bold text-[#efd59d]">عرض تجربة</span>
-                    <span className="text-xs text-white/40">بدون بطاقة بنكية</span>
-                  </div>
+                  <div className="flex flex-wrap items-center gap-2"><span className="rounded-full bg-[#d7b66f]/15 px-3 py-1 text-[11px] font-bold text-[#efd59d]">عرض تجربة</span><span className="text-xs text-white/40">بدون بطاقة بنكية</span></div>
                   <h2 className="mt-2 font-display text-2xl sm:text-3xl font-black">حوّل منتجاتك لمتجر مرتب خلال دقائق</h2>
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-white/50">سجّل دلوقتي وخد 72 ساعة مجانًا، أضف منتجاتك وخد رابط وQR تقدر تبعته لأي عميل فورًا.</p>
-                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs text-white/55">
-                    {['رابط مباشر', 'QR جاهز', 'تعديل الأسعار بسهولة'].map((item) => <span key={item} className="inline-flex items-center gap-1.5"><CheckCircle2 size={14} className="text-[#aab58b]" />{item}</span>)}
-                  </div>
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs text-white/55">{['رابط مباشر', 'QR جاهز', 'تعديل الأسعار بسهولة'].map((item) => <span key={item} className="inline-flex items-center gap-1.5"><CheckCircle2 size={14} className="text-[#aab58b]" />{item}</span>)}</div>
                 </div>
               </div>
               <Link to="/register?src=home-promo" className="w-full lg:w-auto rounded-2xl bg-[#d7b66f] px-6 py-3.5 text-center text-sm font-black text-[#171714] shadow-lg hover:brightness-105 transition">ابدأ تجربتك الآن</Link>
@@ -80,28 +122,11 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="bg-[#151612] border-b border-white/10">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
-            {QUICK_LINKS.map((item) => <Link key={item.to} to={item.to} className="rounded-2xl border border-white/10 bg-white/[0.035] p-3.5 hover:bg-white/[0.07] transition-colors"><item.icon size={18} className="text-[#d7b66f]"/><div className="font-bold text-sm mt-2">{item.title}</div><div className="text-[11px] text-white/40 mt-1">{item.text}</div></Link>)}
-          </div>
-        </section>
+        <section className="bg-[#151612] border-b border-white/10"><div className="max-w-7xl mx-auto px-4 sm:px-6 py-5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">{QUICK_LINKS.map((item) => <Link key={item.to} to={item.to} className="rounded-2xl border border-white/10 bg-white/[0.035] p-3.5 hover:bg-white/[0.07] transition-colors"><item.icon size={18} className="text-[#d7b66f]"/><div className="font-bold text-sm mt-2">{item.title}</div><div className="text-[11px] text-white/40 mt-1">{item.text}</div></Link>)}</div></section>
 
-        <section className="bg-[#11120f] py-10 sm:py-12">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6">
-            <div className="flex items-end justify-between gap-4 mb-6">
-              <div><p className="text-xs font-bold text-[#d7b66f]">متاجر على المنصة</p><h2 className="font-display text-2xl sm:text-3xl font-black mt-1">أحدث المتاجر</h2></div>
-              <Link to="/restaurants" className="text-sm text-white/55 hover:text-white">عرض الكل</Link>
-            </div>
-            <FeaturedMenus />
-          </div>
-        </section>
+        <section className="bg-[#11120f] py-10 sm:py-12"><div className="max-w-7xl mx-auto px-4 sm:px-6"><div className="flex items-end justify-between gap-4 mb-6"><div><p className="text-xs font-bold text-[#d7b66f]">متاجر على المنصة</p><h2 className="font-display text-2xl sm:text-3xl font-black mt-1">أحدث المتاجر</h2></div><Link to="/restaurants" className="text-sm text-white/55 hover:text-white">عرض الكل</Link></div><FeaturedMenus /></div></section>
 
-        <section className="bg-[#d7b66f] text-[#171714]">
-          <div className="max-w-7xl mx-auto px-5 sm:px-7 py-9 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
-            <div><h2 className="font-display text-2xl sm:text-3xl font-black">جاهز تعمل متجرك؟</h2><p className="text-sm text-black/60 mt-1.5">ابدأ 72 ساعة مجانًا وشارك أول رابط مع عميلك.</p></div>
-            <Link to="/register?src=footer-cta" className="rounded-2xl bg-[#171714] text-white px-6 py-3.5 font-black flex items-center gap-2">ابدأ الآن <ArrowLeft size={17}/></Link>
-          </div>
-        </section>
+        <section className="bg-[#d7b66f] text-[#171714]"><div className="max-w-7xl mx-auto px-5 sm:px-7 py-9 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5"><div><h2 className="font-display text-2xl sm:text-3xl font-black">جاهز تعمل متجرك؟</h2><p className="text-sm text-black/60 mt-1.5">ابدأ 72 ساعة مجانًا وشارك أول رابط مع عميلك.</p></div><Link to="/register?src=footer-cta" className="rounded-2xl bg-[#171714] text-white px-6 py-3.5 font-black flex items-center gap-2">ابدأ الآن <ArrowLeft size={17}/></Link></div></section>
       </main>
     </div>
   )
