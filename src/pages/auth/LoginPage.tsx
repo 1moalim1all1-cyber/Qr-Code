@@ -36,9 +36,9 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-[100dvh] bg-[#f2ede5]" dir="rtl">
-      <div className="mx-auto flex min-h-[100dvh] w-full max-w-7xl items-stretch lg:p-5">
-        <div className="grid w-full overflow-hidden bg-white lg:grid-cols-[0.95fr_1.05fr] lg:rounded-[34px] lg:border lg:border-black/5 lg:shadow-[0_28px_90px_rgba(0,0,0,.12)]">
-          <aside className="relative hidden overflow-hidden bg-[#11120f] p-8 text-white lg:flex lg:flex-col lg:justify-between xl:p-11">
+      <div className="mx-auto min-h-[100dvh] w-full lg:flex lg:max-w-7xl lg:items-center lg:p-5">
+        <div className="min-h-[100dvh] w-full bg-white lg:grid lg:min-h-0 lg:grid-cols-[0.95fr_1.05fr] lg:overflow-hidden lg:rounded-[34px] lg:border lg:border-black/5 lg:shadow-[0_28px_90px_rgba(0,0,0,.12)]">
+          <aside className="relative hidden overflow-hidden bg-[#11120f] p-8 text-white lg:flex lg:min-h-[680px] lg:flex-col lg:justify-between xl:p-11">
             <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#788465]/20 blur-3xl" />
             <div className="absolute -bottom-20 -left-20 h-72 w-72 rounded-full bg-[#d7b66f]/15 blur-3xl" />
 
@@ -76,24 +76,27 @@ export default function LoginPage() {
             </div>
           </aside>
 
-          <main className="flex min-h-[100dvh] items-center justify-center px-4 py-7 sm:px-7 sm:py-10 lg:min-h-0 lg:px-12 xl:px-16">
-            <div className="w-full max-w-md">
-              <div className="mb-6 flex items-center justify-between lg:hidden">
+          <main className="flex min-h-[100dvh] items-start justify-center bg-[#f7f3ed] px-3 py-4 sm:items-center sm:px-6 sm:py-8 lg:min-h-0 lg:bg-white lg:px-12 xl:px-16">
+            <div className="w-full max-w-sm sm:max-w-md">
+              <div className="mb-5 flex items-center justify-between lg:hidden">
                 <Link to="/" className="inline-flex items-center gap-2.5">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#171714] text-[#d7b66f] shadow-md"><QrCode size={21} /></div>
-                  <div><div className="font-display text-lg font-black">Egy Menu</div><div className="text-[9px] text-stone">متجرك في رابط واحد</div></div>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#171714] text-[#d7b66f]"><QrCode size={20} /></div>
+                  <div>
+                    <div className="font-display text-base font-black">Egy Menu</div>
+                    <div className="text-[9px] text-stone">إدارة متجرك بسهولة</div>
+                  </div>
                 </Link>
-                <Link to="/" className="flex h-10 w-10 items-center justify-center rounded-full border border-black/8 bg-[#faf8f4] text-stone" aria-label="العودة للرئيسية"><ArrowLeft size={17} /></Link>
+                <Link to="/" className="flex h-9 w-9 items-center justify-center rounded-full border border-black/8 bg-white text-stone" aria-label="العودة للرئيسية"><ArrowLeft size={16} /></Link>
               </div>
 
-              <div className="rounded-[28px] border border-black/5 bg-white p-5 shadow-[0_18px_55px_rgba(0,0,0,.07)] sm:p-7 lg:border-0 lg:p-0 lg:shadow-none">
-                <div className="mb-7">
-                  <p className="text-xs font-bold text-[#8d7444]">أهلاً بيك تاني</p>
-                  <h1 className="mt-2 font-display text-3xl font-black text-[#171714] sm:text-4xl">تسجيل الدخول</h1>
-                  <p className="mt-2 text-sm leading-6 text-stone">ادخل رقم الهاتف وكلمة المرور علشان تفتح لوحة التحكم.</p>
+              <div className="rounded-[24px] border border-black/5 bg-white p-4 shadow-[0_12px_35px_rgba(0,0,0,.06)] sm:p-7 lg:rounded-none lg:border-0 lg:p-0 lg:shadow-none">
+                <div className="mb-5 sm:mb-7">
+                  <p className="text-[11px] font-bold text-[#8d7444] sm:text-xs">أهلاً بيك تاني</p>
+                  <h1 className="mt-1.5 font-display text-2xl font-black text-[#171714] sm:mt-2 sm:text-4xl">تسجيل الدخول</h1>
+                  <p className="mt-1.5 text-xs leading-5 text-stone sm:mt-2 sm:text-sm sm:leading-6">ادخل رقم الهاتف وكلمة المرور علشان تفتح لوحة التحكم.</p>
                 </div>
 
-                <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+                <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3.5 sm:gap-4">
                   <Input
                     label="رقم الهاتف"
                     type="tel"
@@ -113,7 +116,7 @@ export default function LoginPage() {
                   />
 
                   {serverError && (
-                    <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-700">{serverError}</div>
+                    <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-xs leading-5 text-red-700 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm sm:leading-6">{serverError}</div>
                   )}
 
                   <Button type="submit" loading={isSubmitting} className="mt-1 min-h-12 w-full text-base">
@@ -121,23 +124,14 @@ export default function LoginPage() {
                   </Button>
                 </form>
 
-                <div className="mt-6 rounded-2xl bg-[#f7f3ec] p-4 text-center text-sm text-stone">
+                <div className="mt-4 rounded-xl bg-[#f7f3ec] px-3 py-3 text-center text-xs leading-5 text-stone sm:mt-6 sm:rounded-2xl sm:p-4 sm:text-sm">
                   لسه معملتش حساب؟{' '}
                   <Link to="/register" className="font-bold text-[#8d7444] hover:underline">أنشئ متجرك وجرب 72 ساعة مجانًا</Link>
                 </div>
               </div>
 
-              <div className="mt-5 grid grid-cols-3 gap-2 lg:hidden">
-                {[
-                  ['📱', 'موبايل'],
-                  ['💻', 'كمبيوتر'],
-                  ['⚡', 'سريع'],
-                ].map(([icon, label]) => (
-                  <div key={label} className="rounded-2xl border border-black/5 bg-white/70 px-2 py-3 text-center">
-                    <div className="text-lg">{icon}</div>
-                    <div className="mt-1 text-[11px] font-semibold text-stone">{label}</div>
-                  </div>
-                ))}
+              <div className="mt-4 flex items-center justify-center gap-2 text-[10px] text-stone/80 sm:text-xs lg:hidden">
+                <CheckCircle2 size={13} className="text-[#758060]" /> مناسب للموبايل والتابلت والكمبيوتر
               </div>
             </div>
           </main>
