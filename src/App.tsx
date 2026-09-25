@@ -5,9 +5,11 @@ import FloatingContact from './components/public/FloatingContact'
 import SiteFooterLinks from './components/public/SiteFooterLinks'
 import GlobalSiteAnalyticsTracker from './components/analytics/GlobalSiteAnalyticsTracker'
 import AdminAnalyticsShortcut from './components/admin/AdminAnalyticsShortcut'
+import QRFlowController from './components/menu/QRFlowController'
 
 const LandingPage = lazy(() => import('./pages/public/LandingPage'))
 const PublicMenuPage = lazy(() => import('./pages/public/ThemedMenuPage'))
+const QRCategoryPage = lazy(() => import('./pages/public/QRCategoryPage'))
 const OrderTrackingPage = lazy(() => import('./pages/public/OrderTrackingPage'))
 const TermsPage = lazy(() => import('./pages/public/TermsPage'))
 const PrivacyPage = lazy(() => import('./pages/public/PrivacyPage'))
@@ -44,9 +46,11 @@ function App() {
   return (
     <Suspense fallback={<RouteLoading />}>
       <GlobalSiteAnalyticsTracker />
+      <QRFlowController />
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/m/:slug" element={<PublicMenuPage />} />
+        <Route path="/qr/:slug" element={<QRCategoryPage />} />
         <Route path="/m/:slug/order/:orderId" element={<OrderTrackingPage />} />
         <Route path="/restaurants" element={<RestaurantsDirectoryPage />} />
         <Route path="/terms" element={<TermsPage />} />
