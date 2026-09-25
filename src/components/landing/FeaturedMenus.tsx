@@ -12,8 +12,6 @@ interface FeaturedEntry {
   products: Product[]
 }
 
-const HIDDEN_HOME_TYPES = new Set(['restaurant', 'cafe', 'supermarket', 'cosmetics'])
-
 export default function FeaturedMenus() {
   const [entries, setEntries] = useState<FeaturedEntry[]>([])
   const [businessTypes, setBusinessTypes] = useState<BusinessTypeRecord[]>([])
@@ -23,14 +21,13 @@ export default function FeaturedMenus() {
     Promise.all([listFeaturedRestaurants(12), listBusinessTypes()])
       .then(async ([restaurants, types]) => {
         setBusinessTypes(types)
-        const modernStores = restaurants.filter((restaurant) => !HIDDEN_HOME_TYPES.has(restaurant.business_type || ''))
         const withProducts = await Promise.all(
-          modernStores.map(async (restaurant) => {
+          restaurants.map(async (restaurant) => {
             const products = await listProducts(restaurant.id).catch(() => [])
             return { restaurant, products: products.filter((p) => p.is_available).slice(0, 3) }
           })
         )
-        setEntries(withProducts.filter((e) => e.products.length > 0).slice(0, 6))
+        setEntries(withProducts.slice(0, 6))
       })
       .finally(() => setLoading(false))
   }, [])
@@ -40,94 +37,53 @@ export default function FeaturedMenus() {
   if (!loading && entries.length === 0) return null
 
   return (
-    <section id="menus" className="bg-paper-dim py-20 scroll-mt-16">
-      <div className="max-w-6xl mx-auto px-6">
-        <div className="text-center mb-12">
-          <span className="inline-flex items-center gap-1.5 text-sm font-medium text-zaytoon bg-zaytoon/10 rounded-full px-3 py-1 mb-4">
-            <Store size={14} />
-            متاجر وكتالوجات حقيقية على المنصة
-          </span>
-          <h2 className="font-display text-3xl font-semibold">اكتشف المتاجر على Egy Menu</h2>
-          <p className="mt-3 text-sm text-stone">موبايلات، إلكترونيات، ملابس، عطور، أثاث، تشطيبات وأنشطة حديثة في كتالوج واحد احترافي.</p>
+    <div>
+      {loading ? (
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
+          {[1, 2, 3].map((i) => <div key={i} className="rounded-2xl bg-white/5 h-48 animate-pulse" />)}
         </div>
-
-        {loading ? (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="rounded-2xl bg-paper h-48 animate-pulse" />
-            ))}
-          </div>
-        ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {entries.map(({ restaurant, products }, i) => {
-              const type = typeMap.get(restaurant.business_type || '')
-              const typeName = restaurant.business_type_name || type?.name || 'متجر'
-              return (
-                <motion.a
-                  key={restaurant.id}
-                  href={`${import.meta.env.BASE_URL}m/${restaurant.slug}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  initial={{ opacity: 0, y: 16 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.4, delay: i * 0.06 }}
-                  className="rounded-2xl bg-paper border border-stone-light/30 overflow-hidden hover:border-saffron/40 hover:shadow-md transition-all group"
-                >
-                  <div className="h-36 bg-zaytoon relative overflow-hidden">
-                    {restaurant.cover_url ? (
-                      <img src={restaurant.cover_url} alt="" loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                    ) : type?.image_url ? (
-                      <img src={type.image_url} alt="" loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                    ) : null}
-                    <div className="absolute inset-0 bg-gradient-to-t from-ink/65 to-transparent" />
-                    <span className="absolute left-3 bottom-3 rounded-full bg-black/45 backdrop-blur px-2.5 py-1 text-[10px] text-white">{type?.icon || '🏪'} {typeName}</span>
-                  </div>
-                  <div className="p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-9 h-9 rounded-lg bg-ink text-saffron flex items-center justify-center text-xs font-bold overflow-hidden shrink-0">
-                        {restaurant.logo_url ? (
-                          <img src={restaurant.logo_url} alt="" className="w-full h-full object-contain p-0.5 bg-white" />
-                        ) : (
-                          restaurant.name.charAt(0)
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="font-display font-semibold text-sm truncate">{restaurant.name}</p>
-                        <p className="text-[11px] text-stone mt-0.5 truncate">{restaurant.address || typeName}</p>
-                      </div>
-                      <ExternalLink size={13} className="text-stone-light group-hover:text-saffron-dim transition-colors shrink-0" />
+      ) : (
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
+          {entries.map(({ restaurant, products }, i) => {
+            const type = typeMap.get(restaurant.business_type || '')
+            const typeName = restaurant.business_type_name || type?.name || 'متجر'
+            return (
+              <motion.a
+                key={restaurant.id}
+                href={`${import.meta.env.BASE_URL}m/${restaurant.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.35, delay: i * 0.04 }}
+                className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden hover:border-[#d7b66f]/40 transition-all group"
+              >
+                <div className="h-28 sm:h-36 bg-[#3f4737] relative overflow-hidden">
+                  {restaurant.cover_url ? <img src={restaurant.cover_url} alt="" loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" /> : type?.image_url ? <img src={type.image_url} alt="" loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" /> : <div className="w-full h-full flex items-center justify-center text-4xl">{type?.icon || '🏪'}</div>}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                  <span className="absolute right-2 bottom-2 rounded-full bg-black/45 backdrop-blur px-2 py-1 text-[9px] sm:text-[10px] text-white">{type?.icon || '🏪'} {typeName}</span>
+                </div>
+                <div className="p-3 sm:p-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-[#d7b66f] text-[#171714] flex items-center justify-center text-xs font-bold overflow-hidden shrink-0">
+                      {restaurant.logo_url ? <img src={restaurant.logo_url} alt="" className="w-full h-full object-contain bg-white" /> : restaurant.name.charAt(0)}
                     </div>
-                    <ul className="space-y-1.5">
-                      {products.map((p) => (
-                        <li key={p.id} className="flex justify-between gap-3 text-xs text-stone">
-                          <span className="truncate">{p.name.ar}</span>
-                          <span className="shrink-0 text-saffron-dim font-medium">{p.discount_price || p.price} ج.م</span>
-                        </li>
-                      ))}
-                    </ul>
+                    <div className="min-w-0 flex-1"><p className="font-display font-semibold text-xs sm:text-sm truncate">{restaurant.name}</p><p className="text-[10px] text-white/45 mt-0.5 truncate">{restaurant.address || typeName}</p></div>
+                    <ExternalLink size={12} className="text-white/35 shrink-0" />
                   </div>
-                </motion.a>
-              )
-            })}
-          </div>
-        )}
-
-        <div className="text-center mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
-          <Link
-            to="/register"
-            className="inline-block rounded-full bg-saffron text-ink px-6 py-2.5 text-sm font-semibold hover:bg-saffron-dim transition-colors"
-          >
-            اعرض متجرك هنا
-          </Link>
-          <Link
-            to="/restaurants"
-            className="inline-block rounded-full bg-paper border border-stone-light/40 text-ink px-6 py-2.5 text-sm font-semibold hover:bg-paper-dim transition-colors"
-          >
-            شوف كل المتاجر
-          </Link>
+                  {products.length > 0 ? <ul className="space-y-1 mt-3 hidden sm:block">{products.slice(0, 2).map((p) => <li key={p.id} className="flex justify-between gap-2 text-[11px] text-white/55"><span className="truncate">{p.name.ar}</span><span className="shrink-0 text-[#d7b66f]">{p.discount_price || p.price} ج</span></li>)}</ul> : <p className="mt-3 text-[10px] text-white/35">المتجر جاهز لاستقبال المنتجات</p>}
+                </div>
+              </motion.a>
+            )
+          })}
         </div>
+      )}
+
+      <div className="text-center mt-7 flex flex-wrap items-center justify-center gap-3">
+        <Link to="/register?src=stores-home" className="rounded-full bg-[#d7b66f] text-[#171714] px-5 py-2.5 text-sm font-bold">اعرض متجرك هنا</Link>
+        <Link to="/restaurants" className="rounded-full border border-white/15 text-white px-5 py-2.5 text-sm font-semibold">كل المتاجر</Link>
       </div>
-    </section>
+    </div>
   )
 }
