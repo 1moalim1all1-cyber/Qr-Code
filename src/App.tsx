@@ -8,6 +8,10 @@ import AdminAnalyticsShortcut from './components/admin/AdminAnalyticsShortcut'
 import QRFlowController from './components/menu/QRFlowController'
 
 const LandingPage = lazy(() => import('./pages/public/LandingPage'))
+const ActivitiesPage = lazy(() => import('./pages/public/ActivitiesPage'))
+const FeaturesPage = lazy(() => import('./pages/public/FeaturesPage'))
+const HowItWorksPage = lazy(() => import('./pages/public/HowItWorksPage'))
+const PricingPage = lazy(() => import('./pages/public/PricingPage'))
 const StorefrontEntryPage = lazy(() => import('./pages/public/StorefrontEntryPage'))
 const QRCategoryPage = lazy(() => import('./pages/public/QRCategoryPage'))
 const OrderTrackingPage = lazy(() => import('./pages/public/OrderTrackingPage'))
@@ -49,6 +53,10 @@ function App() {
       <QRFlowController />
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/activities" element={<ActivitiesPage />} />
+        <Route path="/features" element={<FeaturesPage />} />
+        <Route path="/how-it-works" element={<HowItWorksPage />} />
+        <Route path="/pricing" element={<PricingPage />} />
         <Route path="/m/:slug" element={<StorefrontEntryPage />} />
         <Route path="/qr/:slug" element={<QRCategoryPage />} />
         <Route path="/m/:slug/order/:orderId" element={<OrderTrackingPage />} />
