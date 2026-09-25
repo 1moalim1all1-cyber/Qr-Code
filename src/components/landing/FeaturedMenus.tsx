@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Store, ExternalLink } from 'lucide-react'
+import { ExternalLink } from 'lucide-react'
 import { listFeaturedRestaurants } from '@/services/restaurants'
 import { listProducts } from '@/services/products'
 import { listBusinessTypes, type BusinessTypeRecord } from '@/services/businessTypes'
