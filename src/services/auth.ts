@@ -10,8 +10,8 @@ import { auth, db } from '@/lib/firebase'
 import { normalizePhone, phoneToPseudoEmail } from '@/lib/phone'
 import type { BusinessType } from '@/types/database'
 
-const FREE_TRIAL_DAYS = 10
-function addDays(date: Date, days: number) { const result = new Date(date); result.setDate(result.getDate() + days); return result }
+const FREE_TRIAL_HOURS = 72
+function addHours(date: Date, hours: number) { const result = new Date(date); result.setHours(result.getHours() + hours); return result }
 export async function signOut() { await firebaseSignOut(auth) }
 export async function getCurrentUserProfile(userId: string) { const snap = await getDoc(doc(db, 'users', userId)); if (!snap.exists()) throw new Error('User profile not found'); return { id: snap.id, ...snap.data() } }
 
@@ -20,15 +20,16 @@ export async function signUpWithPhone(phone: string, password: string, fullName:
   const cred = await createUserWithEmailAndPassword(auth, pseudoEmail, password)
   await updateProfile(cred.user, { displayName: fullName })
   await cred.user.getIdToken(true)
-  const trialStart = new Date(); const trialEnd = addDays(trialStart, FREE_TRIAL_DAYS)
+  const trialStart = new Date(); const trialEnd = addHours(trialStart, FREE_TRIAL_HOURS)
   try {
     await setDoc(doc(db, 'users', cred.user.uid), {
       full_name: fullName, phone: normalizePhone(phone), role: 'owner', avatar_url: null,
       account_status: 'active', business_type: businessType,
       requested_business_name: requestedBusinessName?.trim() || null, rejection_reason: null,
-      payment_status: 'unpaid', amount_paid: 0, payment_note: 'فترة تجريبية مجانية 10 أيام',
+      payment_status: 'unpaid', amount_paid: 0, payment_note: 'فترة تجريبية مجانية 72 ساعة',
       subscription_start: trialStart.toISOString(), subscription_end: trialEnd.toISOString(),
-      subscription_days: FREE_TRIAL_DAYS, trial_days: FREE_TRIAL_DAYS, last_renewed_at: null,
+      subscription_hours: FREE_TRIAL_HOURS, trial_hours: FREE_TRIAL_HOURS,
+      subscription_days: 3, trial_days: 3, last_renewed_at: null,
       created_at: serverTimestamp(),
     })
   } catch (err) { console.error('[signUpWithPhone] failed writing users/{uid}:', err); throw new Error(`تعذّر حفظ بروفايل المستخدم (users): ${err instanceof Error ? err.message : String(err)}`) }
