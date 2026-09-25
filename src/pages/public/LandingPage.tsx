@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, LayoutGrid, ListChecks, QrCode, Sparkles, Store, Tags, WandSparkles } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Gift, LayoutGrid, ListChecks, QrCode, Sparkles, Store, Tags, WandSparkles } from 'lucide-react'
 import FeaturedMenus from '@/components/landing/FeaturedMenus'
 
 const NAV_LINKS = [
@@ -54,6 +54,28 @@ export default function LandingPage() {
 
             <div className="grid grid-cols-2 gap-3">
               {[['موبايلات','📱'],['ملابس','👕'],['عطور','✨'],['إلكترونيات','🎧']].map(([title, icon]) => <Link key={title} to="/activities" className="min-h-28 sm:min-h-36 rounded-[24px] border border-white/10 bg-white/[0.045] p-4 flex flex-col justify-between hover:border-[#d7b66f]/35 transition-colors"><span className="text-3xl">{icon}</span><span className="font-display font-bold text-lg">{title}</span></Link>)}
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-[#0d0f0c] px-4 sm:px-6 py-6">
+          <div className="max-w-7xl mx-auto overflow-hidden rounded-[28px] border border-[#d7b66f]/25 bg-gradient-to-l from-[#242017] via-[#171915] to-[#11120f] shadow-[0_24px_70px_rgba(0,0,0,.28)]">
+            <div className="grid lg:grid-cols-[1fr_auto] items-center gap-5 px-5 sm:px-7 py-6 sm:py-7">
+              <div className="flex items-start gap-4">
+                <div className="hidden sm:flex w-14 h-14 shrink-0 rounded-2xl bg-[#d7b66f] text-[#171714] items-center justify-center shadow-lg"><Gift size={25} /></div>
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full bg-[#d7b66f]/15 px-3 py-1 text-[11px] font-bold text-[#efd59d]">عرض تجربة</span>
+                    <span className="text-xs text-white/40">بدون بطاقة بنكية</span>
+                  </div>
+                  <h2 className="mt-2 font-display text-2xl sm:text-3xl font-black">حوّل منتجاتك لمتجر مرتب خلال دقائق</h2>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-white/50">سجّل دلوقتي وخد 72 ساعة مجانًا، أضف منتجاتك وخد رابط وQR تقدر تبعته لأي عميل فورًا.</p>
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs text-white/55">
+                    {['رابط مباشر', 'QR جاهز', 'تعديل الأسعار بسهولة'].map((item) => <span key={item} className="inline-flex items-center gap-1.5"><CheckCircle2 size={14} className="text-[#aab58b]" />{item}</span>)}
+                  </div>
+                </div>
+              </div>
+              <Link to="/register?src=home-promo" className="w-full lg:w-auto rounded-2xl bg-[#d7b66f] px-6 py-3.5 text-center text-sm font-black text-[#171714] shadow-lg hover:brightness-105 transition">ابدأ تجربتك الآن</Link>
             </div>
           </div>
         </section>
