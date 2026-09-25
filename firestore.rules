@@ -30,8 +30,10 @@ service cloud.firestore {
         request.resource.data.role == 'owner' &&
         request.resource.data.account_status == 'active' &&
         request.resource.data.payment_status == 'unpaid' &&
-        request.resource.data.trial_days == 10 &&
-        request.resource.data.subscription_days == 10;
+        request.resource.data.trial_hours == 72 &&
+        request.resource.data.subscription_hours == 72 &&
+        request.resource.data.trial_days == 3 &&
+        request.resource.data.subscription_days == 3;
       allow update: if isSuperAdmin() || (
         isSignedIn() &&
         request.auth.uid == userId &&
@@ -39,8 +41,8 @@ service cloud.firestore {
         !request.resource.data.diff(resource.data).affectedKeys().hasAny([
           'role', 'account_status', 'requested_business_name', 'rejection_reason',
           'payment_status', 'amount_paid', 'payment_note', 'created_at',
-          'subscription_start', 'subscription_end', 'subscription_days',
-          'subscription_months', 'trial_days', 'last_renewed_at'
+          'subscription_start', 'subscription_end', 'subscription_days', 'subscription_hours',
+          'subscription_months', 'trial_days', 'trial_hours', 'last_renewed_at'
         ])
       );
       allow delete: if false;
@@ -56,8 +58,10 @@ service cloud.firestore {
         request.resource.data.owner_id == request.auth.uid &&
         request.resource.data.status == 'active' &&
         request.resource.data.payment_status == 'unpaid' &&
-        request.resource.data.trial_days == 10 &&
-        request.resource.data.subscription_days == 10
+        request.resource.data.trial_hours == 72 &&
+        request.resource.data.subscription_hours == 72 &&
+        request.resource.data.trial_days == 3 &&
+        request.resource.data.subscription_days == 3
       );
 
       allow update: if isSuperAdmin() || (
@@ -67,8 +71,8 @@ service cloud.firestore {
         !request.resource.data.diff(resource.data).affectedKeys().hasAny([
           'owner_id', 'status', 'payment_status', 'amount_paid', 'payment_note',
           'managed_by_admin', 'client_name', 'client_contact', 'registration_source',
-          'subscription_start', 'subscription_end', 'subscription_days',
-          'subscription_months', 'trial_days', 'last_renewed_at', 'show_on_home'
+          'subscription_start', 'subscription_end', 'subscription_days', 'subscription_hours',
+          'subscription_months', 'trial_days', 'trial_hours', 'last_renewed_at', 'show_on_home'
         ])
       );
       allow delete: if isSuperAdmin();
