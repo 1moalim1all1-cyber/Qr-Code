@@ -68,8 +68,6 @@ export default function OrdersPage({ restaurantIdOverride, backTo = '/dashboard'
         listProducts(r.id).then(setProducts).catch(() => setProducts([]))
 
         unsubscribe = subscribeToOrders(r.id, (data) => {
-          // Detect genuinely NEW orders (not the first load) to trigger the
-          // chime + toast — comparing against previously-seen order IDs.
           if (knownOrderIds.current) {
             const isNewOrder = data.some((o) => !knownOrderIds.current!.has(o.id))
             if (isNewOrder) {
@@ -165,84 +163,102 @@ export default function OrdersPage({ restaurantIdOverride, backTo = '/dashboard'
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            {visible.map((o) => (
-              <div key={o.id} className="rounded-2xl bg-paper border border-stone-light/30 p-4">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLE[o.status]}`}>
-                        {STATUS_LABEL[o.status]}
-                      </span>
-                      <span className="text-xs text-stone">{ORDER_TYPE_LABEL[o.order_type]}</span>
-                      {o.table_label && <span className="text-xs text-stone">· طاولة {o.table_label}</span>}
-                    </div>
-                    {(o.customer_name || o.customer_phone) && (
-                      <p className="text-sm text-stone mt-1 flex items-center gap-2 flex-wrap">
-                        {o.customer_name && <span>{o.customer_name}</span>}
-                        {o.customer_phone && (
-                          <a href={`tel:${o.customer_phone}`} className="flex items-center gap-1 text-saffron-dim">
-                            <Phone size={12} /> {o.customer_phone}
-                          </a>
-                        )}
-                      </p>
-                    )}
-                    {o.customer_address && (
-                      <p className="text-sm text-stone mt-1 flex items-start gap-1.5">
-                        <MapPin size={14} className="text-saffron-dim mt-0.5 shrink-0" />
-                        <span><strong className="text-ink">العنوان:</strong> {o.customer_address}</span>
-                      </p>
-                    )}
-                  </div>
-                  <span className="font-display font-semibold shrink-0">{o.total} ج.م</span>
-                </div>
+            {visible.map((o) => {
+              const mapUrl = o.customer_map_url || (
+                o.customer_latitude != null && o.customer_longitude != null
+                  ? `https://www.google.com/maps?q=${o.customer_latitude},${o.customer_longitude}`
+                  : ''
+              )
 
-                <div className="mb-3 space-y-2">
-                  {o.items.map((it, i) => {
-                    const imageUrl = it.image_url || productImages.get(it.product_id)
-                    return (
-                      <div key={i} className="flex items-center gap-3 rounded-xl bg-paper-dim/70 p-2">
-                        <div className="w-14 h-14 rounded-xl overflow-hidden bg-stone-light/20 shrink-0 flex items-center justify-center">
-                          {imageUrl ? (
-                            <img src={imageUrl} alt={it.name} className="w-full h-full object-cover" />
-                          ) : (
-                            <Package size={20} className="text-stone-light" />
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold text-ink">{it.quantity}× {it.name}</p>
-                          {it.size && <p className="text-xs text-stone mt-0.5">{it.size}</p>}
-                          {it.extras.length > 0 && <p className="text-xs text-stone-light mt-0.5">{it.extras.map((e) => e.name).join('، ')}</p>}
-                        </div>
-                        <span className="text-xs font-medium text-stone shrink-0">{it.price} ج.م</span>
+              return (
+                <div key={o.id} className="rounded-2xl bg-paper border border-stone-light/30 p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLE[o.status]}`}>
+                          {STATUS_LABEL[o.status]}
+                        </span>
+                        <span className="text-xs text-stone">{ORDER_TYPE_LABEL[o.order_type]}</span>
+                        {o.table_label && <span className="text-xs text-stone">· طاولة {o.table_label}</span>}
                       </div>
-                    )
-                  })}
-                </div>
-
-                {o.status !== 'completed' && o.status !== 'cancelled' && (
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {STATUS_FLOW.filter((s) => s !== o.status).map((s) => (
-                      <button
-                        key={s}
-                        onClick={() => handleStatusChange(o, s)}
-                        className="flex items-center gap-1 text-xs rounded-full bg-paper-dim px-3 py-1.5 hover:bg-stone-light/30 transition-colors"
-                      >
-                        {s === 'preparing' && <ChefHat size={12} />}
-                        {s === 'ready' && <Clock size={12} />}
-                        {s === 'completed' && <CheckCircle2 size={12} />}
-                        {STATUS_LABEL[s]}
-                      </button>
-                    ))}
-                    <button
-                      onClick={() => handleStatusChange(o, 'cancelled')}
-                      className="flex items-center gap-1 text-xs rounded-full bg-sumac/10 text-sumac px-3 py-1.5 hover:bg-sumac/20 transition-colors"
-                    >
-                      <XCircle size={12} /> إلغاء
-                    </button>
+                      {(o.customer_name || o.customer_phone) && (
+                        <p className="text-sm text-stone mt-1 flex items-center gap-2 flex-wrap">
+                          {o.customer_name && <span>{o.customer_name}</span>}
+                          {o.customer_phone && (
+                            <a href={`tel:${o.customer_phone}`} className="flex items-center gap-1 text-saffron-dim">
+                              <Phone size={12} /> {o.customer_phone}
+                            </a>
+                          )}
+                        </p>
+                      )}
+                      {o.customer_address && (
+                        <p className="text-sm text-stone mt-1 flex items-start gap-1.5">
+                          <MapPin size={14} className="text-saffron-dim mt-0.5 shrink-0" />
+                          <span><strong className="text-ink">العنوان:</strong> {o.customer_address}</span>
+                        </p>
+                      )}
+                      {mapUrl && (
+                        <a
+                          href={mapUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-saffron/15 text-saffron-dim px-3 py-1.5 text-xs font-semibold hover:bg-saffron/25 transition-colors"
+                        >
+                          <MapPin size={13} /> فتح موقع العميل على الخريطة
+                        </a>
+                      )}
+                    </div>
+                    <span className="font-display font-semibold shrink-0">{o.total} ج.م</span>
                   </div>
-                )}
-              </div>
-            ))}
+
+                  <div className="mb-3 space-y-2">
+                    {o.items.map((it, i) => {
+                      const imageUrl = it.image_url || productImages.get(it.product_id)
+                      return (
+                        <div key={i} className="flex items-center gap-3 rounded-xl bg-paper-dim/70 p-2">
+                          <div className="w-14 h-14 rounded-xl overflow-hidden bg-stone-light/20 shrink-0 flex items-center justify-center">
+                            {imageUrl ? (
+                              <img src={imageUrl} alt={it.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <Package size={20} className="text-stone-light" />
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-ink">{it.quantity}× {it.name}</p>
+                            {it.size && <p className="text-xs text-stone mt-0.5">{it.size}</p>}
+                            {it.extras.length > 0 && <p className="text-xs text-stone-light mt-0.5">{it.extras.map((e) => e.name).join('، ')}</p>}
+                          </div>
+                          <span className="text-xs font-medium text-stone shrink-0">{it.price} ج.م</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {o.status !== 'completed' && o.status !== 'cancelled' && (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {STATUS_FLOW.filter((s) => s !== o.status).map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => handleStatusChange(o, s)}
+                          className="flex items-center gap-1 text-xs rounded-full bg-paper-dim px-3 py-1.5 hover:bg-stone-light/30 transition-colors"
+                        >
+                          {s === 'preparing' && <ChefHat size={12} />}
+                          {s === 'ready' && <Clock size={12} />}
+                          {s === 'completed' && <CheckCircle2 size={12} />}
+                          {STATUS_LABEL[s]}
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => handleStatusChange(o, 'cancelled')}
+                        className="flex items-center gap-1 text-xs rounded-full bg-sumac/10 text-sumac px-3 py-1.5 hover:bg-sumac/20 transition-colors"
+                      >
+                        <XCircle size={12} /> إلغاء
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         )}
       </main>
