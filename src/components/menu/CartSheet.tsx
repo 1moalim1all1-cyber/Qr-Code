@@ -20,6 +20,7 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
   const [tableLabel, setTableLabel] = useState('')
   const [customerName, setCustomerName] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
+  const [customerAddress, setCustomerAddress] = useState('')
   const [couponCode, setCouponCode] = useState('')
   const [couponDiscount, setCouponDiscount] = useState<{ code: string; percent: number } | null>(null)
   const [couponError, setCouponError] = useState<string | null>(null)
@@ -51,6 +52,11 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
   async function handleSubmit() {
     if (lines.length === 0) return
 
+    if ((orderType === 'delivery' || orderType === 'whatsapp') && !customerAddress.trim()) {
+      setSubmitError('اكتب عنوان التوصيل قبل تأكيد الطلب.')
+      return
+    }
+
     const whatsappNumber = normalizeWhatsappNumber(restaurant.whatsapp)
     let whatsappWindow: Window | null = null
 
@@ -76,6 +82,7 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
         extras: l.extras,
         size: l.size,
         notes: l.notes,
+        image_url: l.image_url ?? null,
       }))
 
       const orderId = await createOrder(restaurant.id, {
@@ -87,6 +94,7 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
         orderType,
         customerName: customerName || undefined,
         customerPhone: customerPhone || undefined,
+        customerAddress: customerAddress.trim() || undefined,
         tableLabel: orderType === 'dine_in' ? tableLabel || undefined : undefined,
         restaurantName: restaurant.name,
       })
@@ -98,6 +106,7 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
           total,
           customerName,
           customerPhone,
+          customerAddress,
           orderType,
           tableLabel,
         )
@@ -167,7 +176,10 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
           <div className="p-5">
             <div className="flex flex-col gap-3 mb-5">
               {lines.map((l) => (
-                <div key={l.lineId} className="flex items-start justify-between gap-3">
+                <div key={l.lineId} className="flex items-start gap-3">
+                  {l.image_url && (
+                    <img src={l.image_url} alt={l.name} className="w-14 h-14 rounded-xl object-cover bg-white/5 shrink-0" />
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm">
                       {l.name}
@@ -255,6 +267,18 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
                 />
               </div>
             )}
+            {(orderType === 'delivery' || orderType === 'whatsapp') && (
+              <div className="relative mb-3">
+                <MapPin className="absolute right-3 top-3 text-stone-light" size={15} />
+                <textarea
+                  value={customerAddress}
+                  onChange={(e) => { setCustomerAddress(e.target.value); setSubmitError(null) }}
+                  placeholder="عنوان التوصيل بالتفصيل *"
+                  rows={2}
+                  className="w-full rounded-xl border border-saffron/50 pr-9 pl-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-saffron/40"
+                />
+              </div>
+            )}
 
             <div className="border-t border-saffron/30 pt-3 mb-4 space-y-1.5 text-sm">
               <div className="flex justify-between text-stone-light"><span>الإجمالي الفرعي</span><span>{subtotal} ج.م</span></div>
@@ -293,10 +317,11 @@ function normalizeWhatsappNumber(value?: string | null) {
 
 function buildWhatsappMessage(
   restaurantName: string,
-  items: { name: string; quantity: number; price: number; extras: { name: string; price: number }[]; size?: string; notes?: string }[],
+  items: { name: string; quantity: number; price: number; extras: { name: string; price: number }[]; size?: string; notes?: string; image_url?: string | null }[],
   total: number,
   customerName: string,
   customerPhone: string,
+  customerAddress: string,
   orderType: OrderType,
   tableLabel: string,
 ) {
@@ -313,6 +338,7 @@ function buildWhatsappMessage(
     `نوع الطلب: ${typeLabel}`,
     customerName ? `الاسم: ${customerName}` : '',
     customerPhone ? `التليفون: ${customerPhone}` : '',
+    customerAddress ? `العنوان: ${customerAddress}` : '',
     orderType === 'dine_in' && tableLabel ? `الطاولة: ${tableLabel}` : '',
     '',
     ...lines,
