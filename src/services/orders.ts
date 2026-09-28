@@ -14,6 +14,9 @@ export interface CreateOrderInput {
   customerName?: string
   customerPhone?: string
   customerAddress?: string
+  customerLatitude?: number
+  customerLongitude?: number
+  customerMapUrl?: string
   tableLabel?: string
   notes?: string
   restaurantName: string
@@ -41,13 +44,16 @@ export async function createOrder(restaurantId: string, input: CreateOrderInput)
     customer_name: input.customerName ?? null,
     customer_phone: input.customerPhone ?? null,
     customer_address: input.customerAddress ?? null,
+    customer_latitude: input.customerLatitude ?? null,
+    customer_longitude: input.customerLongitude ?? null,
+    customer_map_url: input.customerMapUrl ?? null,
     table_label: input.tableLabel ?? null,
     notes: input.notes ?? null,
     status: 'pending',
     created_at: serverTimestamp(),
   })
 
-  // A public, non-sensitive companion doc (no customer name/phone/address) with the
+  // A public, non-sensitive companion doc (no customer name/phone/address/location) with the
   // SAME id as the order, so a customer can check "where's my order" via a
   // simple link without needing an account or exposing anyone else's data.
   const itemsSummary = cleanItems.map((it) => `${it.quantity}× ${it.name}`).join('، ')
