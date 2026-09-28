@@ -55,15 +55,9 @@ function recoverPublicEnv() {
   const senderMatch = appId.match(/^1:(\d+):web:/)
   if (!senderMatch) throw new Error('Could not recover Firebase messaging sender id')
 
-  const imageUpload = fs.readdirSync(ghPagesAssets)
-    .filter((name) => /ImageUpload.*\.js$/i.test(name))
-    .map((name) => fs.readFileSync(path.join(ghPagesAssets, name), 'utf8'))
-    .join('\n')
-
-  const cloudName = first(imageUpload, /(?:var|const|let)\s+\w+=`([^`]+)`,\w+=`[^`]+`;?async function[^]*?api\.cloudinary\.com\/v1_1\/\$\{\w+\}\/image\/upload/i, 'Cloudinary cloud name')
-  const presetMatch = imageUpload.match(/(?:var|const|let)\s+\w+=`([^`]+)`,\w+=`([^`]+)`;?async function[^]*?upload_preset/i)
-  const uploadPreset = presetMatch?.[2]
-  if (!uploadPreset) throw new Error('Could not recover Cloudinary upload preset')
+  // These are public frontend values already shipped in the current production bundle.
+  const cloudName = 'sg5ompuf'
+  const uploadPreset = 'Qrcode'
 
   const env = [
     `VITE_FIREBASE_API_KEY=${apiKey}`,
