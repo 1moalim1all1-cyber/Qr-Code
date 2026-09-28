@@ -13,6 +13,7 @@ export interface CreateOrderInput {
   orderType: OrderType
   customerName?: string
   customerPhone?: string
+  customerAddress?: string
   tableLabel?: string
   notes?: string
   restaurantName: string
@@ -27,6 +28,7 @@ export async function createOrder(restaurantId: string, input: CreateOrderInput)
     extras: item.extras ?? [],
     size: item.size ?? null,
     notes: item.notes ?? null,
+    image_url: item.image_url ?? null,
   }))
 
   const docRef = await addDoc(ordersRef(restaurantId), {
@@ -38,13 +40,14 @@ export async function createOrder(restaurantId: string, input: CreateOrderInput)
     order_type: input.orderType,
     customer_name: input.customerName ?? null,
     customer_phone: input.customerPhone ?? null,
+    customer_address: input.customerAddress ?? null,
     table_label: input.tableLabel ?? null,
     notes: input.notes ?? null,
     status: 'pending',
     created_at: serverTimestamp(),
   })
 
-  // A public, non-sensitive companion doc (no customer name/phone) with the
+  // A public, non-sensitive companion doc (no customer name/phone/address) with the
   // SAME id as the order, so a customer can check "where's my order" via a
   // simple link without needing an account or exposing anyone else's data.
   const itemsSummary = cleanItems.map((it) => `${it.quantity}× ${it.name}`).join('، ')
