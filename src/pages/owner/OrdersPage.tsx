@@ -1,11 +1,12 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowRight, Clock, ChefHat, CheckCircle2, XCircle, Phone, Bell } from 'lucide-react'
+import { ArrowRight, Clock, ChefHat, CheckCircle2, XCircle, Phone, Bell, MapPin, Package } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { getRestaurantByOwner, getRestaurantById } from '@/services/restaurants'
 import { subscribeToOrders, updateOrderStatus } from '@/services/orders'
+import { listProducts } from '@/services/products'
 import { playNewOrderChime } from '@/lib/notifySound'
-import type { Order, OrderStatus, Restaurant } from '@/types/database'
+import type { Order, OrderStatus, Product, Restaurant } from '@/types/database'
 
 const STATUS_FLOW: OrderStatus[] = ['pending', 'preparing', 'ready', 'completed']
 
@@ -43,6 +44,7 @@ export default function OrdersPage({ restaurantIdOverride, backTo = '/dashboard'
   const adminRestaurantId = restaurantIdOverride ?? params.id
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
   const [orders, setOrders] = useState<Order[]>([])
+  const [products, setProducts] = useState<Product[]>([])
   const [filter, setFilter] = useState<'active' | 'all'>('active')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -62,6 +64,9 @@ export default function OrdersPage({ restaurantIdOverride, backTo = '/dashboard'
           setLoading(false)
           return
         }
+
+        listProducts(r.id).then(setProducts).catch(() => setProducts([]))
+
         unsubscribe = subscribeToOrders(r.id, (data) => {
           // Detect genuinely NEW orders (not the first load) to trigger the
           // chime + toast — comparing against previously-seen order IDs.
@@ -96,6 +101,15 @@ export default function OrdersPage({ restaurantIdOverride, backTo = '/dashboard'
       setError(err instanceof Error ? err.message : 'حصل خطأ، حاول تاني')
     }
   }
+
+  const productImages = useMemo(() => {
+    const map = new Map<string, string>()
+    products.forEach((product) => {
+      const image = product.images?.[0]?.url
+      if (image) map.set(product.id, image)
+    })
+    return map
+  }, [products])
 
   const visible = filter === 'active' ? orders.filter((o) => o.status !== 'completed' && o.status !== 'cancelled') : orders
 
@@ -155,7 +169,7 @@ export default function OrdersPage({ restaurantIdOverride, backTo = '/dashboard'
               <div key={o.id} className="rounded-2xl bg-paper border border-stone-light/30 p-4">
                 <div className="flex items-start justify-between mb-2">
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLE[o.status]}`}>
                         {STATUS_LABEL[o.status]}
                       </span>
@@ -163,8 +177,8 @@ export default function OrdersPage({ restaurantIdOverride, backTo = '/dashboard'
                       {o.table_label && <span className="text-xs text-stone">· طاولة {o.table_label}</span>}
                     </div>
                     {(o.customer_name || o.customer_phone) && (
-                      <p className="text-sm text-stone mt-1 flex items-center gap-1">
-                        {o.customer_name}
+                      <p className="text-sm text-stone mt-1 flex items-center gap-2 flex-wrap">
+                        {o.customer_name && <span>{o.customer_name}</span>}
                         {o.customer_phone && (
                           <a href={`tel:${o.customer_phone}`} className="flex items-center gap-1 text-saffron-dim">
                             <Phone size={12} /> {o.customer_phone}
@@ -172,18 +186,38 @@ export default function OrdersPage({ restaurantIdOverride, backTo = '/dashboard'
                         )}
                       </p>
                     )}
+                    {o.customer_address && (
+                      <p className="text-sm text-stone mt-1 flex items-start gap-1.5">
+                        <MapPin size={14} className="text-saffron-dim mt-0.5 shrink-0" />
+                        <span><strong className="text-ink">العنوان:</strong> {o.customer_address}</span>
+                      </p>
+                    )}
                   </div>
-                  <span className="font-display font-semibold">{o.total} ج.م</span>
+                  <span className="font-display font-semibold shrink-0">{o.total} ج.م</span>
                 </div>
 
-                <ul className="text-sm text-stone mb-3 space-y-0.5">
-                  {o.items.map((it, i) => (
-                    <li key={i}>
-                      {it.quantity}× {it.name}
-                      {it.extras.length > 0 && <span className="text-stone-light"> ({it.extras.map((e) => e.name).join('، ')})</span>}
-                    </li>
-                  ))}
-                </ul>
+                <div className="mb-3 space-y-2">
+                  {o.items.map((it, i) => {
+                    const imageUrl = it.image_url || productImages.get(it.product_id)
+                    return (
+                      <div key={i} className="flex items-center gap-3 rounded-xl bg-paper-dim/70 p-2">
+                        <div className="w-14 h-14 rounded-xl overflow-hidden bg-stone-light/20 shrink-0 flex items-center justify-center">
+                          {imageUrl ? (
+                            <img src={imageUrl} alt={it.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <Package size={20} className="text-stone-light" />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-ink">{it.quantity}× {it.name}</p>
+                          {it.size && <p className="text-xs text-stone mt-0.5">{it.size}</p>}
+                          {it.extras.length > 0 && <p className="text-xs text-stone-light mt-0.5">{it.extras.map((e) => e.name).join('، ')}</p>}
+                        </div>
+                        <span className="text-xs font-medium text-stone shrink-0">{it.price} ج.م</span>
+                      </div>
+                    )
+                  })}
+                </div>
 
                 {o.status !== 'completed' && o.status !== 'cancelled' && (
                   <div className="flex items-center gap-2 flex-wrap">
