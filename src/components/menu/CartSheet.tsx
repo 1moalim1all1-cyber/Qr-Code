@@ -411,7 +411,8 @@ function buildWhatsappMessage(
     const sizeText = it.size ? ` - ${it.size}` : ''
     const extrasText = it.extras.length ? ` (${it.extras.map((e) => e.name).join('، ')})` : ''
     const notesText = it.notes ? ` | ملاحظة: ${it.notes}` : ''
-    return `- ${it.name}${sizeText}${extrasText} × ${it.quantity}${notesText}`
+    const imageText = it.image_url ? `\n  صورة السلعة: ${it.image_url}` : ''
+    return `- ${it.name}${sizeText}${extrasText} × ${it.quantity}${notesText}${imageText}`
   })
 
   return [
