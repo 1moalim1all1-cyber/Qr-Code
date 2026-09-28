@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { X, Plus, Minus, Trash2, Tag, Check, UtensilsCrossed, ShoppingBag, Truck, MessageCircle, MapPin } from 'lucide-react'
+import { X, Plus, Minus, Trash2, Tag, Check, UtensilsCrossed, ShoppingBag, Truck, MessageCircle, MapPin, LocateFixed } from 'lucide-react'
 import { useCart } from '@/contexts/CartContext'
 import { createOrder } from '@/services/orders'
 import { validateCoupon } from '@/services/coupons'
@@ -14,6 +14,8 @@ const ORDER_TYPES: { value: OrderType; label: string; icon: typeof UtensilsCross
   { value: 'whatsapp', label: 'واتساب', icon: MessageCircle },
 ]
 
+type LocationStatus = 'idle' | 'loading' | 'success' | 'error'
+
 export default function CartSheet({ restaurant, onClose }: { restaurant: Restaurant; onClose: () => void }) {
   const { lines, updateQuantity, removeItem, clearCart, subtotal } = useCart()
   const [orderType, setOrderType] = useState<OrderType>('dine_in')
@@ -21,6 +23,11 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
   const [customerName, setCustomerName] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
   const [customerAddress, setCustomerAddress] = useState('')
+  const [customerLatitude, setCustomerLatitude] = useState<number | null>(null)
+  const [customerLongitude, setCustomerLongitude] = useState<number | null>(null)
+  const [customerMapUrl, setCustomerMapUrl] = useState('')
+  const [locationStatus, setLocationStatus] = useState<LocationStatus>('idle')
+  const [locationMessage, setLocationMessage] = useState('')
   const [couponCode, setCouponCode] = useState('')
   const [couponDiscount, setCouponDiscount] = useState<{ code: string; percent: number } | null>(null)
   const [couponError, setCouponError] = useState<string | null>(null)
@@ -46,6 +53,54 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
       }
     } finally {
       setCheckingCoupon(false)
+    }
+  }
+
+  function requestCustomerLocation() {
+    if (!navigator.geolocation) {
+      setLocationStatus('error')
+      setLocationMessage('المتصفح ده مش بيدعم تحديد الموقع. اكتب العنوان بالتفصيل.')
+      return
+    }
+
+    setLocationStatus('loading')
+    setLocationMessage('جارِ تحديد موقعك الحالي...')
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const latitude = Number(position.coords.latitude.toFixed(6))
+        const longitude = Number(position.coords.longitude.toFixed(6))
+        const mapUrl = `https://www.google.com/maps?q=${latitude},${longitude}`
+
+        setCustomerLatitude(latitude)
+        setCustomerLongitude(longitude)
+        setCustomerMapUrl(mapUrl)
+        setLocationStatus('success')
+        setLocationMessage('تم تحديد موقعك بنجاح ✓')
+        setSubmitError(null)
+      },
+      (error) => {
+        setCustomerLatitude(null)
+        setCustomerLongitude(null)
+        setCustomerMapUrl('')
+        setLocationStatus('error')
+        if (error.code === error.PERMISSION_DENIED) {
+          setLocationMessage('اسمح للموقع باستخدام الـ GPS من إعدادات المتصفح، أو اكتب العنوان بالتفصيل.')
+        } else if (error.code === error.TIMEOUT) {
+          setLocationMessage('تحديد الموقع أخد وقت طويل. جرّب تاني أو اكتب العنوان بالتفصيل.')
+        } else {
+          setLocationMessage('مقدرناش نحدد موقعك حاليًا. جرّب تاني أو اكتب العنوان بالتفصيل.')
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+    )
+  }
+
+  function selectOrderType(type: OrderType) {
+    setOrderType(type)
+    setSubmitError(null)
+    if ((type === 'delivery' || type === 'whatsapp') && locationStatus === 'idle') {
+      requestCustomerLocation()
     }
   }
 
@@ -95,6 +150,9 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
         customerName: customerName || undefined,
         customerPhone: customerPhone || undefined,
         customerAddress: customerAddress.trim() || undefined,
+        customerLatitude: customerLatitude ?? undefined,
+        customerLongitude: customerLongitude ?? undefined,
+        customerMapUrl: customerMapUrl || undefined,
         tableLabel: orderType === 'dine_in' ? tableLabel || undefined : undefined,
         restaurantName: restaurant.name,
       })
@@ -107,6 +165,7 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
           customerName,
           customerPhone,
           customerAddress,
+          customerMapUrl,
           orderType,
           tableLabel,
         )
@@ -233,7 +292,7 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
               {ORDER_TYPES.map((t) => (
                 <button
                   key={t.value}
-                  onClick={() => { setOrderType(t.value); setSubmitError(null) }}
+                  onClick={() => selectOrderType(t.value)}
                   className={`flex flex-col items-center gap-1 rounded-xl py-2.5 text-xs transition-colors ${orderType === t.value ? 'bg-ink text-paper' : 'bg-white/5 text-paper hover:bg-stone-light/30'}`}
                 >
                   <t.icon size={16} />
@@ -268,15 +327,36 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
               </div>
             )}
             {(orderType === 'delivery' || orderType === 'whatsapp') && (
-              <div className="relative mb-3">
-                <MapPin className="absolute right-3 top-3 text-stone-light" size={15} />
-                <textarea
-                  value={customerAddress}
-                  onChange={(e) => { setCustomerAddress(e.target.value); setSubmitError(null) }}
-                  placeholder="عنوان التوصيل بالتفصيل *"
-                  rows={2}
-                  className="w-full rounded-xl border border-saffron/50 pr-9 pl-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-saffron/40"
-                />
+              <div className="mb-3 space-y-2">
+                <div className="relative">
+                  <MapPin className="absolute right-3 top-3 text-stone-light" size={15} />
+                  <textarea
+                    value={customerAddress}
+                    onChange={(e) => { setCustomerAddress(e.target.value); setSubmitError(null) }}
+                    placeholder="عنوان التوصيل بالتفصيل *"
+                    rows={2}
+                    className="w-full rounded-xl border border-saffron/50 pr-9 pl-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-saffron/40"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={requestCustomerLocation}
+                  disabled={locationStatus === 'loading'}
+                  className="w-full rounded-xl border border-saffron/40 bg-white/5 px-3 py-2.5 text-sm flex items-center justify-center gap-2 hover:bg-white/10 disabled:opacity-60"
+                >
+                  <LocateFixed size={16} />
+                  {locationStatus === 'loading' ? 'جارِ تحديد موقعك...' : locationStatus === 'success' ? 'تحديث موقعي الحالي' : 'حدد موقعي الحالي GPS'}
+                </button>
+                {locationMessage && (
+                  <p className={`text-xs px-1 ${locationStatus === 'success' ? 'text-zaytoon' : locationStatus === 'error' ? 'text-sumac' : 'text-stone-light'}`}>
+                    {locationMessage}
+                  </p>
+                )}
+                {customerMapUrl && (
+                  <a href={customerMapUrl} target="_blank" rel="noreferrer" className="text-xs text-saffron-dim underline underline-offset-2 inline-flex items-center gap-1">
+                    <MapPin size={12} /> فتح الموقع المحدد على الخريطة
+                  </a>
+                )}
               </div>
             )}
 
@@ -322,6 +402,7 @@ function buildWhatsappMessage(
   customerName: string,
   customerPhone: string,
   customerAddress: string,
+  customerMapUrl: string,
   orderType: OrderType,
   tableLabel: string,
 ) {
@@ -339,6 +420,7 @@ function buildWhatsappMessage(
     customerName ? `الاسم: ${customerName}` : '',
     customerPhone ? `التليفون: ${customerPhone}` : '',
     customerAddress ? `العنوان: ${customerAddress}` : '',
+    customerMapUrl ? `الموقع على الخريطة: ${customerMapUrl}` : '',
     orderType === 'dine_in' && tableLabel ? `الطاولة: ${tableLabel}` : '',
     '',
     ...lines,
