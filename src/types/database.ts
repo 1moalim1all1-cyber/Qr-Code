@@ -252,6 +252,9 @@ export interface Order {
   customer_name?: string
   customer_phone?: string
   customer_address?: string
+  customer_latitude?: number
+  customer_longitude?: number
+  customer_map_url?: string
   table_label?: string
   notes?: string
   status: OrderStatus
