@@ -12,6 +12,7 @@ interface AddItemInput {
   extras: OrderItemExtra[]
   size?: string
   notes?: string
+  imageUrl?: string | null
 }
 
 interface CartContextValue {
@@ -48,6 +49,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           extras: item.extras,
           size: item.size,
           notes: item.notes,
+          image_url: item.imageUrl ?? null,
         },
       ]
     })
