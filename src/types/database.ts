@@ -234,6 +234,7 @@ export interface OrderItem {
   extras: OrderItemExtra[]
   size?: string
   notes?: string
+  image_url?: string | null
 }
 
 export type OrderType = 'dine_in' | 'pickup' | 'delivery' | 'whatsapp'
@@ -250,6 +251,7 @@ export interface Order {
   order_type: OrderType
   customer_name?: string
   customer_phone?: string
+  customer_address?: string
   table_label?: string
   notes?: string
   status: OrderStatus
