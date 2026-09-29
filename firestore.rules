@@ -119,6 +119,14 @@ service cloud.firestore {
         allow delete: if isSuperAdmin();
       }
 
+      // Contains points only. Customers can read their balance by the exact phone-based doc id,
+      // while only the store owner/admin can award or deduct points.
+      match /loyalty_customers/{docId} {
+        allow read: if true;
+        allow create, update: if ownsActiveRestaurant(restaurantId) || isSuperAdmin();
+        allow delete: if isSuperAdmin();
+      }
+
       match /order_status/{docId} {
         allow read: if true;
         allow create: if true;
