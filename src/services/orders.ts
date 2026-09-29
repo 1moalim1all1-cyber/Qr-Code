@@ -26,6 +26,12 @@ export interface CreateOrderInput {
   restaurantName: string
 }
 
+type LoyaltySummary = {
+  earned: number
+  redeemed: number
+  balance: number
+}
+
 export async function createOrder(restaurantId: string, input: CreateOrderInput) {
   const cleanItems = input.items.map((item) => ({
     product_id: item.product_id,
@@ -55,6 +61,7 @@ export async function createOrder(restaurantId: string, input: CreateOrderInput)
     loyalty_redeem_points: Math.max(0, Number(input.loyaltyRedeemPoints || 0)),
     loyalty_discount: Math.max(0, Number(input.loyaltyDiscount || 0)),
     loyalty_awarded: false,
+    loyalty_reversed: false,
     table_label: input.tableLabel ?? null,
     notes: input.notes ?? null,
     status: 'pending',
@@ -71,6 +78,9 @@ export async function createOrder(restaurantId: string, input: CreateOrderInput)
     items_summary: itemsSummary,
     total: input.total,
     table_label: input.tableLabel ?? null,
+    loyalty_points_earned: 0,
+    loyalty_points_redeemed: 0,
+    loyalty_balance: null,
     created_at: serverTimestamp(),
   })
 
@@ -107,9 +117,10 @@ async function applyInventoryForOrder(
   }))
 }
 
-async function applyLoyaltyForCompletedOrder(restaurantId: string, orderId: string) {
+async function applyLoyaltyForCompletedOrder(restaurantId: string, orderId: string): Promise<LoyaltySummary | null> {
   const restaurantRef = doc(db, 'restaurants', restaurantId)
   const orderRef = doc(db, 'restaurants', restaurantId, 'orders', orderId)
+  let summary: LoyaltySummary | null = null
 
   await runTransaction(db, async (transaction) => {
     const [restaurantSnap, orderSnap] = await Promise.all([
@@ -123,11 +134,26 @@ async function applyLoyaltyForCompletedOrder(restaurantId: string, orderId: stri
     const loyalty = restaurantData.growth?.loyalty
 
     // الولاء لا يعمل نهائيًا إلا لو صاحب المتجر فعّله وحفظ الإعداد.
-    if (loyalty?.enabled !== true || orderData.loyalty_awarded === true) return
+    if (loyalty?.enabled !== true) return
 
     const phone = normalizeCustomerPhone(orderData.customer_phone)
     if (!phone) {
-      transaction.update(orderRef, { loyalty_awarded: true, loyalty_points_earned: 0 })
+      transaction.update(orderRef, { loyalty_awarded: true, loyalty_reversed: false, loyalty_points_earned: 0, loyalty_points_redeemed: 0 })
+      summary = { earned: 0, redeemed: 0, balance: 0 }
+      return
+    }
+
+    const customerRef = doc(db, 'restaurants', restaurantId, 'loyalty_customers', phone)
+    const customerSnap = await transaction.get(customerRef)
+    const existing = customerSnap.exists() ? customerSnap.data() : {}
+    const currentPoints = Math.max(0, Number(existing.points || 0))
+
+    if (orderData.loyalty_awarded === true && orderData.loyalty_reversed !== true) {
+      summary = {
+        earned: Math.max(0, Number(orderData.loyalty_points_earned || 0)),
+        redeemed: Math.max(0, Number(orderData.loyalty_points_redeemed || 0)),
+        balance: currentPoints,
+      }
       return
     }
 
@@ -135,10 +161,6 @@ async function applyLoyaltyForCompletedOrder(restaurantId: string, orderId: stri
     const requestedRedeem = Math.max(0, Number(orderData.loyalty_redeem_points || 0))
     const eligiblePaid = Math.max(0, Number(orderData.total || 0) - Number(orderData.delivery_fee || 0))
     const earned = Math.floor(eligiblePaid * pointsPerEgp)
-    const customerRef = doc(db, 'restaurants', restaurantId, 'loyalty_customers', phone)
-    const customerSnap = await transaction.get(customerRef)
-    const existing = customerSnap.exists() ? customerSnap.data() : {}
-    const currentPoints = Math.max(0, Number(existing.points || 0))
     const redeemed = Math.min(currentPoints, requestedRedeem)
     const nextPoints = Math.max(0, currentPoints - redeemed + earned)
 
@@ -152,15 +174,61 @@ async function applyLoyaltyForCompletedOrder(restaurantId: string, orderId: stri
 
     transaction.update(orderRef, {
       loyalty_awarded: true,
+      loyalty_reversed: false,
       loyalty_points_earned: earned,
       loyalty_points_redeemed: redeemed,
     })
+
+    summary = { earned, redeemed, balance: nextPoints }
   })
+
+  return summary
+}
+
+async function reverseLoyaltyForCancelledOrder(restaurantId: string, orderId: string): Promise<LoyaltySummary | null> {
+  const orderRef = doc(db, 'restaurants', restaurantId, 'orders', orderId)
+  let summary: LoyaltySummary | null = null
+
+  await runTransaction(db, async (transaction) => {
+    const orderSnap = await transaction.get(orderRef)
+    if (!orderSnap.exists()) return
+    const orderData = orderSnap.data()
+
+    if (orderData.loyalty_awarded !== true || orderData.loyalty_reversed === true) return
+
+    const earned = Math.max(0, Number(orderData.loyalty_points_earned || 0))
+    const redeemed = Math.max(0, Number(orderData.loyalty_points_redeemed || 0))
+    const phone = normalizeCustomerPhone(orderData.customer_phone)
+
+    if (!phone) {
+      transaction.update(orderRef, { loyalty_reversed: true })
+      summary = { earned: 0, redeemed: 0, balance: 0 }
+      return
+    }
+
+    const customerRef = doc(db, 'restaurants', restaurantId, 'loyalty_customers', phone)
+    const customerSnap = await transaction.get(customerRef)
+    const existing = customerSnap.exists() ? customerSnap.data() : {}
+    const currentPoints = Math.max(0, Number(existing.points || 0))
+    const nextPoints = Math.max(0, currentPoints - earned + redeemed)
+
+    transaction.set(customerRef, {
+      points: nextPoints,
+      total_earned: Math.max(0, Number(existing.total_earned || 0) - earned),
+      total_redeemed: Math.max(0, Number(existing.total_redeemed || 0) - redeemed),
+      updated_at: serverTimestamp(),
+    }, { merge: true })
+    transaction.update(orderRef, { loyalty_reversed: true })
+    summary = { earned: 0, redeemed: 0, balance: nextPoints }
+  })
+
+  return summary
 }
 
 export async function updateOrderStatus(restaurantId: string, orderId: string, status: OrderStatus) {
   const orderRef = doc(db, 'restaurants', restaurantId, 'orders', orderId)
   const orderSnap = await getDoc(orderRef)
+  let loyaltySummary: LoyaltySummary | null = null
 
   if (orderSnap.exists()) {
     const data = orderSnap.data() as { items?: OrderItem[]; inventory_applied?: boolean }
@@ -181,10 +249,18 @@ export async function updateOrderStatus(restaurantId: string, orderId: string, s
   }
 
   if (status === 'completed') {
-    await applyLoyaltyForCompletedOrder(restaurantId, orderId)
+    loyaltySummary = await applyLoyaltyForCompletedOrder(restaurantId, orderId)
+  } else if (status === 'cancelled') {
+    loyaltySummary = await reverseLoyaltyForCancelledOrder(restaurantId, orderId)
   }
 
-  await updateDoc(doc(db, 'restaurants', restaurantId, 'order_status', orderId), { status })
+  const publicStatusUpdate: Record<string, unknown> = { status }
+  if (loyaltySummary) {
+    publicStatusUpdate.loyalty_points_earned = loyaltySummary.earned
+    publicStatusUpdate.loyalty_points_redeemed = loyaltySummary.redeemed
+    publicStatusUpdate.loyalty_balance = loyaltySummary.balance
+  }
+  await updateDoc(doc(db, 'restaurants', restaurantId, 'order_status', orderId), publicStatusUpdate)
 }
 
 export function subscribeToOrders(restaurantId: string, onChange: (orders: Order[]) => void) {
