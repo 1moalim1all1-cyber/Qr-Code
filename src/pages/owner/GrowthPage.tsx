@@ -63,7 +63,7 @@ export default function GrowthPage() {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [loyalty, setLoyalty] = useState({ enabled: true, points_per_egp: 1, reward_threshold: 100, reward_value: 10 })
+  const [loyalty, setLoyalty] = useState({ enabled: false, points_per_egp: 1, reward_threshold: 100, reward_value: 10 })
   const [zones, setZones] = useState<DeliveryZone[]>([])
   const [inventory, setInventory] = useState<Record<string, { stock: string; reorder: string }>>({})
 
@@ -81,7 +81,7 @@ export default function GrowthPage() {
         setProducts(productRows as InventoryProduct[])
         const savedLoyalty = r.growth?.loyalty
         setLoyalty({
-          enabled: savedLoyalty?.enabled ?? true,
+          enabled: savedLoyalty?.enabled === true,
           points_per_egp: Number(savedLoyalty?.points_per_egp ?? 1),
           reward_threshold: Number(savedLoyalty?.reward_threshold ?? 100),
           reward_value: Number(savedLoyalty?.reward_value ?? 10),
@@ -157,7 +157,7 @@ export default function GrowthPage() {
       }
       await updateRestaurant(restaurant.id, { growth } as unknown as Partial<Restaurant>)
       setRestaurant({ ...restaurant, growth })
-      setMessage('تم حفظ إعدادات الولاء ومناطق التوصيل ✓')
+      setMessage(loyalty.enabled ? 'تم حفظ الإعدادات وتفعيل نقاط الولاء ✓' : 'تم حفظ الإعدادات — نقاط الولاء غير مفعلة')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'تعذّر الحفظ')
     } finally {
@@ -239,7 +239,7 @@ export default function GrowthPage() {
           <Card title="برنامج الولاء" icon={Gift}>
             <div className="space-y-4">
               <label className="flex items-center justify-between rounded-2xl bg-[#f7f3ec] px-4 py-3">
-                <span><b>تفعيل نقاط الولاء</b><small className="block text-stone mt-1">النقاط محسوبة تلقائيًا من الطلبات المكتملة</small></span>
+                <span><b>تفعيل نقاط الولاء</b><small className="block text-stone mt-1">مقفولة افتراضيًا ولن تظهر للعملاء إلا بعد ما تفعّلها بنفسك وتحفظ الإعدادات.</small></span>
                 <input type="checkbox" checked={loyalty.enabled} onChange={(e) => setLoyalty((v) => ({ ...v, enabled: e.target.checked }))} className="w-5 h-5" />
               </label>
               <div className="grid sm:grid-cols-3 gap-3">
@@ -257,7 +257,7 @@ export default function GrowthPage() {
             <table className="w-full text-sm min-w-[720px]">
               <thead><tr className="text-stone border-b border-black/10"><th className="text-right py-3">العميل</th><th>الموبايل</th><th>الطلبات</th><th>إجمالي الشراء</th><th>النقاط</th><th>آخر طلب</th></tr></thead>
               <tbody>{customers.length === 0 ? <tr><td colSpan={6}><Empty text="العملاء هيظهروا هنا تلقائيًا بعد أول طلب." /></td></tr> : customers.map((c) => (
-                <tr key={c.key} className="border-b border-black/5"><td className="py-3 font-semibold">{c.name}</td><td className="text-center">{c.phone || '—'}</td><td className="text-center">{c.orders}</td><td className="text-center">{money(c.spend)}</td><td className="text-center font-semibold text-[#8d7444]">{Math.floor(c.spend * Math.max(0, loyalty.points_per_egp || 0)).toLocaleString('ar-EG')}</td><td className="text-center">{c.lastOrder ? new Date(c.lastOrder).toLocaleDateString('ar-EG') : '—'}</td></tr>
+                <tr key={c.key} className="border-b border-black/5"><td className="py-3 font-semibold">{c.name}</td><td className="text-center">{c.phone || '—'}</td><td className="text-center">{c.orders}</td><td className="text-center">{money(c.spend)}</td><td className="text-center font-semibold text-[#8d7444]">{loyalty.enabled ? Math.floor(c.spend * Math.max(0, loyalty.points_per_egp || 0)).toLocaleString('ar-EG') : 'غير مفعّل'}</td><td className="text-center">{c.lastOrder ? new Date(c.lastOrder).toLocaleDateString('ar-EG') : '—'}</td></tr>
               ))}</tbody>
             </table>
           </div>
