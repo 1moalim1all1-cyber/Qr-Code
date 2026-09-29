@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { CheckCircle2, ChefHat, PackageCheck, XCircle, Clock, ArrowRight } from 'lucide-react'
+import { CheckCircle2, ChefHat, PackageCheck, XCircle, Clock, ArrowRight, Gift } from 'lucide-react'
 import { getRestaurantBySlug } from '@/services/restaurants'
 import { subscribeToOrderStatus } from '@/services/orders'
 import type { OrderStatusPublic, OrderStatus } from '@/types/database'
@@ -20,9 +20,15 @@ const ORDER_TYPE_LABEL: Record<string, string> = {
   whatsapp: 'واتساب',
 }
 
+type LoyaltyOrderStatus = OrderStatusPublic & {
+  loyalty_points_earned?: number
+  loyalty_points_redeemed?: number
+  loyalty_balance?: number | null
+}
+
 export default function OrderTrackingPage() {
   const { slug, orderId } = useParams<{ slug: string; orderId: string }>()
-  const [status, setStatus] = useState<OrderStatusPublic | null>(null)
+  const [status, setStatus] = useState<LoyaltyOrderStatus | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -32,7 +38,7 @@ export default function OrderTrackingPage() {
     getRestaurantBySlug(slug)
       .then((r) => {
         unsubscribe = subscribeToOrderStatus(r.id, orderId, (s) => {
-          setStatus(s)
+          setStatus(s as LoyaltyOrderStatus | null)
           setLoading(false)
         })
       })
@@ -61,6 +67,10 @@ export default function OrderTrackingPage() {
 
   const isCancelled = status.status === 'cancelled'
   const currentStepIndex = STEPS.findIndex((s) => s.status === status.status)
+  const earned = Math.max(0, Number(status.loyalty_points_earned || 0))
+  const redeemed = Math.max(0, Number(status.loyalty_points_redeemed || 0))
+  const balance = status.loyalty_balance == null ? null : Math.max(0, Number(status.loyalty_balance || 0))
+  const showLoyalty = status.status === 'completed' && (earned > 0 || redeemed > 0 || balance != null)
 
   return (
     <div className="min-h-screen bg-ink text-paper flex flex-col items-center px-6 py-12">
@@ -116,6 +126,18 @@ export default function OrderTrackingPage() {
             <span>{status.total} ج.م</span>
           </div>
         </div>
+
+        {showLoyalty && (
+          <div className="rounded-2xl bg-saffron/10 border border-saffron/20 p-4 mt-4">
+            <div className="flex items-center gap-2 text-saffron mb-2">
+              <Gift size={18} />
+              <p className="font-semibold text-sm">نقاط الولاء</p>
+            </div>
+            {earned > 0 && <div className="flex justify-between text-sm py-1"><span className="text-stone-light">نقاط مكتسبة</span><strong>+{earned.toLocaleString('ar-EG')}</strong></div>}
+            {redeemed > 0 && <div className="flex justify-between text-sm py-1"><span className="text-stone-light">نقاط مستخدمة</span><strong>-{redeemed.toLocaleString('ar-EG')}</strong></div>}
+            {balance != null && <div className="flex justify-between text-sm pt-2 mt-1 border-t border-saffron/20"><span>رصيدك الحالي</span><strong className="text-saffron">{balance.toLocaleString('ar-EG')} نقطة</strong></div>}
+          </div>
+        )}
 
         {slug && (
           <Link
