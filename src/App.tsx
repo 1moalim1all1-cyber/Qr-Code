@@ -5,6 +5,7 @@ import FloatingContact from './components/public/FloatingContact'
 import SiteFooterLinks from './components/public/SiteFooterLinks'
 import GlobalSiteAnalyticsTracker from './components/analytics/GlobalSiteAnalyticsTracker'
 import AdminAnalyticsShortcut from './components/admin/AdminAnalyticsShortcut'
+import GrowthShortcut from './components/owner/GrowthShortcut'
 import QRFlowController from './components/menu/QRFlowController'
 
 const LandingPage = lazy(() => import('./pages/public/LandingPage'))
@@ -34,6 +35,7 @@ const SettingsPage = lazy(() => import('./pages/owner/SettingsPage'))
 const OrdersPage = lazy(() => import('./pages/owner/OrdersPage'))
 const OffersPage = lazy(() => import('./pages/owner/OffersPage'))
 const DataToolsPage = lazy(() => import('./pages/owner/DataToolsPage'))
+const GrowthPage = lazy(() => import('./pages/owner/GrowthPage'))
 const AdminHomePage = lazy(() => import('./pages/admin/AdminHomePage'))
 const AdminCreateClientPage = lazy(() => import('./pages/admin/AdminCreateClientPage'))
 const AdminCatalogPage = lazy(() => import('./pages/admin/AdminCatalogPage'))
@@ -78,6 +80,7 @@ function App() {
         <Route path="/dashboard/orders" element={<ProtectedRoute allowedRoles={['owner', 'staff']}><OrdersPage /></ProtectedRoute>} />
         <Route path="/dashboard/offers" element={<ProtectedRoute allowedRoles={['owner', 'staff']}><OffersPage /></ProtectedRoute>} />
         <Route path="/dashboard/data" element={<ProtectedRoute allowedRoles={['owner', 'staff']}><DataToolsPage /></ProtectedRoute>} />
+        <Route path="/dashboard/growth" element={<ProtectedRoute allowedRoles={['owner', 'staff']}><GrowthPage /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute allowedRoles={['super_admin']}><AdminHomePage /></ProtectedRoute>} />
         <Route path="/admin/analytics" element={<ProtectedRoute allowedRoles={['super_admin']}><AdminAnalyticsPage /></ProtectedRoute>} />
         <Route path="/admin/catalog" element={<ProtectedRoute allowedRoles={['super_admin']}><AdminCatalogPage /></ProtectedRoute>} />
@@ -93,6 +96,7 @@ function App() {
       </Routes>
       <SiteFooterLinks />
       <FloatingContact />
+      <GrowthShortcut />
       <AdminAnalyticsShortcut />
     </Suspense>
   )
