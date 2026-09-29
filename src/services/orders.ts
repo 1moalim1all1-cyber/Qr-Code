@@ -50,12 +50,10 @@ export async function createOrder(restaurantId: string, input: CreateOrderInput)
     table_label: input.tableLabel ?? null,
     notes: input.notes ?? null,
     status: 'pending',
+    inventory_applied: false,
     created_at: serverTimestamp(),
   })
 
-  // A public, non-sensitive companion doc (no customer name/phone/address/location) with the
-  // SAME id as the order, so a customer can check "where's my order" via a
-  // simple link without needing an account or exposing anyone else's data.
   const itemsSummary = cleanItems.map((it) => `${it.quantity}× ${it.name}`).join('، ')
   await setDoc(doc(db, 'restaurants', restaurantId, 'order_status', docRef.id), {
     restaurant_id: restaurantId,
@@ -77,14 +75,55 @@ export async function listOrders(restaurantId: string) {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() })) as unknown as Order[]
 }
 
+async function applyInventoryForOrder(
+  restaurantId: string,
+  items: OrderItem[],
+  direction: 'subtract' | 'restore',
+) {
+  const quantities = new Map<string, number>()
+  items.forEach((item) => {
+    if (!item.product_id) return
+    quantities.set(item.product_id, (quantities.get(item.product_id) || 0) + Number(item.quantity || 0))
+  })
+
+  await Promise.all([...quantities.entries()].map(async ([productId, quantity]) => {
+    const productRef = doc(db, 'restaurants', restaurantId, 'products', productId)
+    const productSnap = await getDoc(productRef)
+    if (!productSnap.exists()) return
+    const data = productSnap.data()
+    if (typeof data.stock_quantity !== 'number') return
+    const nextStock = direction === 'subtract'
+      ? Math.max(0, data.stock_quantity - quantity)
+      : data.stock_quantity + quantity
+    await updateDoc(productRef, { stock_quantity: nextStock })
+  }))
+}
+
 export async function updateOrderStatus(restaurantId: string, orderId: string, status: OrderStatus) {
-  await updateDoc(doc(db, 'restaurants', restaurantId, 'orders', orderId), { status })
+  const orderRef = doc(db, 'restaurants', restaurantId, 'orders', orderId)
+  const orderSnap = await getDoc(orderRef)
+
+  if (orderSnap.exists()) {
+    const data = orderSnap.data() as { items?: OrderItem[]; inventory_applied?: boolean }
+    const items = data.items ?? []
+    const inventoryApplied = data.inventory_applied === true
+
+    if (status === 'completed' && !inventoryApplied) {
+      await applyInventoryForOrder(restaurantId, items, 'subtract')
+      await updateDoc(orderRef, { status, inventory_applied: true })
+    } else if (status === 'cancelled' && inventoryApplied) {
+      await applyInventoryForOrder(restaurantId, items, 'restore')
+      await updateDoc(orderRef, { status, inventory_applied: false })
+    } else {
+      await updateDoc(orderRef, { status })
+    }
+  } else {
+    await updateDoc(orderRef, { status })
+  }
+
   await updateDoc(doc(db, 'restaurants', restaurantId, 'order_status', orderId), { status })
 }
 
-// Real-time subscription — used by OrdersPage so a restaurant owner sees new
-// orders (and a notification) the moment a customer places one, without
-// needing to refresh the page.
 export function subscribeToOrders(restaurantId: string, onChange: (orders: Order[]) => void) {
   const q = query(ordersRef(restaurantId), orderBy('created_at', 'desc'))
   return onSnapshot(q, (snap) => {
@@ -93,8 +132,6 @@ export function subscribeToOrders(restaurantId: string, onChange: (orders: Order
   })
 }
 
-// Used by the public order-tracking page — a customer polls/subscribes to
-// this by the order ID they were given right after checkout.
 export function subscribeToOrderStatus(
   restaurantId: string,
   orderId: string,
