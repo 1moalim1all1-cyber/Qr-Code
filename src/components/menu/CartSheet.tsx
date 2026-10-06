@@ -8,12 +8,43 @@ import { validateCoupon } from '@/services/coupons'
 import { getLoyaltyBalance, normalizeCustomerPhone } from '@/services/loyalty'
 import type { Restaurant, OrderType } from '@/types/database'
 
-const ORDER_TYPES: { value: OrderType; label: string; icon: typeof UtensilsCrossed }[] = [
-  { value: 'dine_in', label: 'داخل المطعم', icon: UtensilsCrossed },
+const BASE_ORDER_TYPES: { value: OrderType; label: string; icon: typeof UtensilsCrossed }[] = [
+  { value: 'dine_in', label: 'داخل المكان', icon: UtensilsCrossed },
   { value: 'pickup', label: 'استلام', icon: ShoppingBag },
   { value: 'delivery', label: 'دليفري', icon: Truck },
   { value: 'whatsapp', label: 'واتساب', icon: MessageCircle },
 ]
+
+function getBusinessOrderLabels(restaurant: Restaurant) {
+  const text = `${restaurant.business_type || ''} ${restaurant.business_type_name || ''}`.toLowerCase()
+
+  if (/cafe|coffee|كافيه|قهوة|كوفي/.test(text)) {
+    return { dineIn: 'داخل الكافيه', reference: 'رقم الطاولة (اختياري)', referenceMessage: 'الطاولة' }
+  }
+  if (/restaurant|food|مطعم|مأكولات|اكل|أكل/.test(text)) {
+    return { dineIn: 'داخل المطعم', reference: 'رقم الطاولة (اختياري)', referenceMessage: 'الطاولة' }
+  }
+  if (/salon|beauty|barber|spa|صالون|حلاق|تجميل|سبا/.test(text)) {
+    return { dineIn: 'داخل الصالون', reference: 'ملاحظة الحجز (اختياري)', referenceMessage: 'تفاصيل الحجز' }
+  }
+  if (/gym|fitness|club|جيم|نادي|لياقة/.test(text)) {
+    return { dineIn: 'داخل النادي', reference: 'ملاحظة الحجز (اختياري)', referenceMessage: 'تفاصيل الحجز' }
+  }
+  if (/supermarket|grocery|market|سوبر|بقالة|ماركت/.test(text)) {
+    return { dineIn: 'شراء من المحل', reference: 'ملاحظة للطلب (اختياري)', referenceMessage: 'ملاحظة الاستلام' }
+  }
+  if (/cosmetic|makeup|perfume|مستحضرات|تجميل|عطور/.test(text)) {
+    return { dineIn: 'شراء من المحل', reference: 'ملاحظة للطلب (اختياري)', referenceMessage: 'ملاحظة الاستلام' }
+  }
+  if (/mobile|phone|electronics|موبايل|هواتف|الكترون|إلكترون/.test(text)) {
+    return { dineIn: 'شراء من المحل', reference: 'ملاحظة للطلب (اختياري)', referenceMessage: 'ملاحظة الاستلام' }
+  }
+  if (/clothes|fashion|shop|store|retail|ملابس|محل|متجر|معرض/.test(text)) {
+    return { dineIn: 'شراء من المحل', reference: 'ملاحظة للطلب (اختياري)', referenceMessage: 'ملاحظة الاستلام' }
+  }
+
+  return { dineIn: 'داخل المحل', reference: 'ملاحظة (اختياري)', referenceMessage: 'ملاحظة' }
+}
 
 type LocationStatus = 'idle' | 'loading' | 'success' | 'error'
 type DeliveryZone = { id: string; name: string; fee: number; min_order: number; active: boolean }
@@ -30,6 +61,10 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
   const loyaltyConfig = growth?.loyalty
   const loyaltyEnabled = loyaltyConfig?.enabled === true
   const activeZones = useMemo(() => (growth?.delivery_zones ?? []).filter((zone) => zone.active !== false), [growth?.delivery_zones])
+  const businessOrderLabels = useMemo(() => getBusinessOrderLabels(restaurant), [restaurant])
+  const orderTypes = useMemo(() => BASE_ORDER_TYPES.map((type) => (
+    type.value === 'dine_in' ? { ...type, label: businessOrderLabels.dineIn } : type
+  )), [businessOrderLabels.dineIn])
 
   const [orderType, setOrderType] = useState<OrderType>('dine_in')
   const [tableLabel, setTableLabel] = useState('')
@@ -222,6 +257,8 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
           selectedZone?.name || '',
           deliveryFee,
           loyaltyDiscountAmount,
+          businessOrderLabels.dineIn,
+          businessOrderLabels.referenceMessage,
         )
         const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`
         if (whatsappWindow && !whatsappWindow.closed) whatsappWindow.location.href = whatsappUrl
@@ -290,10 +327,10 @@ export default function CartSheet({ restaurant, onClose }: { restaurant: Restaur
 
             <p className="text-sm font-medium mb-2">طريقة الاستلام</p>
             <div className="grid grid-cols-4 gap-2 mb-4">
-              {ORDER_TYPES.map((t) => <button key={t.value} onClick={() => selectOrderType(t.value)} className={`flex flex-col items-center gap-1 rounded-xl py-2.5 text-xs transition-colors ${orderType === t.value ? 'bg-saffron text-ink' : 'bg-white/5 text-paper hover:bg-stone-light/30'}`}><t.icon size={16} />{t.label}</button>)}
+              {orderTypes.map((t) => <button key={t.value} onClick={() => selectOrderType(t.value)} className={`flex flex-col items-center gap-1 rounded-xl py-2.5 text-xs transition-colors ${orderType === t.value ? 'bg-saffron text-ink' : 'bg-white/5 text-paper hover:bg-stone-light/30'}`}><t.icon size={16} />{t.label}</button>)}
             </div>
 
-            {orderType === 'dine_in' && <input value={tableLabel} onChange={(e) => setTableLabel(e.target.value)} placeholder="رقم الطاولة (اختياري)" className="w-full rounded-xl border border-saffron/50 bg-white/5 px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-saffron/40" />}
+            {orderType === 'dine_in' && <input value={tableLabel} onChange={(e) => setTableLabel(e.target.value)} placeholder={businessOrderLabels.reference} className="w-full rounded-xl border border-saffron/50 bg-white/5 px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-saffron/40" />}
 
             {(orderType === 'pickup' || orderType === 'delivery' || orderType === 'whatsapp') && (
               <div className="grid grid-cols-2 gap-2 mb-3">
@@ -375,8 +412,12 @@ function buildWhatsappMessage(
   deliveryZoneName: string,
   deliveryFee: number,
   loyaltyDiscount: number,
+  dineInLabel: string,
+  dineInReferenceLabel: string,
 ) {
-  const typeLabel = ORDER_TYPES.find((type) => type.value === orderType)?.label ?? orderType
+  const typeLabel = orderType === 'dine_in'
+    ? dineInLabel
+    : BASE_ORDER_TYPES.find((type) => type.value === orderType)?.label ?? orderType
   const lines = items.map((it) => {
     const sizeText = it.size ? ` - ${it.size}` : ''
     const extrasText = (it.extras ?? []).length ? ` (${(it.extras ?? []).map((e) => e.name).join('، ')})` : ''
@@ -393,7 +434,7 @@ function buildWhatsappMessage(
     deliveryZoneName ? `منطقة التوصيل: ${deliveryZoneName}` : '',
     customerAddress ? `العنوان: ${customerAddress}` : '',
     customerMapUrl ? `الموقع على الخريطة: ${customerMapUrl}` : '',
-    orderType === 'dine_in' && tableLabel ? `الطاولة: ${tableLabel}` : '',
+    orderType === 'dine_in' && tableLabel ? `${dineInReferenceLabel}: ${tableLabel}` : '',
     '',
     ...lines,
     '',
