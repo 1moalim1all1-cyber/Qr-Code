@@ -423,11 +423,11 @@ export default function MenuPage({ restaurantIdOverride, backTo = '/dashboard' }
             {categories.map((cat, index) => (
               <li key={cat.id} className="group flex items-center gap-1">
                 <button onClick={() => setActiveCategoryId(cat.id)} className={`flex-1 text-right rounded-lg px-3 py-2 text-sm transition-colors ${activeCategoryId === cat.id ? 'bg-saffron/15 text-saffron-dim font-medium' : 'hover:bg-paper-dim'}`}>{cat.name.ar}{!cat.is_visible && <span className="text-stone-light text-xs mr-1">(مخفي)</span>}</button>
-                <div className="hidden group-hover:flex items-center gap-0.5">
-                  <button onClick={() => handleMoveCategory(index, -1)} className="p-1 text-stone hover:text-ink" aria-label="لأعلى"><ChevronUp size={14} /></button>
-                  <button onClick={() => handleMoveCategory(index, 1)} className="p-1 text-stone hover:text-ink" aria-label="لأسفل"><ChevronDown size={14} /></button>
-                  <button onClick={() => setCategoryModal({ open: true, editing: cat })} className="p-1 text-stone hover:text-ink" aria-label="تعديل"><Pencil size={14} /></button>
-                  <button onClick={() => handleDeleteCategory(cat.id)} className="p-1 text-stone hover:text-sumac" aria-label="حذف"><Trash2 size={14} /></button>
+                <div className="flex items-center gap-0.5 shrink-0">
+                  <button onClick={() => handleMoveCategory(index, -1)} className="p-1 text-stone hover:text-ink" aria-label="لأعلى" title="تحريك لأعلى"><ChevronUp size={14} /></button>
+                  <button onClick={() => handleMoveCategory(index, 1)} className="p-1 text-stone hover:text-ink" aria-label="لأسفل" title="تحريك لأسفل"><ChevronDown size={14} /></button>
+                  <button onClick={() => setCategoryModal({ open: true, editing: cat })} className="p-1 text-stone hover:text-ink" aria-label="تعديل" title="تعديل القسم"><Pencil size={14} /></button>
+                  <button onClick={() => handleDeleteCategory(cat.id)} className="p-1.5 rounded-lg bg-sumac/10 text-sumac hover:bg-sumac/20" aria-label="حذف القسم" title="حذف القسم"><Trash2 size={15} /></button>
                 </div>
               </li>
             ))}
