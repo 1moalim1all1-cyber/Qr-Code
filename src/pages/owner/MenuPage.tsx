@@ -55,6 +55,8 @@ export default function MenuPage({ restaurantIdOverride, backTo = '/dashboard' }
   const [bulkBusy, setBulkBusy] = useState(false)
   const [bulkPercent, setBulkPercent] = useState('')
   const [duplicatingCategory, setDuplicatingCategory] = useState(false)
+  const [movingProductId, setMovingProductId] = useState<string | null>(null)
+  const [bulkTargetCategoryId, setBulkTargetCategoryId] = useState('')
 
   const loadCategories = useCallback(async (restaurantId: string) => {
     const data = await listCategories(restaurantId)
@@ -144,6 +146,40 @@ export default function MenuPage({ restaurantIdOverride, backTo = '/dashboard' }
       })
     } catch (err) {
       setPageError(err instanceof Error ? err.message : 'حصل خطأ، حاول تاني')
+    }
+  }
+
+  async function moveProductToCategory(product: Product, categoryId: string) {
+    if (!restaurant || !categoryId || categoryId === product.category_id) return
+    const targetCategory = categories.find((c) => c.id === categoryId)
+    setMovingProductId(product.id)
+    setPageError(null)
+    try {
+      await updateProduct(restaurant.id, product.id, { category_id: categoryId })
+      setProducts((current) => current.map((p) => p.id === product.id ? { ...p, category_id: categoryId } : p))
+      flashMessage(`تم نقل ${product.name.ar} إلى ${targetCategory?.name.ar ?? 'القسم الجديد'}`)
+    } catch (err) {
+      setPageError(err instanceof Error ? err.message : 'تعذر نقل المنتج')
+    } finally {
+      setMovingProductId(null)
+    }
+  }
+
+  async function moveSelectedProducts() {
+    if (!restaurant || selectedProducts.length === 0 || !bulkTargetCategoryId) return
+    const targetCategory = categories.find((c) => c.id === bulkTargetCategoryId)
+    setBulkBusy(true)
+    setPageError(null)
+    try {
+      await Promise.all(selectedProducts.map((p) => updateProduct(restaurant.id, p.id, { category_id: bulkTargetCategoryId })))
+      setProducts((current) => current.map((p) => selectedIds.has(p.id) ? { ...p, category_id: bulkTargetCategoryId } : p))
+      flashMessage(`تم نقل ${selectedProducts.length} منتج إلى ${targetCategory?.name.ar ?? 'القسم الجديد'}`, 3000)
+      setSelectedIds(new Set())
+      setBulkTargetCategoryId('')
+    } catch (err) {
+      setPageError(err instanceof Error ? err.message : 'تعذر نقل المنتجات')
+    } finally {
+      setBulkBusy(false)
     }
   }
 
@@ -479,6 +515,13 @@ export default function MenuPage({ restaurantIdOverride, backTo = '/dashboard' }
                 <button disabled={bulkBusy} onClick={() => setSelectedAvailability(true)} className="rounded-full bg-zaytoon px-3 py-2 text-xs flex items-center gap-1"><Eye size={14} /> إظهار</button>
                 <button disabled={bulkBusy} onClick={() => setSelectedAvailability(false)} className="rounded-full bg-sumac px-3 py-2 text-xs flex items-center gap-1"><EyeOff size={14} /> إخفاء</button>
                 <div className="flex items-center gap-1 bg-white/10 rounded-full p-1">
+                  <select value={bulkTargetCategoryId} onChange={(e) => setBulkTargetCategoryId(e.target.value)} className="bg-[#272822] text-paper rounded-full px-3 py-1.5 text-xs outline-none">
+                    <option value="">انقل لقسم...</option>
+                    {categories.map((c) => <option key={c.id} value={c.id}>{c.name.ar}</option>)}
+                  </select>
+                  <button disabled={bulkBusy || !bulkTargetCategoryId} onClick={moveSelectedProducts} className="rounded-full bg-saffron text-ink px-3 py-1.5 text-xs font-bold disabled:opacity-40">نقل</button>
+                </div>
+                <div className="flex items-center gap-1 bg-white/10 rounded-full p-1">
                   <Percent size={14} className="mr-2 text-saffron" />
                   <input value={bulkPercent} onChange={(e) => setBulkPercent(e.target.value)} type="number" placeholder="10 أو -10" className="w-24 bg-transparent px-2 py-1 text-xs outline-none placeholder:text-white/35" />
                   <button disabled={bulkBusy || !bulkPercent} onClick={applyBulkPercent} className="rounded-full bg-saffron text-ink px-3 py-1.5 text-xs font-bold">تطبيق السعر</button>
@@ -517,7 +560,19 @@ export default function MenuPage({ restaurantIdOverride, backTo = '/dashboard' }
                         {p.discount_price ? <p className="text-[11px] text-saffron-dim mt-1">سعر الخصم الحالي: {p.discount_price} ج.م</p> : null}
                       </div>
                     </div>
-                    <div className="mt-4 pt-3 border-t border-stone-light/20 flex items-center justify-between gap-2"><span className={`text-xs font-medium ${p.is_available ? 'text-zaytoon' : 'text-sumac'}`}>{p.is_available ? 'ظاهر للعملاء' : 'مخفي من المنيو'}</span><div className="flex items-center gap-2"><button disabled={duplicatingId === p.id} onClick={() => duplicateProduct(p)} className="rounded-full bg-saffron/10 text-saffron-dim px-3 py-2 text-xs flex items-center gap-1 disabled:opacity-40"><Copy size={14} /> {duplicatingId === p.id ? 'نسخ...' : 'تكرار'}</button><button onClick={() => setProductModal({ open: true, editing: p })} className="rounded-full bg-paper-dim px-3 py-2 text-xs flex items-center gap-1"><Pencil size={14} /> التفاصيل</button><button onClick={() => handleDeleteProduct(p.id)} className="rounded-full bg-sumac/10 text-sumac p-2"><Trash2 size={15} /></button></div></div>
+                    <div className="mt-4 pt-3 border-t border-stone-light/20 flex flex-col gap-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className={`text-xs font-medium ${p.is_available ? 'text-zaytoon' : 'text-sumac'}`}>{p.is_available ? 'ظاهر للعملاء' : 'مخفي من المنيو'}</span>
+                        <div className="flex items-center gap-2"><button disabled={duplicatingId === p.id} onClick={() => duplicateProduct(p)} className="rounded-full bg-saffron/10 text-saffron-dim px-3 py-2 text-xs flex items-center gap-1 disabled:opacity-40"><Copy size={14} /> {duplicatingId === p.id ? 'نسخ...' : 'تكرار'}</button><button onClick={() => setProductModal({ open: true, editing: p })} className="rounded-full bg-paper-dim px-3 py-2 text-xs flex items-center gap-1"><Pencil size={14} /> التفاصيل</button><button onClick={() => handleDeleteProduct(p.id)} className="rounded-full bg-sumac/10 text-sumac p-2"><Trash2 size={15} /></button></div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] text-stone shrink-0">نقل إلى:</span>
+                        <select disabled={movingProductId === p.id} value={p.category_id ?? ''} onChange={(e) => moveProductToCategory(p, e.target.value)} className="flex-1 rounded-xl border border-stone-light/30 bg-paper px-3 py-2 text-xs outline-none focus:border-saffron disabled:opacity-50">
+                          {categories.map((c) => <option key={c.id} value={c.id}>{c.name.ar}</option>)}
+                        </select>
+                        {movingProductId === p.id && <span className="text-[11px] text-saffron-dim">جارِ النقل...</span>}
+                      </div>
+                    </div>
                   </div>
                 )
               })}
