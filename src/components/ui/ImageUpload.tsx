@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { ImagePlus, X, Loader2 } from 'lucide-react'
 import { uploadImage } from '@/lib/cloudinary'
+import { uploadSteadyImage } from '@/lib/steadylink'
 
 interface ImageUploadProps {
   label: string
@@ -20,8 +21,16 @@ export default function ImageUpload({ label, value, onChange, folder, aspect = '
     setError(null)
     setUploading(true)
     try {
-      const result = await uploadImage(file, folder)
-      onChange(result.url)
+      const useSteady = import.meta.env.VITE_IMAGE_UPLOAD_PROVIDER === 'steadylink'
+      const restaurantId = /^restaurants\/([^/]+)(?:\/|$)/.exec(folder || '')?.[1]
+      if (useSteady) {
+        if (!restaurantId) throw new Error('مش قادر أحدد المتجر لرفع الصورة')
+        const url = await uploadSteadyImage(file, restaurantId)
+        onChange(url)
+      } else {
+        const result = await uploadImage(file, folder)
+        onChange(result.url)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'فشل رفع الصورة')
     } finally {
