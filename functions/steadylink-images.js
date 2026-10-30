@@ -22,9 +22,9 @@ async function authorized(uid, restaurantId) {
   if (!admin && !owner) throw new HttpsError('permission-denied','Not authorized for this restaurant');
   return db;
 }
-async function steady(path, method, body) {
+async function steady(path, method, body, extraHeaders = {}) {
   const response = await fetch(API + path, {
-    method, headers: { 'X-API-Key': key.value(), 'Content-Type': 'application/json' },
+    method, headers: { 'X-API-Key': key.value(), 'Content-Type': 'application/json', ...extraHeaders },
     ...(body ? { body: JSON.stringify(body) } : {})
   });
   const raw = await response.text();
@@ -61,7 +61,7 @@ exports.finishSteadyImageUpload = onCall({ secrets: [key], maxInstances: 5 }, as
   const record = await ref.get();
   if (!record.exists || record.data().uid !== request.auth.uid) throw new HttpsError('permission-denied','Unauthorized upload');
   await authorized(request.auth.uid, record.data().restaurantId);
-  await steady('/api/upload-sessions/' + encodeURIComponent(sessionId) + '/complete', 'POST', {});
+  await steady('/api/upload-sessions/' + encodeURIComponent(sessionId) + '/complete', 'POST', {}, { 'Idempotency-Key': 'complete-' + sessionId });
   const batch = await steady('/api/upload-batches/' + encodeURIComponent(record.data().batchId), 'GET');
   const file = batch.files?.find(f => f.id === sessionId);
   if (file?.status !== 'ready') return { status: file?.status || 'processing' };
