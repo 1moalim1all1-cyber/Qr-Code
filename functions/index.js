@@ -103,3 +103,6 @@ exports.deleteClientCompletely = onCall(async (request) => {
 
   return { ok: true }
 })
+
+// SteadyLink image upload endpoints (server-only; no API key in client bundle)
+Object.assign(exports, require('./steadylink-images'))
