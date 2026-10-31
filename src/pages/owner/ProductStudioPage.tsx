@@ -166,20 +166,20 @@ export default function ProductStudioPage() {
         is_available: form.available,
         is_best_seller: form.bestSeller,
         is_new: form.isNew,
-        is_spicy: false,
-        is_vegetarian: false,
+        is_spicy: editing?.is_spicy ?? false,
+        is_vegetarian: editing?.is_vegetarian ?? false,
         is_featured: form.featured,
         images: images.map((url, index) => ({ id: `img-${Date.now()}-${index}`, url, sort_order: index })),
         ingredients: food ? ingredientsText.split(/[،,]/).map(x => x.trim()).filter(Boolean) : (editing?.ingredients || []), allergens: editing?.allergens || [], extras: food ? extrasText.split('،').map(entry => { const [name, value] = entry.split('='); return { name: name?.trim() || '', price: Number(value) } }).filter(e => e.name && Number.isFinite(e.price) && e.price >= 0) : (editing?.extras || []), sizes: editing?.sizes || [],
-        colors, badges, specifications: normalizedSpecs, variants: normalizedVariants,
+        colors: food ? (editing?.colors || []) : colors, badges, specifications: food ? (editing?.specifications || []) : normalizedSpecs, variants: normalizedVariants,
         variant_options: optionNames.map((name) => ({ id: name, label: name, value: name })),
       }
 
       if (editing) await updateProduct(restaurant.id, editing.id, payload)
       else await createProduct(restaurant.id, restaurant.owner_id ?? (adminMode ? null : auth.currentUser?.uid ?? null), payload)
       await load(restaurant.id)
-      setMessage(editing ? 'تم تحديث المنتج بنجاح' : 'تمت إضافة المنتج بنجاح')
       resetForm()
+      setMessage(editing ? 'تم تحديث المنتج بنجاح' : 'تمت إضافة المنتج بنجاح')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'تعذّر حفظ المنتج')
     } finally {
@@ -217,8 +217,8 @@ export default function ProductStudioPage() {
           </div>
 
           <div className="space-y-4">
-            <Field label="اسم المنتج *"><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input" placeholder="مثال: iPhone 17 Pro Max" /></Field>
-            <Field label="الوصف"><textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="input min-h-20" placeholder="256GB – Titanium" /></Field>
+            <Field label="اسم المنتج *"><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input" placeholder={food ? (activity === "cafe" ? "مثال: آيس لاتيه" : "مثال: شاورما فراخ") : "مثال: اسم المنتج"} /></Field>
+            <Field label="الوصف"><textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="input min-h-20" placeholder={food ? "وصف الصنف وطريقة تقديمه" : "وصف المنتج ومميزاته"} /></Field>
             <div className="grid grid-cols-2 gap-3"><Field label="القسم *"><select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })} className="input"><option value="">اختار القسم</option>{categories.map((c) => <option key={c.id} value={c.id}>{c.name.ar}</option>)}</select></Field>{!food && <Field label="الماركة"><input value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} className="input" placeholder="اسم الماركة" /></Field>}</div>
             <div className="grid grid-cols-2 gap-3"><Field label="السعر الحالي *"><input type="number" min="0" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className="input" /></Field><Field label="السعر قبل الخصم"><input type="number" min="0" value={form.compareAtPrice} onChange={(e) => setForm({ ...form, compareAtPrice: e.target.value })} className="input" /></Field></div>
             {!food && <Field label="باركود / SKU عام"><input value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} className="input" /></Field>}
