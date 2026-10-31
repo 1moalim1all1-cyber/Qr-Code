@@ -1,22 +1,51 @@
-import { getFunctions, httpsCallable } from 'firebase/functions'
-import { app } from './firebase'
+import { auth } from './firebase'
 
-const functions = getFunctions(app)
-const start = httpsCallable<{restaurantId:string,size:number,contentType:string},{sessionId:string,uploadUrl:string}>(functions,'beginSteadyImageUpload')
-const finish = httpsCallable<{sessionId:string},{status:string,url?:string}>(functions,'finishSteadyImageUpload')
-const sleep = (ms:number) => new Promise<void>(r => setTimeout(r,ms))
+const WORKER_URL = 'https://misty-dew-76fd.1moalim1all1.workers.dev/upload'
+const MAX_SIZE = 8 * 1024 * 1024
 
-export async function uploadSteadyImage(file:File, restaurantId:string):Promise<string> {
-  if (!['image/jpeg','image/png','image/webp'].includes(file.type)) throw new Error('ارفع صورة JPG أو PNG أو WebP')
-  if (file.size > 8 * 1024 * 1024) throw new Error('حجم الصورة لازم يكون أقل من 8 ميجا')
-  const { data } = await start({restaurantId,size:file.size,contentType:file.type})
-  const response = await fetch(data.uploadUrl,{method:'PUT',headers:{'Content-Type':'application/octet-stream'},body:file})
-  if(!response.ok) throw new Error('فشل نقل الصورة لمساحة التخزين')
-  for(let i=0;i<16;i++){
-    const result = (await finish({sessionId:data.sessionId})).data
-    if(result.status === 'ready' && result.url) return result.url
-    if(['blocked','failed','cancelled'].includes(result.status)) throw new Error('لم يتم قبول الصورة في التخزين')
-    await sleep(1200 + i*350)
+export async function uploadSteadyImage(file: File, restaurantId: string): Promise<string> {
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+    throw new Error('ارفع صورة JPG أو PNG أو WebP')
   }
-  throw new Error('الصورة لسه قيد الفحص؛ حاول تاني بعد شوية')
+  if (!file.size || file.size > MAX_SIZE) {
+    throw new Error('حجم الصورة لازم يكون أقل من 8 ميجا')
+  }
+  if (!/^[A-Za-z0-9_-]{8,128}$/.test(restaurantId)) {
+    throw new Error('معرّف المتجر غير صحيح')
+  }
+  const user = auth.currentUser
+  if (!user) throw new Error('لازم تسجّل دخول قبل رفع الصور')
+
+  const form = new FormData()
+  form.append('file', file, file.name)
+  form.append('restaurantId', restaurantId)
+
+  let response: Response
+  try {
+    response = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${await user.getIdToken()}` },
+      body: form,
+    })
+  } catch {
+    throw new Error('تعذر الاتصال بخدمة الصور. حاول مرة أخرى')
+  }
+  const result = await response.json().catch(() => null) as { url?: string; error?: string } | null
+  if (!response.ok || !result?.url) {
+    const errors: Record<string, string> = {
+      NOT_CONFIGURED: 'خدمة رفع الصور لم تكتمل إعداداتها بعد',
+      ACCESS_DENIED: 'مش مسموح لك ترفع صور للمتجر ده',
+      INVALID_TOKEN: 'انتهت جلسة الدخول؛ سجل دخول مرة تانية',
+      LOGIN_REQUIRED: 'لازم تسجّل دخول',
+      FREE_LIMIT_REACHED: 'الحصة المجانية للصور خلصت. تواصل مع الإدارة',
+      PROCESSING: 'الصورة لسه قيد الفحص؛ حاول لاحقًا',
+      STORAGE_UNAVAILABLE: 'خدمة التخزين غير متاحة حاليًا',
+      FILE_TOO_LARGE: 'الصورة أكبر من الحجم المسموح',
+    }
+    throw new Error(errors[result?.error || ''] || 'تعذر رفع الصورة؛ حاول مرة أخرى')
+  }
+  if (!/^https:\/\/cdn\.steadylink\.io\/a\/[\w-]+$/i.test(result.url)) {
+    throw new Error('رابط الصورة المستلم غير صالح')
+  }
+  return result.url
 }
