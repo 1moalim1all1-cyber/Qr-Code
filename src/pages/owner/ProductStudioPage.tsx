@@ -8,6 +8,7 @@ import { listCategories } from '@/services/categories'
 import { createProduct, deleteProduct, listProducts, updateProduct } from '@/services/products'
 import type { Category, Product, ProductSpecification, ProductVariant, Restaurant } from '@/types/database'
 import ImageUpload from '@/components/ui/ImageUpload'
+import { productActivity, productEditorPresets } from '@/lib/productEditorPresets'
 
 type VariantDraft = { id: string; label: string; price: string; compareAt: string; stock: string; options: string; sku: string }
 type SpecDraft = { name: string; value: string }
@@ -35,6 +36,14 @@ export default function ProductStudioPage() {
   const [images, setImages] = useState<string[]>([])
   const [specs, setSpecs] = useState<SpecDraft[]>([])
   const [variants, setVariants] = useState<VariantDraft[]>([])
+  const activity = productActivity(restaurant?.business_type, restaurant?.business_type_name || '')
+  const food = activity === 'restaurant' || activity === 'cafe'
+  const presets = productEditorPresets[activity]
+  const [ingredientsText, setIngredientsText] = useState('')
+  const [extrasText, setExtrasText] = useState('')
+  function addPreset(labels: readonly string[], key: string) {
+    setVariants(old => [...old, ...labels.filter(label => !old.some(v => v.label === label)).map(label => ({ id: `draft-${crypto.randomUUID()}`, label, options: `${key}=${label}`, price: form.price, compareAt: '', stock: '', sku: '' }))])
+  }
 
   async function load(restaurantId: string) {
     const [cats, prods] = await Promise.all([listCategories(restaurantId), listProducts(restaurantId)])
@@ -70,6 +79,8 @@ export default function ProductStudioPage() {
     setImages([])
     setSpecs([])
     setVariants([])
+    setIngredientsText('')
+    setExtrasText('')
     setError(null)
   }
 
@@ -91,6 +102,8 @@ export default function ProductStudioPage() {
       bestSeller: Boolean(product.is_best_seller),
     })
     setImages((product.images || []).map((i) => i.url))
+    setIngredientsText((product.ingredients || []).join('، '))
+    setExtrasText((product.extras || []).map(e => `${e.name}=${e.price}`).join('، '))
     setSpecs((product.specifications || []).map((s) => ({ name: s.name, value: s.value })))
     setVariants((product.variants || []).map((v) => ({
       id: v.id,
@@ -142,8 +155,8 @@ export default function ProductStudioPage() {
       const optionNames = Array.from(new Set(normalizedVariants.flatMap((v) => Object.keys(v.options))))
       const payload = {
         category_id: form.categoryId,
-        barcode: form.barcode.trim() || null,
-        brand: form.brand.trim() || null,
+        barcode: food ? (editing?.barcode || null) : (form.barcode.trim() || null),
+        brand: food ? (editing?.brand || null) : (form.brand.trim() || null),
         name: { ar: form.name.trim(), en: '' },
         description: { ar: form.description.trim(), en: '' },
         price,
@@ -157,7 +170,7 @@ export default function ProductStudioPage() {
         is_vegetarian: false,
         is_featured: form.featured,
         images: images.map((url, index) => ({ id: `img-${Date.now()}-${index}`, url, sort_order: index })),
-        ingredients: [], allergens: [], extras: [], sizes: [],
+        ingredients: food ? ingredientsText.split(/[،,]/).map(x => x.trim()).filter(Boolean) : (editing?.ingredients || []), allergens: editing?.allergens || [], extras: food ? extrasText.split('،').map(entry => { const [name, value] = entry.split('='); return { name: name?.trim() || '', price: Number(value) } }).filter(e => e.name && Number.isFinite(e.price) && e.price >= 0) : (editing?.extras || []), sizes: editing?.sizes || [],
         colors, badges, specifications: normalizedSpecs, variants: normalizedVariants,
         variant_options: optionNames.map((name) => ({ id: name, label: name, value: name })),
       }
@@ -206,20 +219,29 @@ export default function ProductStudioPage() {
           <div className="space-y-4">
             <Field label="اسم المنتج *"><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input" placeholder="مثال: iPhone 17 Pro Max" /></Field>
             <Field label="الوصف"><textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="input min-h-20" placeholder="256GB – Titanium" /></Field>
-            <div className="grid grid-cols-2 gap-3"><Field label="القسم *"><select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })} className="input"><option value="">اختار القسم</option>{categories.map((c) => <option key={c.id} value={c.id}>{c.name.ar}</option>)}</select></Field><Field label="الماركة"><input value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} className="input" placeholder="Apple" /></Field></div>
+            <div className="grid grid-cols-2 gap-3"><Field label="القسم *"><select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })} className="input"><option value="">اختار القسم</option>{categories.map((c) => <option key={c.id} value={c.id}>{c.name.ar}</option>)}</select></Field>{!food && <Field label="الماركة"><input value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} className="input" placeholder="اسم الماركة" /></Field>}</div>
             <div className="grid grid-cols-2 gap-3"><Field label="السعر الحالي *"><input type="number" min="0" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className="input" /></Field><Field label="السعر قبل الخصم"><input type="number" min="0" value={form.compareAtPrice} onChange={(e) => setForm({ ...form, compareAtPrice: e.target.value })} className="input" /></Field></div>
-            <Field label="باركود / SKU عام"><input value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} className="input" /></Field>
+            {!food && <Field label="باركود / SKU عام"><input value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} className="input" /></Field>}
 
             <div className="rounded-2xl bg-[#f8f5ef] p-4"><div className="flex items-center justify-between mb-3"><div><p className="font-bold text-sm">صور المنتج</p><p className="text-[11px] text-stone mt-1">ارفع أكتر من صورة، وأول صورة هي الرئيسية.</p></div><ImagePlus size={18} className="text-[#a78545]" /></div><div className="flex gap-2 flex-wrap">{images.map((url, i) => <div key={`${url}-${i}`} className="relative w-20 h-20 rounded-xl overflow-hidden border"><img src={url} className="w-full h-full object-cover" alt="" /><button onClick={() => setImages(images.filter((_, idx) => idx !== i))} className="absolute top-1 left-1 bg-black/70 text-white rounded-full p-1"><X size={11} /></button></div>)}<ImageUpload label="" value={null} onChange={(url) => url && setImages([...images, url])} folder={`restaurants/${restaurant.id}/products`} aspect="square" /></div></div>
 
-            <div className="grid grid-cols-2 gap-3"><Field label="الألوان"><input value={form.colors} onChange={(e) => setForm({ ...form, colors: e.target.value })} className="input" placeholder="أسود، أبيض، أزرق" /></Field><Field label="Badges"><input value={form.badges} onChange={(e) => setForm({ ...form, badges: e.target.value })} className="input" placeholder="عرض، حصري" /></Field></div>
+            {food && <EditorBox title="المكونات والإضافات" subtitle="للوجبات والمشروبات فقط">
+              <Field label="المكونات"><input className="input" value={ingredientsText} onChange={e => setIngredientsText(e.target.value)} placeholder="مثال: قهوة، لبن، ثلج" /></Field>
+              <Field label="الإضافات وأسعارها"><input className="input" value={extrasText} onChange={e => setExtrasText(e.target.value)} placeholder="مثال: لبن إضافي=10، صوص=15" /></Field>
+            </EditorBox>}
+            <div className="grid grid-cols-2 gap-3">{!food && <Field label="الألوان"><input value={form.colors} onChange={(e) => setForm({ ...form, colors: e.target.value })} className="input" placeholder="أسود، أبيض، أزرق" /></Field>}<Field label="Badges"><input value={form.badges} onChange={(e) => setForm({ ...form, badges: e.target.value })} className="input" placeholder="عرض، حصري" /></Field></div>
 
-            <EditorBox title="المواصفات" subtitle="مثال: الرام = 8GB">
+            {!food && <EditorBox title="المواصفات" subtitle="مثال: الرام = 8GB">
               {specs.map((s, i) => <div key={i} className="grid grid-cols-[1fr_1fr_auto] gap-2"><input value={s.name} onChange={(e) => setSpecs(specs.map((x, idx) => idx === i ? { ...x, name: e.target.value } : x))} className="input" placeholder="المواصفة" /><input value={s.value} onChange={(e) => setSpecs(specs.map((x, idx) => idx === i ? { ...x, value: e.target.value } : x))} className="input" placeholder="القيمة" /><button onClick={() => setSpecs(specs.filter((_, idx) => idx !== i))}><X size={16} /></button></div>)}
               <button onClick={() => setSpecs([...specs, { name: '', value: '' }])} className="small-action"><Plus size={14} /> إضافة مواصفة</button>
-            </EditorBox>
+            </EditorBox>}
 
-            <EditorBox title="Variants" subtitle="كل سعة/مقاس/لون ممكن يكون له سعر ومخزون مختلف.">
+            <EditorBox title={food ? 'الأحجام والأوزان' : 'الخيارات والمخزون'} subtitle={food ? 'اختار المقاسات والأوزان وحدد السعر لكل اختيار' : 'لكل مقاس أو لون سعر ومخزون'}>
+              {food && <div className="flex flex-wrap gap-2 mb-3">
+                {'sizes' in presets.quickOptions && <button type="button" className="small-action" onClick={() => addPreset(presets.quickOptions.sizes, 'الحجم')}>+ صغير / وسط / كبير</button>}
+                {'volume' in presets.quickOptions && <button type="button" className="small-action" onClick={() => addPreset(presets.quickOptions.volume, 'الحجم')}>+ مل / لتر</button>}
+                {'weight' in presets.quickOptions && <button type="button" className="small-action" onClick={() => addPreset(presets.quickOptions.weight, 'الوزن')}>+ جرام / كيلو</button>}
+              </div>
               {variants.map((v, i) => <div key={v.id || i} className="rounded-2xl border border-black/8 p-3 space-y-2"><div className="grid grid-cols-2 gap-2"><input value={v.label} onChange={(e) => setVariants(variants.map((x, idx) => idx === i ? { ...x, label: e.target.value } : x))} className="input" placeholder="مثال: 256GB أسود" /><input value={v.options} onChange={(e) => setVariants(variants.map((x, idx) => idx === i ? { ...x, options: e.target.value } : x))} className="input" placeholder="السعة=256GB, اللون=أسود" /></div><div className="grid grid-cols-3 gap-2"><input type="number" value={v.price} onChange={(e) => setVariants(variants.map((x, idx) => idx === i ? { ...x, price: e.target.value } : x))} className="input" placeholder="السعر" /><input type="number" value={v.stock} onChange={(e) => setVariants(variants.map((x, idx) => idx === i ? { ...x, stock: e.target.value } : x))} className="input" placeholder="المخزون" /><input value={v.sku} onChange={(e) => setVariants(variants.map((x, idx) => idx === i ? { ...x, sku: e.target.value } : x))} className="input" placeholder="SKU" /></div><div className="flex justify-between"><input type="number" value={v.compareAt} onChange={(e) => setVariants(variants.map((x, idx) => idx === i ? { ...x, compareAt: e.target.value } : x))} className="input max-w-[180px]" placeholder="السعر قبل الخصم" /><button onClick={() => setVariants(variants.filter((_, idx) => idx !== i))} className="text-red-600 text-xs flex items-center gap-1"><Trash2 size={13} /> حذف الاختيار</button></div></div>)}
               <button onClick={() => setVariants([...variants, { id: `draft-${Date.now()}`, label: '', price: form.price, compareAt: '', stock: '', options: '', sku: '' }])} className="small-action"><Plus size={14} /> إضافة Variant</button>
             </EditorBox>
